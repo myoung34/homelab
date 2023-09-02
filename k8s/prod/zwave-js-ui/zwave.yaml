@@ -1,0 +1,94 @@
+---
+# Source: zwave-js-ui/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zwave-js-ui
+  labels:
+    app.kubernetes.io/name: zwave-js-ui
+---
+# Source: zwave-js-ui/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zwave-js-ui
+  labels:
+    app.kubernetes.io/name: zwave-js-ui
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8091
+      targetPort: 8091
+      protocol: TCP
+      name: http-ui
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http-websocket
+  selector:
+    app.kubernetes.io/name: zwave-js-ui
+---
+# Source: zwave-js-ui/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zwave-js-ui
+  labels:
+    app.kubernetes.io/name: zwave-js-ui
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zwave-js-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zwave-js-ui
+    spec:
+      serviceAccountName: zwave-js-ui
+      securityContext:
+        {}
+      containers:
+        - name: zwave-js-ui
+          securityContext:
+            {}
+          image: "zwavejs/zwave-js-ui:8.24.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http-ui
+              containerPort: 8091
+              protocol: TCP
+            - name: http-websocket
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http-ui
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http-ui
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http-ui
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          resources:
+            limits:
+              cpu: 300m
+              memory: 256Mi
+            requests:
+              cpu: 200m
+              memory: 192Mi
+          volumeMounts:
+            - name: store
+              mountPath: /usr/src/app/store
+      volumes:
+        - name: store
+          persistentVolumeClaim:
+            claimName: zwave-js-ui

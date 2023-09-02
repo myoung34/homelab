@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: metallb
+
+resources:
+  - namespace.yaml
+  - ippool.yaml
+
+helmCharts:
+- name: metallb
+  includeCRDs: true
+  namespace: metallb
+  releaseName: metallb
+  version:  0.13.10
+  repo:  https://metallb.github.io/metallb
+  valuesInline: {}
+    #clusterName: "metallb"

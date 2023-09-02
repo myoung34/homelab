@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ser2net
+data:
+  ser2net.yaml: |
+    %YAML 1.1
+    ---
+    define: &confver 1.0
+    define: &banner Connected to port \N(\d)\r\n
+    default:
+          name: local
+          value: true
+          class: serialdev
+    default:
+          name: mdns
+          value: false
+    default:
+          name: mdns-sysattrs
+          value: true
+    default:
+          name: speed
+          value: 115200n81
+    connection: &con01
+      accepter: tcp,3001
+      connector: serialdev,/dev/zig,115200n81,nobreak,local
+      options:
+        kickolduser: true
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ser2net
+  namespace: home-automation
+  labels:
+    app.kubernetes.io/name: ser2net
+    app.kubernetes.io/instance: rfxcom
+  annotations:
+    configmap.reloader.stakater.com/reload: "ser2net"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ser2net
+      app.kubernetes.io/instance: rfxcom
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ser2net
+        app.kubernetes.io/instance: rfxcom
+    spec:
+      containers:
+        - name: ser2net
+          image: jippi/ser2net:latest
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: true
+            privileged: true
+          ports:
+            - containerPort: 3001
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/ser2net
+              name: configmap
+            - name: usb-conbee
+              mountPath: /dev/zig
+      volumes:
+        - configMap:
+            name: ser2net
+          name: configmap
+        - name: usb-conbee
+          hostPath:
+            path: /dev/serial/by-id/usb-dresden_elektronik_ingenieurtechnik_GmbH_ConBee_II_DE2669726-if00
+      nodeSelector:
+        feature.node.kubernetes.io/usb-02_1cf1_0030.present: "true"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: ser2net
+  namespace: home-automation
+  labels:
+    app.kubernetes.io/name: ser2net
+    app.kubernetes.io/instance: rfxcom
+spec:
+  selector:
+    app.kubernetes.io/name: ser2net
+    app.kubernetes.io/instance: rfxcom
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3001
+      targetPort: 3001

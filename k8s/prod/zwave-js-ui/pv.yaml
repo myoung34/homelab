@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: zwave-js-ui
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 128Mi
+  hostPath:
+    path: /var/mnt/storage/zwave
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: feature.node.kubernetes.io/usb-08_0781_5597.present
+          operator: Exists
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path
+  volumeMode: Filesystem

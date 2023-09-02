@@ -1,0 +1,33 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: default
+spec:
+  address: http://192.168.3.2:8200
+  skipTLSVerify: true
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: dex
+spec:
+  vaultAuthRef: dex
+  mount: secret/
+  type: kv-v2
+  path: dex
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: dex-auth
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: dex
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: dex
+    serviceAccount: dex

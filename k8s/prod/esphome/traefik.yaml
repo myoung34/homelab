@@ -1,0 +1,41 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: esphome-redirect
+  namespace: esphome
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`esphome.service.kube`)
+      middlewares:
+        - name: httpredirectscheme
+          namespace: traefik
+      services:
+        - name: esphome
+          port: 6052
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: esphome
+  namespace: esphome
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`esphome.service.kube`)
+      services:
+        - name: esphome
+          port: 6052
+      middlewares:
+        - name: traefik-forward-auth
+          namespace: traefik
+  tls: {}

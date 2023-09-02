@@ -1,0 +1,34 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: default
+spec:
+  address: http://192.168.3.2:8200
+  skipTLSVerify: true
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: esphome
+spec:
+  vaultAuthRef: esphome
+  mount: secret/
+  type: kv-v2
+  version: 1
+  path: esphome
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: esphome
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: esphome
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: esphome
+    serviceAccount: default

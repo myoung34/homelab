@@ -1,0 +1,36 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: zwave-js-ui-redirect
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`zwave.service.kube`)
+      priority: 10
+      middlewares:
+        - name: httpredirectscheme
+          namespace: traefik
+      services:
+        - name: zwave-js-ui
+          port: 8091
+---
+# Source: zwave-js-ui/templates/ingress.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: zwave-js-ui
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`zwave.service.kube`)
+      services:
+        - name: zwave-js-ui
+          port: 8091
+  tls: {}

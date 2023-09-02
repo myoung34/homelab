@@ -1,0 +1,26 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: argowf
+spec:
+  vaultAuthRef: argowf
+  mount: secret/
+  type: kv-v2
+  path: argowf
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: argowf
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: argowf
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: argowf
+    serviceAccount: default
+---

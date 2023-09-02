@@ -1,0 +1,45 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: atlantis-reap
+spec:
+  schedule: "0 0 * * 0" # “At 00:00 on Sunday.”
+  startingDeadlineSeconds: 0
+  suspend: false
+  workflowSpec:
+    serviceAccountName: argowf-atlantis-ttl
+    volumes:
+    - name: talos-secrets
+      secret:
+        secretName: talos-secrets
+    entrypoint: main
+    templates:
+      - name: main
+        container:
+          image: alpine:latest
+          command:
+          - sh
+          - -c
+          - |
+            export CPU_ARCH=`uname -m | sed 's/aarch64/arm64/g' | sed 's/x86_64/amd64/g'`
+            apk add -U curl
+            curl -sL https://github.com/siderolabs/talos/releases/download/v1.4.7/talosctl-linux-${CPU_ARCH} -o /usr/local/bin/talosctl
+            chmod +x /usr/local/bin/talosctl
+            talosctl kubeconfig -n 192.168.1.22 kube.config --merge=false
+            export KUBECONFIG=$(pwd)/kube.config
+            curl -sL "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${CPU_ARCH}/kubectl" -o /usr/local/bin/kubectl
+            chmod +x /usr/local/bin/kubectl
+            POD_NAME=$(kubectl -n atlantis delete pods -l statefulset.kubernetes.io/pod-name=atlantis-0 --force --grace-period 0 -o name)
+            curl -XPOST -H 'Content-Type: application/json' ${ZAPIER_WEBHOOK_URL} -d "{\"message\": \"Reaping atlantis pod: ${POD_NAME}\"}"
+          env:
+          - name: ZAPIER_WEBHOOK_URL
+            valueFrom:
+              secretKeyRef:
+                key: ZAPIER_WEBHOOK_URL
+                name: argowf
+
+
+        volumeMounts:
+        - mountPath: /var/run/secrets/talos.dev
+          name: talos-secrets

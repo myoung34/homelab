@@ -1,0 +1,33 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: default
+spec:
+  address: http://192.168.3.2:8200
+  skipTLSVerify: true
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: cert-manager
+spec:
+  vaultAuthRef: cert-manager
+  mount: secret/
+  type: kv-v2
+  path: cert-manager
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: cert-manager
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: cert-manager
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: cert-manager
+    serviceAccount: default

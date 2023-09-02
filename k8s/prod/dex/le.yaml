@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dex-cert
+  namespace:  dex
+spec:
+  secretName: dex-cert
+  commonName: "dex.marcyoung.us"
+  dnsNames:
+  - dex.marcyoung.us
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

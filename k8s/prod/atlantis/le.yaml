@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: atlantis-cert
+  namespace:  atlantis
+spec:
+  secretName: atlantis-cert
+  commonName: "atlantis.marcyoung.us"
+  dnsNames:
+  - atlantis.marcyoung.us
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

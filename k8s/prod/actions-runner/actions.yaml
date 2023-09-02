@@ -1,0 +1,57 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: actions-runner
+  namespace: actions-runner
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: actions-runner
+  namespace: runners
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: actions-runner
+  template:
+    metadata:
+      labels:
+        app: actions-runner
+    spec:
+      volumes:
+      - name: containerdsock
+        hostPath:
+          path: /run/containerd/containerd.sock
+      containers:
+      - name: runner
+        image: myoung34/github-runner:latest
+        env:
+        - name: START_DOCKER_SERVICE
+          value: "true"
+        - name: RUNNER_SCOPE
+          value: "org"
+        - name: ORG_NAME
+          value: octokode
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: actions-runner
+              key: ACCESS_TOKEN
+        - name: RUNNER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: containerdsock
+          mountPath: /run/containerd/containerd.sock
+        securityContext:
+          privileged: true
+        resources:
+          limits:
+            cpu: 2
+            memory: 512Mi
+          requests:
+            cpu: 2
+            memory: 256Mi

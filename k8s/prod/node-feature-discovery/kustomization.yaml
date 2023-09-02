@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: node-feature-discovery
+
+resources:
+  - namespace.yaml
+
+helmCharts:
+- name: node-feature-discovery
+  includeCRDs: true
+  namespace: node-feature-discovery
+  releaseName: node-feature-discovery
+  version: 0.13.4
+  repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: node-feature-discovery-worker-conf
+    patch: |-
+      - op: replace
+        path: /data/nfd-worker.conf
+        value: |-
+          sources:
+            usb:
+              deviceClassWhitelist:
+                - "02"
+                - "08"
+                - "0e"
+                - "ef"
+                - "fe"
+                - "ff"
+              deviceLabelFields:
+                - "class"
+                - "vendor"
+                - "device"
+            pci:
+              deviceLabelFields:
+                - "class"
+                - "vendor"
+                - "device"
+                - "subsystem_vendor"
+                - "subsystem_device"

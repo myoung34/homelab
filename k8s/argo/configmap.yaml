@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  kustomize.buildOptions: --enable-helm
+  url: https://argocd.marcyoung.us
+  admin.enabled: "false"
+  oidc.config: |
+    name: SSO
+    issuer: https://dex.marcyoung.us
+    clientID: argocd
+    clientSecret: $client.secret
+  repositories: |
+    - url: https://github.com/myoung34/homelab
+      passwordSecret:
+        name: argocd-secret
+        key: github_password
+      usernameSecret:
+        name: argocd-secret
+        key: github_username
+  resource.customizations: |
+      StatefulSet:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/volumeClaimTemplates/0/apiVersion
+             - /spec/volumeClaimTemplates/0/kind
+      v1/Secret:
+          ignoreDifferences: |
+             jsonPointers:
+             - /metadata/labels
+      apiextensions.k8s.io/CustomResourceDefinition:
+          ignoreDifferences: |
+             jsonPointers:
+             - /status
+             - /spec/conversion/webhook/clientConfig/service
+             - /spec/conversion/webhook/clientConfig/caBundle
+             - /spec/validation/openAPIV3Schema/properties/spec/properties/solver/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields
+             - /spec/validation/openAPIV3Schema/properties/spec/properties/acme/properties/solvers/items/properties/dns01/properties/webhook/properties/config/x-kubernetes-preserve-unknown-fields
+      admissionregistration.k8s.io/ValidatingWebhookConfiguration:
+          ignoreDifferences: |
+             jsonPointers:
+             - /webhooks/0/clientConfig/caBundle
+             - /webhooks/0/failurePolicy
+             - /webhooks/1/clientConfig/caBundle
+             - /webhooks/1/failurePolicy
+      admissionregistration.k8s.io/MutatingWebhookConfiguration:
+          ignoreDifferences: |
+             jsonPointers:
+             - /webhooks/0/clientConfig/caBundle
+      argoproj.io/CronWorkflow:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/schedule

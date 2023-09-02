@@ -1,0 +1,101 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+
+helmCharts:
+- name: coredns
+  releaseName: coredns
+  version: 1.26.0
+  includeCRDs: true
+  repo: https://coredns.github.io/helm
+  valuesInline:
+    k8sAppLabelOverride: "coredns"
+    fullnameOverride: coredns
+    service:
+      name: "kube-dns"
+      clusterIP: "10.96.0.10"
+    servers:
+    - zones:
+      - zone: .
+      port: 53
+      plugins:
+      - name: errors
+      # Serves a /health endpoint on :8080, required for livenessProbe
+      - name: health
+        configBlock: |-
+          lameduck 5s
+      # Serves a /ready endpoint on :8181, required for readinessProbe
+      - name: ready
+      # Required to query kubernetes API for data
+      - name: kubernetes
+        parameters: cluster.local in-addr.arpa ip6.arpa
+        configBlock: |-
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+          ttl 30
+
+      - name: file /etc/coredns/kube.db service.kube
+      - name: file /etc/coredns/consul.db service.consul
+      - name: file /etc/coredns/esphome.db service.iot
+      - name: file /etc/coredns/blindrage.db blindrage.local
+      # Serves a /metrics endpoint on :9153, required for serviceMonitor
+      - name: prometheus
+        parameters: 0.0.0.0:9153
+      - name: forward
+        parameters: . /etc/resolv.conf
+      - name: cache
+        parameters: 30
+      - name: loop
+      - name: reload
+      - name: loadbalance
+    zoneFiles:
+    - filename: NodeHosts
+      domain: NodeHosts
+      contents: |
+        192.168.1.20 cluster11
+        192.168.1.21 cluster12
+        192.168.1.22 cluster13
+        192.168.1.23 cluster14
+        192.168.1.24 cluster21
+        192.168.1.25 cluster22
+        192.168.1.26 cluster23
+        192.168.1.27 cluster24
+        192.168.3.2  bignasty
+    - filename: blindrage.db
+      domain: blindrage.local
+      contents: |
+        ; blindrage.local
+        blindrage.local.              IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
+        bignasty.blindrage.local.     IN      A       192.168.3.2
+    - filename: kube.db
+      domain: service.kube
+      contents: |
+        ; service.kube
+        service.kube.              IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
+        *.service.kube.            IN      A       192.168.1.21
+    - filename: esphome.db
+      domain: service.iot
+      contents: |
+        ; service.iot
+        service.iot.                      IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
+        pergola_lights.service.iot.       IN      A       192.168.4.100
+        garage_switch.service.iot.        IN      A       192.168.4.101
+        liam_light.service.iot.           IN      A       192.168.4.102
+        front_porch_switch.service.iot.   IN      A       192.168.4.103
+        liam_room_starlights.service.iot. IN      A       192.168.4.104
+        ecobee.service.iot.               IN      A       192.168.4.105
+        feather.service.iot.              IN      A       192.168.4.106
+        plug2.service.iot.                IN      A       192.168.4.107
+        plaato_keg.service.iot.           IN      A       192.168.4.110
+        plaato_airlock.service.iot.       IN      A       192.168.4.111
+        liamplug.service.iot.             IN      A       192.168.4.112
+        plug1.service.iot.                IN      A       192.168.4.113
+        plug3.service.iot.                IN      A       192.168.4.114
+        driveway_switch.service.iot.      IN      A       192.168.4.120
+        driveway_light.service.iot.       IN      A       192.168.4.121
+    - filename: consul.db
+      domain: service.consul
+      contents: |
+        ; service.consul
+        service.consul.            IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
+        *.service.consul.          IN      A       192.168.3.2

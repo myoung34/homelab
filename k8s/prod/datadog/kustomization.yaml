@@ -1,0 +1,131 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: datadog
+
+resources:
+  - namespace.yaml
+  - vault.yaml
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: DaemonSet
+      name: datadog
+      namespace: datadog
+    patch: |-
+      - op: remove
+        path: /spec/template/metadata/annotations/container.apparmor.security.beta.kubernetes.io~1system-probe
+        value: unconfined
+patchesStrategicMerge:
+ - patch.yaml
+
+helmCharts:
+- name: datadog
+  releaseName: datadog
+  namespace: datadog
+  version: 3.34.3
+  includeCRDs: true
+  repo: https://helm.datadoghq.com
+  valuesInline:
+    datadog:
+
+      confd:
+         kubernetes_state.yaml: |-
+           ad_identifiers:
+             - kube-state-metrics
+           instances:
+             - kube_state_url: http://10.96.0.255:8080/metrics
+      livenessProbe:
+        initialDelaySeconds: 60
+      readinessProbe:
+        initialDelaySeconds: 60
+      kubelet:
+        tlsVerify: false
+      apiKeyExistingSecret:  datadog
+      logs:
+        enabled: true
+        containerCollectAll: true
+      networkMonitoring:
+        enabled: true
+      serviceMonitoring:
+        enabled: true
+      envFrom:
+        - secretRef:
+            name: datadog
+    clusterChecksRunner:
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          effect: "NoSchedule"
+      envFrom:
+        - secretRef:
+            name: datadog
+    clusterAgent:
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      envFrom:
+        - secretRef:
+            name: datadog
+      livenessProbe:
+        initialDelaySeconds: 60
+      readinessProbe:
+        initialDelaySeconds: 60
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          effect: "NoSchedule"
+      volumes:
+        - hostPath:
+            path: /run/containerd/containerd.sock
+          name: containerdsocket
+        - name: secrets
+          secret:
+            secretName: "datadog"
+      volumeMounts:
+        - name: containerdsocket
+          mountPath: /var/run/containerd/containerd.sock
+        - name: secrets
+          mountPath: /etc/secrets
+          readOnly: true
+      securityAgent:
+        compliance:
+          enabled: true
+        runtime:
+          enabled: true
+          syscallMonitor:
+            enabled: false
+    kube-state-metrics:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          effect: "NoSchedule"
+      envFrom:
+        - secretRef:
+            name: datadog
+    agents:
+      image:
+        tag: 7
+      containers:
+        traceAgent:
+          livenessProbe:
+            initialDelaySeconds: 60
+          readinessProbe:
+            initialDelaySeconds: 60
+        agent:
+          livenessProbe:
+            initialDelaySeconds: 60
+          readinessProbe:
+            initialDelaySeconds: 60
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          effect: "NoSchedule"
+      podAnnotations:
+        container.apparmor.security.beta.kubernetes.io/agent: unconfined
+        container.apparmor.security.beta.kubernetes.io/process-agent: unconfined
+      envFrom:
+        - secretRef:
+            name: datadog

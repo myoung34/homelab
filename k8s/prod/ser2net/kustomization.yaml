@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ser2net
+
+resources:
+  - common.yaml
+  - ser2net-zigbee.yaml
+  - ser2net-zwave.yaml

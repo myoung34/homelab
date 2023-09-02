@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vault-secrets-operator
+
+resources:
+  - namespace.yaml
+  - sa.yaml
+
+helmCharts:
+- name: vault-secrets-operator
+  includeCRDs: true
+  namespace: vault-secrets-operator
+  releaseName: vault-secrets-operator
+  version: 0.2.0
+  repo: https://helm.releases.hashicorp.com
+  valuesInline:
+    defaultVaultConnection:
+      enabled: true
+      address: "http://192.168.3.2:8200"
+      skipTLSVerify: true

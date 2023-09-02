@@ -1,0 +1,7 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: vault-secrets-operator
+  labels:
+    name: vault-secrets-operator

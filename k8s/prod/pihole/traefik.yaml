@@ -1,0 +1,62 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pihole-redirect
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`pihole.service.kube`)
+      priority: 10
+      middlewares:
+        - name: httpredirectscheme
+          namespace: traefik
+      services:
+        - name: pihole-web
+          port: 80
+---
+# Source: pihole/templates/ingress.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pihole
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`pihole.service.kube`)
+      services:
+        - name: pihole-web
+          port: 80
+  tls: {}
+---
+# Source: pihole/templates/ingress.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: pihole-dns
+spec:
+  entryPoints:
+    - dns
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: pihole-dns-tcp
+          port: 53
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteUDP
+metadata:
+  name: pihole-dns
+spec:
+  entryPoints:
+    - dnsudp
+  routes:
+    - services:
+      - name: pihole-dns-udp
+        port: 53

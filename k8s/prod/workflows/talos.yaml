@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: talos-backup-template
+spec:
+  serviceAccountName: argo
+  templates:
+    - name: main
+      inputs:
+        parameters:
+        - name: slack_message
+        - name: talos_directory
+        - name: minio_path
+      script:
+        image: alpine:latest
+        command:
+        - sh
+        - -c
+        - |
+          apk add -U bash curl aws-cli >/dev/null 2>&1
+          curl -sL https://github.com/siderolabs/talos/releases/download/v1.4.7/talosctl-linux-`uname -m | sed 's/aarch64/arm64/g' | sed 's/x86_64/amd64/g'` -o /usr/local/bin/talosctl
+          chmod +x /usr/local/bin/talosctl
+          aws configure set default.s3.signature_version s3v4
+          mkdir /tmp/backup
+          cat <<EOF >run.sh
+          host=\`talosctl -n \${NODES} mounts | grep /var/mnt/storage | awk '{print \$1}'\`
+          echo "got host \${host}"
+          for i in \$(talosctl -n \${host} list {{inputs.parameters.talos_directory}} 2>/dev/null | grep -v '^NODE' | awk '{print \$2}'); do
+            echo "copying \${i} from \${host}"
+            talosctl -n \${host} read {{inputs.parameters.talos_directory}}/\${i} >/tmp/backup/\${i}
+          done
+          tar czf /tmp/\$(date '+%Y%m%d%H%M%S').tgz /tmp/backup
+          aws --endpoint-url http://minio.service.consul:9000 s3 cp /tmp/*.tgz s3://backups/{{inputs.parameters.minio_path}}/
+          curl -XPOST -H 'Content-Type: application/json' \${ZAPIER_WEBHOOK_URL} -d '{"message": "{{inputs.parameters.slack_message}}"}'
+          EOF
+          cat run.sh
+          bash run.sh
+        env:
+        - name: NODES
+          value: "192.168.1.20,192.168.1.21,192.168.1.22,192.168.1.23,192.168.1.24,192.168.1.25,192.168.1.26,192.168.1.27"
+        - name: ZAPIER_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              key: ZAPIER_WEBHOOK_URL
+              name: argowf
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              key: MINIO_ACCESS_KEY_ID
+              name: argowf
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              key: MINIO_SECRET_ACCESS_KEY
+              name: argowf
+        volumeMounts:
+        - mountPath: /var/run/secrets/talos.dev
+          name: talos-secrets

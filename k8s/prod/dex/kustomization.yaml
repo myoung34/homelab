@@ -1,0 +1,81 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: dex
+
+resources:
+  - namespace.yaml
+  - vault.yaml
+  - le.yaml
+  - traefik.yaml
+
+helmCharts:
+- name: dex
+  includeCRDs: true
+  namespace: dex
+  releaseName: dex
+  version: 0.15.3
+  repo: https://charts.dexidp.io
+  valuesInline:
+    env: {}
+    envVars:
+      - name: GITHUB_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: dex-auth
+            key: GITHUB_CLIENT_ID
+      - name: GITHUB_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: dex-auth
+            key: GITHUB_CLIENT_SECRET
+      - name: ARGOCD_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: dex-auth
+            key: ARGOCD_CLIENT_SECRET
+      - name: FORWARD_AUTH_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: dex-auth
+            key: FORWARD_AUTH_CLIENT_SECRET
+    config:
+      issuer: https://dex.marcyoung.us
+      storage:
+        type: kubernetes
+        config:
+          inCluster: true
+      staticClients:
+        - id: argocd
+          redirectURIs:
+            - "https://argocd.marcyoung.us/auth/callback"
+            - "https://argowf.marcyoung.us/oauth2/redirect"
+            - "https://argowf.marcyoung.us/oauth2/callback"
+          name: ArgoCD
+          secretEnv: ARGOCD_CLIENT_SECRET
+        - id: forward-auth
+          redirectURIs:
+            - "https://dashy.service.kube/_oauth"
+            - "https://esphome.service.kube/_oauth"
+            - "https://atlantis.marcyoung.us/_oauth"
+          name: ForwardAuth
+          secretEnv: FORWARD_AUTH_CLIENT_SECRET
+      connectors:
+      - type: github
+        id: github
+        name: GitHub
+        config:
+          clientID: $GITHUB_CLIENT_ID
+          clientSecret: $GITHUB_CLIENT_SECRET
+          redirectURI: https://dex.marcyoung.us/callback
+          orgs:
+          - name: OctoKode
+          loadAllGroups: false
+          teamNameField: slug
+          useLoginAsID: false
+    grpc:
+      addr: 0.0.0.0:5557
+      reflection: true
+    web:
+      http: 0.0.0.0:5556
+    telemetry:
+      http: 0.0.0.0:5558

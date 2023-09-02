@@ -1,0 +1,7 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: zwave-js-ui
+  labels:
+    name: zwave-js-ui

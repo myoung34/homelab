@@ -1,0 +1,33 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: default
+spec:
+  address: http://192.168.3.2:8200
+  skipTLSVerify: true
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: actions-runner
+spec:
+  vaultAuthRef: actions-runner
+  mount: secret/
+  type: kv-v2
+  path: actions-runner
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: actions-runner
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: actions-runner
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: actions-runner
+    serviceAccount: actions-runner

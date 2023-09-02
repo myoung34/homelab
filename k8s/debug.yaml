@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: foo
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 128Mi
+  hostPath:
+    path: /var/mnt/storage
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - cluster24
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path
+  volumeMode: Filesystem
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slim
+spec:
+  selector:
+    matchLabels:
+      app: slim
+  template:
+    metadata:
+      labels:
+        app: slim
+    spec:
+      containers:
+      - name: app
+        image: alpine:latest
+        command:
+        - "sleep"
+        - "600"
+        volumeMounts:
+        - mountPath: /usr/src/app/store
+          name: store
+      volumes:
+      - name: store
+        persistentVolumeClaim:
+          claimName: foo
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: foo
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128Mi
+  storageClassName: local-path
+  volumeMode: Filesystem
+  volumeName: foo

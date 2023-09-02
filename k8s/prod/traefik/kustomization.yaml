@@ -1,0 +1,66 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: traefik
+
+resources:
+  - namespace.yaml
+  - forward-auth.yaml
+  - vault.yaml
+  - middleware.yaml
+
+helmCharts:
+- name: traefik
+  includeCRDs: true
+  namespace: traefik
+  releaseName: traefik
+  version: 24.0.0
+  repo: https://helm.traefik.io/traefik
+  valuesInline:
+    nodeSelector:
+      kubernetes.io/hostname: cluster12
+    service:
+      type: ClusterIP
+      externalIPs:
+        - 192.168.1.21
+    deployment:
+      enabled: true
+    ingressRoute:
+      dashboard:
+        matchRule: "Host(`traefik.service.kube`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))"
+        entryPoints:
+          - web
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+    globalArguments: []
+    additionalArguments:
+      - "--serverstransport.insecureskipverify=true"
+    ports:
+      mqtt:
+        port: 1883
+        expose: true
+        exposedPort: 1883
+        protocol: TCP
+      dns:
+        port: 8853
+        expose: true
+        exposedPort: 53
+        protocol: TCP
+      dnsudp:
+        port: 8854
+        expose: true
+        exposedPort: 53
+        protocol: UDP
+    providers:
+      kubernetesCRD:
+        allowCrossNamespace: true
+      kubernetesIngress:
+        allowExternalNameServices: true
+        publishedService:
+          enabled: true
+        ingressEndpoint:
+          ip: "209.30.119.60"
+    hub:
+      enabled: false
