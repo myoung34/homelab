@@ -1,0 +1,155 @@
+import requests
+import re
+import json
+import base64
+import os
+
+GH_USER='myoung34',
+GH_TOKEN=os.environ.get('GH_TOKEN')
+def whatever(upstream, filename_url, original_string, string_to_replace, tag) -> bool:
+    current_version = requests.get(
+        f'{filename_url}/../.version?ref=master',
+        headers={'Accept': 'application/vnd.github.v3.raw'},
+        auth=(GH_USER, GH_TOKEN)
+    )
+    if tag == current_version.text.strip():
+        return False
+
+    req = requests.get(
+        f'{filename_url}?ref=master',
+        headers={'Accept': 'application/vnd.github.v3+json'},
+        auth=(GH_USER, GH_TOKEN)
+    )
+    req.raise_for_status()
+    new_contents = re.sub(
+        original_string,
+        string_to_replace,
+        base64.b64decode(req.json()['content']).decode("utf-8"),
+    )
+
+    # Update the real file
+    payload_body = {
+        "message": f"[Automated :robot: ] Bump {upstream} from {current_version.text.strip()} to {tag}",
+        "committer": {
+            "name": "Marcus Young",
+            "email": "myoung34@my.apsu.edu"
+        },
+        "sha": req.json()['sha'],
+        "content": base64.b64encode(new_contents.encode('ascii')).decode('utf-8')
+    }
+
+    _req = requests.put(
+        filename_url,
+        headers={'Accept': 'application/vnd.github.v3+json'},
+        auth=(GH_USER, GH_TOKEN),
+        data=json.dumps(payload_body).encode("utf-8")
+    )
+    _req.raise_for_status()
+
+   # Update the version file
+    version_payload_body = {
+        "message": f"[Automated :robot: ] Bump version file for {upstream} from {current_version.text.strip()} to {tag}",
+        "committer": {
+            "name": "Marcus Young",
+            "email": "myoung34@my.apsu.edu"
+        },
+        "sha": requests.get(
+            f'{filename_url}/../.version?ref=master',
+            headers={'Accept': 'application/vnd.github.v3+json'},
+            auth=(GH_USER, GH_TOKEN)
+        ).json()['sha'],
+        "content": base64.b64encode(f'{tag}\n'.encode('ascii')).decode('utf-8')
+    }
+
+    _req = requests.put(
+        f'{filename_url}/../.version',
+        headers={'Accept': 'application/vnd.github.v3+json'},
+        auth=(GH_USER, GH_TOKEN),
+        data=json.dumps(version_payload_body).encode("utf-8")
+    )
+    _req.raise_for_status()
+
+
+
+    return True
+
+def do_work():
+    updates = [
+        {
+            'upstream': 'Lissy93/dashy',
+            'filename_url': 'apps/prod/dashy/dashy.yaml',
+            'original_string': r'      - image: lissy93/dashy:[0-9\.]+',
+            'string_to_replace': '      - image: lissy93/dashy:{}',
+        },
+        {
+            'upstream': 'esphome/esphome',
+            'filename_url': 'apps/prod/esphome/kustomization.yaml',
+            'original_string': r"      tag: '[0-9\.]+'",
+            'string_to_replace': "      tag: '{}'",
+        },
+        {
+            'upstream': 'home-assistant/core',
+            'filename_url': 'apps/prod/hass/kustomization.yaml',
+            'original_string': r"        value: ghcr.io/home-assistant/home-assistant:[0-9\.]+",
+            'string_to_replace': "        value: ghcr.io/home-assistant/home-assistant:{}",
+        },
+        {
+            'upstream': 'rancher/local-path-provisioner',
+            'filename_url': 'apps/prod/local-path-storage/chart.yaml',
+            'original_string': r"        image: rancher/local-path-provisioner:v[0-9\.]+",
+            'string_to_replace': r"        image: rancher/local-path-provisioner:{}",
+        },
+        {
+            'upstream': 'eclipse/mosquitto',
+            'filename_url': 'apps/prod/mosquitto/kustomization.yaml',
+            'original_string': r"      tag: '[0-9\.]+'",
+            'string_to_replace': r"      tag: '{}'",
+            'strip_v': True,
+        },
+        {
+            'upstream': 'Koenkk/zigbee2mqtt',
+            'filename_url': 'apps/prod/zigbee2mqtt/zigbee2mqtt.yaml',
+            'original_string': r"        image: koenkk/zigbee2mqtt:[0-9\.]+",
+            'string_to_replace': r"        image: koenkk/zigbee2mqtt:{}",
+        },
+        {
+            'upstream': 'zwave-js/zwave-js-ui',
+            'filename_url': 'apps/prod/zwave-js-ui/zwave.yaml',
+            'original_string': r'          image: "zwavejs/zwave-js-ui:[0-9\.]+"',
+            'string_to_replace': r'          image: "zwavejs/zwave-js-ui:{}"',
+            'strip_v': True,
+        },
+    ]
+    for update in updates:
+        tag = None
+        try:
+            tag = requests.get(
+                f'https://api.github.com/repos/{update["upstream"]}/releases/latest',
+                headers={ 'Accept': 'application/vnd.github.v3+json'},
+                auth=(GH_USER, GH_TOKEN)
+            ).json()['tag_name']
+        except KeyError:
+            tag = requests.get(
+                f'https://api.github.com/repos/{update["upstream"]}/tags',
+                headers={ 'Accept': 'application/vnd.github.v3+json'},
+                auth=(GH_USER, GH_TOKEN)
+            ).json()[0]['name']
+
+        if update.get('strip_v', False):
+            tag = tag[1:]
+
+        updated = whatever(
+            upstream=update['upstream'],
+            filename_url=f'https://api.github.com/repos/myoung34/argo/contents/{update["filename_url"]}',
+            original_string=update['original_string'],
+            string_to_replace=update['string_to_replace'].format(tag),
+            tag=tag,
+        )
+        if updated:
+            print(f'Updated {update["filename_url"]} to {tag}')
+        else:
+            print(f'No update needed for {update["filename_url"]}')
+
+
+if __name__ == '__main__':
+    do_work()
