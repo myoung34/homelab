@@ -1,10 +1,10 @@
 terraform {
-  #backend "s3" {
-  #  bucket  = "terraform-847713735871-us-east-1"
-  #  key     = "unifi/terraform.tfstate"
-  #  region  = "us-east-1"
-  #  encrypt = true
-  #}
+  backend "s3" {
+    bucket  = "terraform-847713735871-us-east-1"
+    key     = "unifi/terraform.tfstate"
+    region  = "us-east-1"
+    encrypt = true
+  }
   required_providers {
     unifi = {
       source = "paultyng/unifi"

@@ -1,3 +1,6 @@
 talos/*.yaml
 talos/talosconfig
 nomad/vault.hcl
+**/*.tfstate
+**/*.backup
+.terraform
