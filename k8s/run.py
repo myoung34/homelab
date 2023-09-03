@@ -8,7 +8,7 @@ GH_USER='myoung34',
 GH_TOKEN=os.environ.get('GH_TOKEN')
 def whatever(upstream, filename_url, original_string, string_to_replace, tag) -> bool:
     current_version = requests.get(
-        f'{filename_url}/../.version?ref=master',
+        f'{filename_url}/../.version?ref=main',
         headers={'Accept': 'application/vnd.github.v3.raw'},
         auth=(GH_USER, GH_TOKEN)
     )
@@ -16,7 +16,7 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
         return False
 
     req = requests.get(
-        f'{filename_url}?ref=master',
+        f'{filename_url}?ref=main',
         headers={'Accept': 'application/vnd.github.v3+json'},
         auth=(GH_USER, GH_TOKEN)
     )
@@ -54,7 +54,7 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
             "email": "myoung34@my.apsu.edu"
         },
         "sha": requests.get(
-            f'{filename_url}/../.version?ref=master',
+            f'{filename_url}/../.version?ref=main',
             headers={'Accept': 'application/vnd.github.v3+json'},
             auth=(GH_USER, GH_TOKEN)
         ).json()['sha'],
