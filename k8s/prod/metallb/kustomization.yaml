@@ -11,7 +11,7 @@ helmCharts:
   includeCRDs: true
   namespace: metallb
   releaseName: metallb
-  version:  0.13.10
+  version:  0.13.11
   repo:  https://metallb.github.io/metallb
   valuesInline: {}
     #clusterName: "metallb"
