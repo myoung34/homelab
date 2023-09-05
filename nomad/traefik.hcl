@@ -21,6 +21,9 @@ job "traefik" {
         volumes = [
           "/var/run/docker.sock:/var/run/docker.sock",
         ]
+        extra_hosts = [
+          "bignasty:192.168.3.2",
+        ]
 
         args = [
           "--accesslog",
