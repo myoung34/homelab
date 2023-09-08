@@ -4,6 +4,9 @@ on:
   schedule:
     - cron:  '59 23 * * *'
 
+permissions:
+  contents: write
+
 jobs:
   bump:
     runs-on: ubuntu-latest
