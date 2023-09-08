@@ -76,10 +76,10 @@ data:
           conditions:
             - condition: state
               entity_id: sensor.season
-              state: summer
+              state: winter
             - condition: state
               entity_id: sensor.season
-              state: autumn
+              state: spring
       action:
         - service: climate.set_temperature
           data:
@@ -99,10 +99,10 @@ data:
           conditions:
             - condition: state
               entity_id: sensor.season
-              state: summer
+              state: winter
             - condition: state
               entity_id: sensor.season
-              state: autumn
+              state: spring
       action:
         - service: climate.set_temperature
           data:
