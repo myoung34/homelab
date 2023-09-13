@@ -3,7 +3,6 @@ import re
 import json
 import base64
 import os
-from pprint import pprint
 
 GH_USER='myoung34',
 GH_TOKEN=os.environ.get('GH_TOKEN')
@@ -40,7 +39,6 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
         "sha": req.json()['sha'],
         "content": base64.b64encode(new_contents.encode('ascii')).decode('utf-8')
     }
-    pprint(payload_body)
 
     _req = requests.put(
         filename_url,
@@ -48,7 +46,6 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
         auth=(GH_USER, GH_TOKEN),
         data=json.dumps(payload_body).encode("utf-8")
     )
-    pprint(_req.content)
     _req.raise_for_status()
 
    # Update the version file
