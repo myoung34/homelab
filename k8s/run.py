@@ -13,8 +13,10 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
         auth=(GH_USER, GH_TOKEN)
     )
     if tag == current_version.text.strip():
+        print(f'No change between {tag} and {current_version.text.strip()}. Nothing to do.')
         return False
 
+    print(f'Found change between {tag} and {current_version.text.strip()}. Keep on keepin on')
     req = requests.get(
         f'{filename_url}?ref=main',
         headers={'Accept': 'application/vnd.github.v3+json'},
@@ -122,16 +124,20 @@ def do_work():
                 headers={ 'Accept': 'application/vnd.github.v3+json'},
                 auth=(GH_USER, GH_TOKEN)
             ).json()['tag_name']
+            print(f'Got tag {tag} for {update["upstream"]}')
         except KeyError:
             tag = requests.get(
                 f'https://api.github.com/repos/{update["upstream"]}/tags',
                 headers={ 'Accept': 'application/vnd.github.v3+json'},
                 auth=(GH_USER, GH_TOKEN)
             ).json()[0]['name']
+            print(f'Got tag by name {tag} for {update["upstream"]}')
 
         if update.get('strip_v', False):
+            print(f'Got strip_v, fixing tag to {tag[1:]}')
             tag = tag[1:]
 
+        print(f'Want to update {update["upstream"]} from {tag} to {update["string_to_replace"].format(tag)}')
         updated = whatever(
             upstream=update['upstream'],
             filename_url=f'https://api.github.com/repos/myoung34/homelab/contents/{update["filename_url"]}',
