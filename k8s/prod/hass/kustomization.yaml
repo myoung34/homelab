@@ -31,8 +31,13 @@ helmCharts:
           - NET_ADMIN
           - NET_RAW
           - SYS_ADMIN
-    nodeSelector:
-      feature.node.kubernetes.io/usb-08_0781_5597.present: "true"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: feature.node.kubernetes.io/usb-08_0781_5597.present
+              operator: Exists
     initContainers:
       copy:
         image: alpine:latest
