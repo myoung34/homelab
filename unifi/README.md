@@ -12,7 +12,7 @@ I cannot currently update client devices, so instead I'll capture them here on o
 # Easiest is to just go to chrome dev tools -> network -> copy as cURL for clients
 $ curl 'https://192.168.2.1/proxy/network/v2/api/site/default/clients/active?includeTrafficUsage=true' \
  .....  >clients.json
-$ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat a | jq -r '.[] | select(.display_name!=null) | select(.use_fixedip==true) | "|" + .display_name + "|" + .mac + "|" + .network_name + "|" + .ip + "|"' ) | pbcopy
+$ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq -r '.[] | select(.display_name!=null) | select(.use_fixedip==true) | "|" + .display_name + "|" + .mac + "|" + .network_name + "|" + .ip + "|"' ) | pbcopy
 ```
 
 |name|mac|network|ip|
@@ -24,15 +24,15 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat a | jq -r '.[] | s
 |bigNASty|00:11:32:97:da:3c|NAS|192.168.3.2|
 |plug3|48:3f:da:2a:d7:01|IoT|192.168.4.114|
 |cluster11|00:e0:4c:88:0b:85|cluster|192.168.1.20|
-|cluster24|e4:5f:01:58:de:64|cluster|192.168.1.27|
 |plaato_keg|84:0d:8e:e3:01:78|IoT|192.168.4.110|
-|cluster12|dc:a6:32:45:cd:64|cluster|192.168.1.21|
 |liamplug|48:3f:da:27:7c:c3|IoT|192.168.4.112|
+|cluster12|d8:3a:dd:28:50:51|cluster|192.168.1.21|
+|cluster14|d8:3a:dd:55:cb:5e|cluster|192.168.1.23|
 |plug2|a4:cf:12:b7:ff:5b|IoT|192.168.4.107|
+|cluster24|d8:3a:dd:55:c8:e0|cluster|192.168.1.27|
 |liam_room_starlights|84:0d:8e:5c:12:b7|IoT|192.168.4.104|
 |office brother|3c:2a:f4:14:4f:e9|printer|192.168.6.9|
 |cluster13|dc:a6:32:d3:86:35|cluster|192.168.1.22|
 |garage_switch|68:c6:3a:9f:bb:55|IoT|192.168.4.101|
 |cluster21|00:e0:4c:88:00:cd|cluster|192.168.1.24|
-|cluster14|dc:a6:32:35:8e:33|cluster|192.168.1.23|
 |pergola_lights|c4:4f:33:81:ba:cf|IoT|192.168.4.100|
