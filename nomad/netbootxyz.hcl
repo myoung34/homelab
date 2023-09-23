@@ -132,13 +132,13 @@ job "netbootxyz" {
         network_mode = "host"
         volumes = [
           "local/cluster11:/config/menus/MAC-00e04c880b85.ipxe",
-          "local/cluster12:/config/menus/MAC-dca63245cd64.ipxe",
+          "local/cluster12:/config/menus/MAC-d83add285051.ipxe",
           "local/cluster13:/config/menus/MAC-dca632d38635.ipxe",
-          "local/cluster14:/config/menus/MAC-dca632358e33.ipxe",
+          "local/cluster14:/config/menus/MAC-d83add55cb5e.ipxe",
           "local/cluster21:/config/menus/MAC-00e04c8800cd.ipxe",
           "local/cluster22:/config/menus/MAC-e45f01582d7d.ipxe",
           "local/cluster23:/config/menus/MAC-e45f0158de82.ipxe",
-          "local/cluster24:/config/menus/MAC-e45f0158de64.ipxe",
+          "local/cluster24:/config/menus/MAC-d83add55c8e0.ipxe",
           "local/talos:/config/menus/home-talos.ipxe",
         ]
         privileged = true

@@ -4,3 +4,4 @@ nomad/vault.hcl
 **/*.tfstate
 **/*.backup
 .terraform
+*.sw[op]
