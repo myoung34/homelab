@@ -50,6 +50,8 @@ spec:
       labels:
         app.kubernetes.io/name: ser2net-zwave
         app.kubernetes.io/instance: rfxcom
+      annotations:
+        descheduler.alpha.kubernetes.io/evict: "true"
     spec:
       containers:
         - name: ser2net-zwave
@@ -73,8 +75,13 @@ spec:
         - name: usb-zooz
           hostPath:
             path: /dev/serial/by-id/usb-Silicon_Labs_Zooz_ZST10_700_Z-Wave_Stick_baf11d5406caec11b51361a341be1031-if00-port0
-      nodeSelector:
-        feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true" #zooz
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: feature.node.kubernetes.io/usb-ff_10c4_ea60.present #zooz
+                operator: Exists
 ---
 kind: Service
 apiVersion: v1

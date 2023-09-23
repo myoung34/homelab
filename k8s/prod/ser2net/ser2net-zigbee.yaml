@@ -50,6 +50,8 @@ spec:
       labels:
         app.kubernetes.io/name: ser2net
         app.kubernetes.io/instance: rfxcom
+      annotations:
+        descheduler.alpha.kubernetes.io/evict: "true"
     spec:
       containers:
         - name: ser2net
@@ -73,8 +75,13 @@ spec:
         - name: usb-conbee
           hostPath:
             path: /dev/serial/by-id/usb-dresden_elektronik_ingenieurtechnik_GmbH_ConBee_II_DE2669726-if00
-      nodeSelector:
-        feature.node.kubernetes.io/usb-02_1cf1_0030.present: "true"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: feature.node.kubernetes.io/usb-02_1cf1_0030.present
+                operator: Exists
 ---
 kind: Service
 apiVersion: v1
