@@ -23,7 +23,7 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |front_porch_switch|ec:fa:bc:57:20:7c|IoT|192.168.4.103|
 |bigNASty|00:11:32:97:da:3c|NAS|192.168.3.2|
 |plug3|48:3f:da:2a:d7:01|IoT|192.168.4.114|
-|cluster11|00:e0:4c:88:0b:85|cluster|192.168.1.20|
+|cluster11|00:e0:4c:88:0b:85|cluster|192.168.1.19|
 |plaato_keg|84:0d:8e:e3:01:78|IoT|192.168.4.110|
 |liamplug|48:3f:da:27:7c:c3|IoT|192.168.4.112|
 |cluster12|d8:3a:dd:28:50:51|cluster|192.168.1.21|

@@ -52,7 +52,7 @@ helmCharts:
     - filename: NodeHosts
       domain: NodeHosts
       contents: |
-        192.168.1.20 cluster11
+        192.168.1.19 cluster11
         192.168.1.21 cluster12
         192.168.1.22 cluster13
         192.168.1.23 cluster14
