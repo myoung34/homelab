@@ -20,7 +20,7 @@ helmCharts:
     env:
       ESPHOME_DASHBOARD_USE_PING: true
     image:
-      tag: '2023.9.0'
+      tag: '2023.9.1'
     securityContext:
       privileged: true
       capabilities:
