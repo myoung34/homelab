@@ -4,7 +4,6 @@ namespace: descheduler
 
 resources:
   - namespace.yaml
-  - atlantis.yaml
 
 helmCharts:
 - name: descheduler
@@ -15,3 +14,14 @@ helmCharts:
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
     schedule: "*/1 * * * *"
+    deschedulerPolicy:
+      strategies:
+        PodLifeTime:
+          enabled: true
+          params:
+            podLifeTime:
+              maxPodLifeTimeSeconds: 86400 #1 day
+              #maxPodLifeTimeSeconds: 1209600 #14 days
+            namespaces:
+              include:
+              - "atlantis"
