@@ -4,6 +4,7 @@ namespace: descheduler
 
 resources:
   - namespace.yaml
+  - atlantis.yaml
 
 helmCharts:
 - name: descheduler

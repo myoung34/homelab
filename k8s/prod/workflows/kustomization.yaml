@@ -7,6 +7,5 @@ resources:
   - etcdsnapshot.yaml
   - zwavejsui.yaml
   - zigbee2mqtt.yaml
-  - atlantis-ttl.yaml
   - vault.yaml
   - sa.yaml
