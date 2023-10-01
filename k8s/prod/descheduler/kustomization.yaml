@@ -13,15 +13,15 @@ helmCharts:
   version: 0.28.0
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
-    schedule: "*/1 * * * *"
+    schedule: "*/30 * * * *"
     deschedulerPolicy:
       strategies:
         PodLifeTime:
           enabled: true
           params:
             podLifeTime:
-              maxPodLifeTimeSeconds: 86400 #1 day
-              #maxPodLifeTimeSeconds: 1209600 #14 days
+              #maxPodLifeTimeSeconds: 86400 #1 day
+              maxPodLifeTimeSeconds: 1209600 #14 days
             namespaces:
               include:
               - "atlantis"
