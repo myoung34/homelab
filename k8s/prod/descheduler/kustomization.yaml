@@ -20,8 +20,8 @@ helmCharts:
           enabled: true
           params:
             podLifeTime:
-              #maxPodLifeTimeSeconds: 86400 #1 day
-              maxPodLifeTimeSeconds: 1209600 #14 days
+              maxPodLifeTimeSeconds: 86400 #1 day
             namespaces:
               include:
               - "atlantis"
+              - "reloader"
