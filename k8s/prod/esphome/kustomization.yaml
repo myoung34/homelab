@@ -16,6 +16,10 @@ helmCharts:
   version: 8.4.2
   repo: https://k8s-at-home.com/charts/
   valuesInline:
+    controller:
+      annotations:
+        configmap.reloader.stakater.com/reload: "esphome"
+        secret.reloader.stakater.com/reload: "esphome"
     hostNetwork: true
     env:
       ESPHOME_DASHBOARD_USE_PING: true
@@ -57,7 +61,7 @@ helmCharts:
       copy:
         image: alpine:latest
         imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "-c", "apk add -U --no-cache curl; cp /configs/*.yaml /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml; curl -sL https://raw.githubusercontent.com/myoung34/plaato-keg-esphome/main/plaato_keg.yaml -o /config/plaato_keg.yaml"]
+        command: ["/bin/sh", "-c", "apk add -U --no-cache curl; cp /configs/*.h /config/; cp /configs/*.yaml /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml; curl -sL https://raw.githubusercontent.com/myoung34/plaato-keg-esphome/main/plaato_keg.yaml -o /config/plaato_keg.yaml"]
         env:
           - name: SECRETS_YAML
             valueFrom:

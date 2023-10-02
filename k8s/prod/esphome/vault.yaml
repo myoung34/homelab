@@ -15,7 +15,6 @@ spec:
   vaultAuthRef: esphome
   mount: secret/
   type: kv-v2
-  version: 1
   path: esphome
   refreshAfter: 60s
   destination:
