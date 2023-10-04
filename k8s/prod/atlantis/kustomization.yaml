@@ -20,8 +20,6 @@ helmCharts:
     orgAllowlist: github.com/myoung34/vps
     service:
       type: LoadBalancer
-      annotations:
-        external-dns.alpha.kubernetes.io/hostname: atlantis.marcyoung.us
     statefulSet:
       annotations:
         secret.reloader.stakater.com/reload: "atlantis"
