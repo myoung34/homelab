@@ -78,6 +78,12 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
 def do_work():
     updates = [
         {
+            'upstream': 'myoung34/atlantis',
+            'filename_url': 'k8s/prod/atlantis/kustomization.yaml',
+            'original_string': r"      tag: 'v[0-9\.]+'",
+            'string_to_replace': "      tag: '{}'",
+        },
+        {
             'upstream': 'esphome/esphome',
             'filename_url': 'k8s/prod/esphome/kustomization.yaml',
             'original_string': r"      tag: '[0-9\.]+'",

@@ -1,6 +1,10 @@
 name: bump
 
 on:
+  push:
+    paths:
+      - .github/workflows/bump.yml
+      - k8s/run.py
   schedule:
     - cron:  '59 23 * * *'
 
