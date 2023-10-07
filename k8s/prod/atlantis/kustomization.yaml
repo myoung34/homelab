@@ -43,7 +43,7 @@ helmCharts:
     environment: []
     image:
       repository: ghcr.io/runatlantis/atlantis
-      tag: 'v0.25.0'
+      tag: 'v0.26.0'
 
 patches:
   - target:
