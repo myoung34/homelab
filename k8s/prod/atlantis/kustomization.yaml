@@ -42,7 +42,8 @@ helmCharts:
     - --data-dir=/tmp
     environment: []
     image:
-      repository: ghcr.io/myoung34/atlantis
+      repository: ghcr.io/runatlantis/atlantis
+      tag: 'v0.25.0'
 
 patches:
   - target:
