@@ -164,9 +164,9 @@ data:
           entity_id: switch.front_porch_relay
           domain: switch
         - type: turn_on
-          device_id: 8fec13bbe0a0a0ca901a0a46920b7156
-          entity_id: light.driveway_light
-          domain: light
+          device_id: 885230fdc728915ff5a2b5a61930b845
+          entity_id: switch.plug1_pow_relay
+          domain: switch
     - alias: Outside lights off
       id: outside_lights_off
       description: "Turn off outside lights"
@@ -183,9 +183,9 @@ data:
           entity_id: switch.front_porch_relay
           domain: switch
         - type: turn_off
-          device_id: 8fec13bbe0a0a0ca901a0a46920b7156
-          entity_id: light.driveway_light
-          domain: light
+          device_id: 885230fdc728915ff5a2b5a61930b845
+          entity_id: switch.plug1_pow_relay
+          domain: switch
     - alias: Liam - turn things on
       id: liams_room_on
       description: "Turn things on in liams room"
@@ -234,9 +234,9 @@ data:
           entity_id: switch.front_porch_relay
           domain: switch
         - type: turn_on
-          device_id: 8fec13bbe0a0a0ca901a0a46920b7156
-          entity_id: light.driveway_light
-          domain: light
+          device_id: 885230fdc728915ff5a2b5a61930b845
+          entity_id: switch.plug1_pow_relay
+          domain: switch
         - type: turn_on
           device_id: ebe254c5092831e687e3cb0f21cf2c91
           entity_id: light.liam_starlight
@@ -270,9 +270,9 @@ data:
           entity_id: switch.front_porch_relay
           domain: switch
         - type: turn_off
-          device_id: 8fec13bbe0a0a0ca901a0a46920b7156
-          entity_id: light.driveway_light
-          domain: light
+          device_id: 885230fdc728915ff5a2b5a61930b845
+          entity_id: switch.plug1_pow_relay
+          domain: switch
       mode: single
     - alias: Utility - backup
       id: utility_backup

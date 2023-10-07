@@ -885,19 +885,6 @@ data:
     ota:
       password: !secret ota_password
 
-    # sensors
-    sensor:
-    # signal wifi
-      - platform: wifi_signal
-        name: driveway_light_signal
-        update_interval: 15s
-
-    # bulb ip
-    text_sensor:
-      - platform: wifi_info
-        ip_address:
-          name: driveway_light_wifi
-
     output:
       - platform: esp8266_pwm
         id: output_green
@@ -926,84 +913,7 @@ data:
 
     light:
       - platform: rgbww
-        name: "driveway_light"
-        id: light_rgb
-        red: output_red
-        green: output_green
-        blue: output_blue
-        cold_white: output_cwhite
-        warm_white: output_wwhite
-        cold_white_color_temperature: 5000 K
-        warm_white_color_temperature: 2000 K
-        effects:
-          - strobe:
-          - flicker:
-          - random:
-        restore_mode: ALWAYS_ON
-
-  driveway_light.yaml: |
-    esphome:
-      name: driveway_light
-      platform: ESP8266
-      board: esp01_1m
-
-    wifi:
-      ssid: !secret wifi_ssid
-      password: !secret wifi_password
-      domain: !secret wifi_domain
-
-    # Enable logging
-    logger:
-
-    api:
-      encryption:
-        key: !secret driveway_light_key
-
-    ota:
-      password: !secret ota_password
-
-    # sensors
-    sensor:
-    # signal wifi
-      - platform: wifi_signal
-        name: driveway_light_signal
-        update_interval: 15s
-
-    # bulb ip
-    text_sensor:
-      - platform: wifi_info
-        ip_address:
-          name: driveway_light_wifi
-
-    output:
-      - platform: esp8266_pwm
-        id: output_green
-        pin: GPIO12
-        max_power: 0.7
-
-      - platform: esp8266_pwm
-        id: output_red
-        pin: GPIO4
-        max_power: 0.7
-
-      - platform: esp8266_pwm
-        id: output_blue
-        pin: GPIO14
-        max_power: 0.7
-
-      - platform: esp8266_pwm
-        id: output_wwhite
-        pin: GPIO13
-        max_power: 0.65
-
-      - platform: esp8266_pwm
-        id: output_cwhite
-        pin: GPIO5
-        max_power: 0.65
-
-    light:
-      - platform: rgbww
-        name: "driveway_light"
+        name: "liam_light"
         id: light_rgb
         red: output_red
         green: output_green

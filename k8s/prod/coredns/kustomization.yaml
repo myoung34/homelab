@@ -37,7 +37,6 @@ helmCharts:
       - name: file /etc/coredns/kube.db service.kube
       - name: file /etc/coredns/consul.db service.consul
       - name: file /etc/coredns/esphome.db service.iot
-      - name: file /etc/coredns/blindrage.db blindrage.local
       # Serves a /metrics endpoint on :9153, required for serviceMonitor
       - name: prometheus
         parameters: 0.0.0.0:9153
@@ -61,12 +60,6 @@ helmCharts:
         192.168.1.26 cluster23
         192.168.1.27 cluster24
         192.168.3.2  bignasty
-    - filename: blindrage.db
-      domain: blindrage.local
-      contents: |
-        ; blindrage.local
-        blindrage.local.              IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
-        bignasty.blindrage.local.     IN      A       192.168.3.2
     - filename: kube.db
       domain: service.kube
       contents: |
@@ -92,7 +85,6 @@ helmCharts:
         plug1.service.iot.                IN      A       192.168.4.113
         plug3.service.iot.                IN      A       192.168.4.114
         driveway_switch.service.iot.      IN      A       192.168.4.120
-        driveway_light.service.iot.       IN      A       192.168.4.121
     - filename: consul.db
       domain: service.consul
       contents: |
