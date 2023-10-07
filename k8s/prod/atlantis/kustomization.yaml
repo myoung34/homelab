@@ -42,7 +42,8 @@ helmCharts:
     - --data-dir=/tmp
     environment: []
     image:
-      repository: ghcr.io/runatlantis/atlantis
+      # run my automated fork that has my addons
+      repository: ghcr.io/myoung34/atlantis
       tag: 'v0.26.0'
 
 patches:
