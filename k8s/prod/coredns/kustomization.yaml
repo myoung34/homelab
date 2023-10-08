@@ -73,7 +73,6 @@ helmCharts:
         service.iot.                      IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
         pergola_lights.service.iot.       IN      A       192.168.4.100
         garage_switch.service.iot.        IN      A       192.168.4.101
-        liam_light.service.iot.           IN      A       192.168.4.102
         front_porch_switch.service.iot.   IN      A       192.168.4.103
         liam_room_starlights.service.iot. IN      A       192.168.4.104
         ecobee.service.iot.               IN      A       192.168.4.105
