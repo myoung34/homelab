@@ -10,7 +10,7 @@ helmCharts:
   includeCRDs: true
   namespace: node-feature-discovery
   releaseName: node-feature-discovery
-  version: 0.14.1
+  version: 0.14.2
   repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
 
 patches:
