@@ -9,7 +9,7 @@ data:
     class UltrasonicSensor : public PollingComponent, public Sensor {
      public:
       UltrasonicSensor(uint32_t update_interval) : PollingComponent(update_interval) {}
-      const int pingPin = 2;
+      const int pingPin = 14;
       Sensor *ultrasonic_sensor = new Sensor();
 
       void setup() override {
