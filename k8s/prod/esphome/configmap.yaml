@@ -6,20 +6,41 @@ data:
   airlock.h: |
     #include "esphome.h"
 
-    class MyCustomComponent : public Component {
-     public:
-      void setup() override {
-        Wire.setClock(100000)
-        Serial.begin(9600);  // start serial for output
-      }
-      void loop() override {
-        Wire.requestFrom(0x53, 6);    // request 6 bytes from slave device #8
-        while (Wire.available()) { // slave may send less than requested
-          char c = Wire.read(); // receive a byte as character
-          Serial.print(c);         // print the character
-        }
+    const uint16_t POLLING_PERIOD = 1000; //milliseconds
+    int original = -1; //Initial value of the register
 
-        delay(500);
+    class Foo : public PollingComponent {
+     public:
+      Foo() : PollingComponent(POLLING_PERIOD) {}
+      float get_setup_priority() const override { return esphome::setup_priority::BUS; } //Access I2C bus
+      Sensor *foo = new Sensor();
+
+      void update() override {
+
+        byte error, address;
+        int nDevices;
+
+        nDevices = 0;
+        //char register_value = id(input_1).state; //Read the number set on the dashboard
+        int register_value = id(input_1).state - '0' + 48; //Read the number set on the dashboard
+        //Did the user change the input?
+        if(register_value != original){
+          //ESP_LOGD("custom", "Trying 0x%d", register_value);
+          char register_as_char = register_value;
+          Wire.beginTransmission(0x00);
+          error = Wire.endTransmission();
+          // Looking for error code "0" to know we found the device over i2c
+          foo->publish_state(error);
+
+          Wire.requestFrom(0x00, 1);
+          if (Wire.available()) { // slave may send less than requested
+            char c = Wire.read(); // receive a byte as character
+            ESP_LOGD("custom", "read %s", c);
+          }
+
+
+          original = register_value; //Swap in the new value
+        }
       }
     };
   ultrasonic_sensor.h: |
@@ -231,11 +252,32 @@ data:
       password: !secret ota_password
 
     i2c:
-      sda: 4
-      scl: 5
-      scan: true
+      sda: GPIO4
+      scl: GPIO5
+      scan: false
+      frequency: 100kHz
       id: bus_a
 
+    number:
+      - platform: template
+        name: "Input 1"
+        optimistic: true
+        min_value: 0
+        max_value: 127
+        initial_value: -1
+        step: 1
+        mode: box
+        id: input_1
+        icon: "mdi:counter"
+
+    sensor:
+      - platform: custom
+        lambda: |-
+          auto asdf = new Foo();
+          App.register_component(asdf);
+          return {asdf->foo};
+        sensors:
+          - name: foo
     status_led:
         pin: GPIO2
 
