@@ -3,6 +3,25 @@ kind: ConfigMap
 metadata:
   name: esphome
 data:
+  airlock.h: |
+    #include "esphome.h"
+
+    class MyCustomComponent : public Component {
+     public:
+      void setup() override {
+        Wire.setClock(100000)
+        Serial.begin(9600);  // start serial for output
+      }
+      void loop() override {
+        Wire.requestFrom(0x53, 6);    // request 6 bytes from slave device #8
+        while (Wire.available()) { // slave may send less than requested
+          char c = Wire.read(); // receive a byte as character
+          Serial.print(c);         // print the character
+        }
+
+        delay(500);
+      }
+    };
   ultrasonic_sensor.h: |
     #include "esphome.h"
 
@@ -187,6 +206,8 @@ data:
   plaato_airlock.yaml: |
     esphome:
       name: plaato_airlock
+      includes:
+        - airlock.h
 
     esp8266:
       board: nodemcuv2
@@ -209,6 +230,11 @@ data:
     ota:
       password: !secret ota_password
 
+    i2c:
+      sda: 4
+      scl: 5
+      scan: true
+      id: bus_a
 
     status_led:
         pin: GPIO2
