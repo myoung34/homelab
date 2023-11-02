@@ -78,10 +78,11 @@ data:
   traeger.yaml: |
     esphome:
       name: traeger_pellet
-      platform: ESP8266
-      board: huzzah
       includes:
         - ultrasonic_sensor.h
+
+    esp32:
+      board: nodemcu-32s
 
     wifi:
      ssid: !secret wifi_ssid
