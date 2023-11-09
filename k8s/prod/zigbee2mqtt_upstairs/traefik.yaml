@@ -1,0 +1,36 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: zigbee2mqtt-upstairs-redirect
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`zig-upstairs.service.kube`)
+      priority: 10
+      middlewares:
+        - name: httpredirectscheme
+          namespace: traefik
+      services:
+        - name: zigbee2mqtt-upstairs
+          port: 8080
+---
+# Source: zigbee2mqtt/templates/ingress.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: zigbee2mqtt-upstairs
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`zig.service.kube`)
+      services:
+        - name: zigbee2mqtt-upstairs
+          port: 8080
+  tls: {}
