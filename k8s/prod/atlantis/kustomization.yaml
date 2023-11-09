@@ -14,7 +14,7 @@ helmCharts:
   includeCRDs: true
   namespace: atlantis
   releaseName: atlantis
-  version: 4.16.0
+  version: 4.17.0
   repo: https://runatlantis.github.io/helm-charts
   valuesInline:
     orgAllowlist: github.com/myoung34/vps
