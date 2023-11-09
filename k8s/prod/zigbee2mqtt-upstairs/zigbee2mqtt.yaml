@@ -1,0 +1,126 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: zigbee2mqtt-upstairs
+    app.kubernetes.io/version: 1.19.1
+    helm.sh/chart: zigbee2mqtt-9.4.2
+  name: zigbee2mqtt-upstairs
+  namespace: zigbee2mqtt
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: zigbee2mqtt-upstairs
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: zigbee2mqtt-upstairs
+    app.kubernetes.io/version: 1.19.1
+    helm.sh/chart: zigbee2mqtt-9.4.2
+  annotations:
+    configmap.reloader.stakater.com/reload: "zigbee2mqtt-upstairs-settings"
+  name: zigbee2mqtt-upstairs
+  namespace: zigbee2mqtt
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zigbee2mqtt-upstairs
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zigbee2mqtt-upstairs
+    spec:
+      automountServiceAccountToken: true
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - cp /configs/configuration.yaml /data/;echo $SECRETS_YAML | base64 -d >/data/secrets.yaml;
+        image: alpine:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SECRETS_YAML
+          valueFrom:
+            secretKeyRef:
+              key: secrets
+              name: zigbee2mqtt
+        name: copy
+        volumeMounts:
+        - mountPath: /data
+          name: data
+        - mountPath: /configs/
+          name: zigbee2mqtt-upstairs-settings
+      containers:
+      - env:
+        - name: ZIGBEE2MQTT_DATA
+          value: /data
+        image: koenkk/zigbee2mqtt:1.33.2
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 1
+        name: zigbee2mqtt
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 1
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
+            - SYS_ADMIN
+          privileged: true
+        startupProbe:
+          failureThreshold: 30
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /data
+          name: data
+      dnsPolicy: ClusterFirstWithHostNet
+      enableServiceLinks: true
+      hostNetwork: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: feature.node.kubernetes.io/usb-08_0781_5597.present
+                operator: Exists
+      serviceAccountName: default
+      volumes:
+      - configMap:
+          name: zigbee2mqtt-upstairs-settings
+        name: zigbee2mqtt-upstairs-settings
+      - name: data
+        persistentVolumeClaim:
+          claimName: zigbee2mqtt-upstairs
