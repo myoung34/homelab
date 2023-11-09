@@ -28,3 +28,33 @@ spec:
                 value: "/var/mnt/storage/zigbee2mqtt"
               - name: minio_path
                 value: "zigbee2mqtt"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: zigbee2mqtt-upstairs-backup
+spec:
+  schedule: "0 0 2 * *"
+  startingDeadlineSeconds: 0
+  suspend: false
+  workflowSpec:
+    volumes:
+    - name: talos-secrets
+      secret:
+        secretName: talos-secrets
+    entrypoint: main
+    templates:
+    - name: main
+      steps:
+        - - name: call-talos-template
+            templateRef:
+              name: talos-backup-template
+              template: main
+            arguments:
+              parameters:
+              - name: slack_message
+                value: "zigbee2mqtt upstairs snapshot complete"
+              - name: talos_directory
+                value: "/var/mnt/storage/zigbee2mqtt-upstairs"
+              - name: minio_path
+                value: "zigbee2mqtt-upstairs"
