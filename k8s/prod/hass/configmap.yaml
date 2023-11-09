@@ -375,6 +375,51 @@ data:
         - light
       entity_config: {}
 
+    light:
+      - platform: switch
+        name: "Kitchen Lights"
+        entity_id: switch.toggle_kitchen_lights
+      - platform: switch
+        name: "Dining Room Lights"
+        entity_id: switch.toggle_dining_room_lights
+      - platform: switch
+        name: "Living Room Lights"
+        entity_id: switch.toggle_living_room_lights
+      - platform: switch
+        name: "Closet Lights"
+        entity_id: switch.toggle_closet_lights
+      - platform: group
+        name: "Downstairs Hall Lights"
+        entities:
+          - light.downstairs_hall_1
+      - platform: group
+        name: "Front Door Lights"
+        entities:
+          - light.front_door_1
+      - platform: switch
+        name: "Half Bath Lights"
+        entity_id: switch.toggle_half_bath_lights
+      - platform: switch
+        name: "Laundry Room Lights"
+        entity_id: switch.toggle_laundry_room_lights
+      - platform: switch
+        name: "Liam Bathroom Lights"
+        entity_id: switch.toggle_liam_bath_lights
+      - platform: switch
+        name: "Master Bedroom Lights"
+        entity_id: switch.toggle_master_bedroom_lights
+      - platform: switch
+        name: "Master Bathroom Lights"
+        entity_id: switch.toggle_master_bath_lights
+      - platform: switch
+        name: "Office Lights"
+        entity_id: switch.toggle_office_lights
+      - platform: switch
+        name: "Playroom Lights"
+        entity_id: switch.toggle_playroom_lights
+      - platform: switch
+        name: "Upstairs Hall Lights"
+        entity_id: switch.toggle_upstairs_hall_lights
     #for i in $(talosctl read -n ${node} /var/mnt/storage/zigbee2mqtt/configuration.yaml | yq '.groups[].friendly_name' | xargs echo); do
     #FRIENDLY=$(echo $i | sed 's/_/ /g')
     #cat <<EOF >>out.yaml
@@ -409,6 +454,27 @@ data:
             data:
               topic: "zigbee2mqtt/kitchen/set"
               payload: "{\"state\": \"OFF\"}"
+        toggle_all_lights:
+          friendly_name: "Toggle all inside lights"
+          unique_id: all_inside_lights
+          turn_on:
+            - service: mqtt.publish
+              data:
+                topic: "zigbee2mqtt/all/set"
+                payload: "{\"state\": \"ON\"}"
+            - service: mqtt.publish
+              data:
+                topic: "zigbee2mqtt-upstairs/all/set"
+                payload: "{\"state\": \"ON\"}"
+          turn_off:
+            - service: mqtt.publish
+              data:
+                topic: "zigbee2mqtt/all/set"
+                payload: "{\"state\": \"OFF\"}"
+            - service: mqtt.publish
+              data:
+                topic: "zigbee2mqtt-upstairs/all/set"
+                payload: "{\"state\": \"OFF\"}"
         toggle_downstairs_lights:
           friendly_name: "Toggle downstairs Lights"
           unique_id: downstairs_lights
@@ -487,18 +553,31 @@ data:
             data:
               topic: "zigbee2mqtt/half_bath/set"
               payload: "{\"state\": \"OFF\"}"
+        toggle_upstairs_hall_lights:
+          friendly_name: "Toggle upstairs hall Lights"
+          unique_id: upstairs_hall_lights
+          turn_on:
+            service: mqtt.publish
+            data:
+              topic: "zigbee2mqtt-upstairs/upstairs_hall/set"
+              payload: "{\"state\": \"ON\"}"
+          turn_off:
+            service: mqtt.publish
+            data:
+              topic: "zigbee2mqtt-upstairs/upstairs_hall/set"
+              payload: "{\"state\": \"OFF\"}"
         toggle_liam_bath_lights:
           friendly_name: "Toggle liam bath Lights"
           unique_id: liam_bath_lights
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/liam_bath/set"
+              topic: "zigbee2mqtt-upstairs/liam_bathroom/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/liam_bath/set"
+              topic: "zigbee2mqtt-upstairs/liam_bathroom/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_master_bath_lights:
           friendly_name: "Toggle master bath Lights"
@@ -506,12 +585,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bath/set"
+              topic: "zigbee2mqtt-upstairs/master_bath/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bath/set"
+              topic: "zigbee2mqtt-upstairs/master_bath/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_master_bedroom_lights:
           friendly_name: "Toggle master bedroom Lights"
@@ -519,12 +598,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bedroom/set"
+              topic: "zigbee2mqtt-upstairs/master_bedroom/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bedroom/set"
+              topic: "zigbee2mqtt-upstairs/master_bedroom/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_closet_lights:
           friendly_name: "Toggle closet Lights"
@@ -532,12 +611,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/closet/set"
+              topic: "zigbee2mqtt-upstairs/closet/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/closet/set"
+              topic: "zigbee2mqtt-upstairs/closet/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_upstairs_lights:
           friendly_name: "Toggle upstairs Lights"
@@ -545,12 +624,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/upstairs/set"
+              topic: "zigbee2mqtt-upstairs/all/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/upstairs/set"
+              topic: "zigbee2mqtt-upstairs/all/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_office_lights:
           friendly_name: "Toggle office Lights"
@@ -558,12 +637,25 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/office/set"
+              topic: "zigbee2mqtt-upstairs/office/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/office/set"
+              topic: "zigbee2mqtt-upstairs/office/set"
+              payload: "{\"state\": \"OFF\"}"
+        toggle_playroom_lights:
+          friendly_name: "Toggle playroom Lights"
+          unique_id: playroom_lights
+          turn_on:
+            service: mqtt.publish
+            data:
+              topic: "zigbee2mqtt-upstairs/playroom/set"
+              payload: "{\"state\": \"ON\"}"
+          turn_off:
+            service: mqtt.publish
+            data:
+              topic: "zigbee2mqtt-upstairs/playroom/set"
               payload: "{\"state\": \"OFF\"}"
         activate_garage:
           unique_id: garage
@@ -587,93 +679,6 @@ data:
           turn_off:
             service: automation.trigger
             entity_id: automation.liam_turn_things_off
-    light:
-      - platform: group
-        name: "Kitchen Lights"
-        entities:
-          - light.kitchen_1
-          - light.kitchen_2
-          - light.kitchen_3
-          - light.kitchen_4
-          - light.kitchen_5
-          - light.kitchen_sink
-      - platform: group
-        name: "Dining Room Lights"
-        entities:
-          - light.dining_1
-          - light.dining_2
-          - light.dining_3
-          - light.dining_4
-          - light.dining_5
-      - platform: group
-        name: "Living Room Lights"
-        entities:
-          - light.living_room_1
-          - light.living_room_2
-      - platform: group
-        name: "Closet Lights"
-        entities:
-          - light.closet_1
-          - light.closet_2
-      - platform: group
-        name: "Downstairs Hall Lights"
-        entities:
-          - light.downstairs_hall_1
-          - light.downstairs_hall_2
-      - platform: group
-        name: "Front Door Lights"
-        entities:
-          - light.front_door_1
-          - light.front_door_2
-      - platform: group
-        name: "Half Bath Lights"
-        entities:
-          - light.half_bath_1
-          - light.half_bath_2
-      - platform: group
-        name: "Laundry Room Lights"
-        entities:
-          - light.laundry_1
-          - light.laundry_2
-      - platform: group
-        name: "Liam Bathroom Lights"
-        entities:
-          - light.liam_bath_1
-          - light.liam_bath_2
-          - light.liam_bath_3
-      - platform: group
-        name: "Master Bedroom Lights"
-        entities:
-          - light.master_1
-          - light.master_2
-          - light.master_3
-          - light.master_4
-          - light.master_lamp
-      - platform: group
-        name: "Master Bathroom Lights"
-        entities:
-          - light.master_bath_1
-          - light.master_bath_2
-          - light.master_bath_3
-          - light.master_bath_4
-          - light.master_bath_5
-          - light.master_bath_tub
-      - platform: group
-        name: "Office Lights"
-        entities:
-          - light.office_1
-          - light.office_2
-          - light.office_3
-      - platform: group
-        name: "Playroom Lights"
-        entities:
-          - light.playroom_1
-          - light.playroom_2
-      - platform: group
-        name: "Upstairs Hall Lights"
-        entities:
-          - light.upstairs_hall_1
-          - light.upstairs_hall_2
 
     recorder:
       purge_keep_days: 5
