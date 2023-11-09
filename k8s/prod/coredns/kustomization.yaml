@@ -78,6 +78,7 @@ helmCharts:
         ecobee.service.iot.               IN      A       192.168.4.105
         traeger_pellet.service.iot.       IN      A       192.168.4.106
         plug2.service.iot.                IN      A       192.168.4.107
+        tubeszb_upstairs.service.iot.     IN      A       192.168.4.108
         plaato_keg.service.iot.           IN      A       192.168.4.110
         plaato_airlock.service.iot.       IN      A       192.168.4.111
         liamplug.service.iot.             IN      A       192.168.4.112
