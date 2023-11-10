@@ -55,6 +55,14 @@ data:
         friendly_name: upstairs_hall_1
       '0x001788010d696ff0':
         friendly_name: liam
+      '0x0017880106a8b272':
+        friendly_name: closet_1
+      '0x00178801065e7696':
+        friendly_name: closet_2
+      '0x00178801065ca701':
+        friendly_name: master_2
+      '0x0017880106d9bc1c':
+        friendly_name: master_lamp
     groups:
       '1':
         friendly_name: office
@@ -76,3 +84,18 @@ data:
           - 0xb0ce1814030a449e/1
           - 0x00178801069607e5/11
           - 0x0017880106a8ea65/11
+      '4':
+        friendly_name: closet
+        retain: false
+        devices:
+          - 0x00178801065e7696/11
+          - 0x0017880106a8b272/11
+      '5':
+        friendly_name: master_bedroom
+        retain: false
+        devices:
+          - 0x00178801065ca701/11
+          - 0x0017880106d9bc1c/11
+          #- 0x0017880103a989ae/11
+          #- 0x0017880103f18413/11
+          #- 0x0017880103bfbb44/11
