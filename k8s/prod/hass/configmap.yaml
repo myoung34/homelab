@@ -558,7 +558,7 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/office/set"
+              topic: "zigbee2mqtt-upstairs/office/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
