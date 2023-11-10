@@ -34,3 +34,31 @@ data:
       include_device_information: true
       server: 'mqtt://mosquitto.service.kube'
     permit_join: true
+    devices:
+      '0x0017880106a99d9f':
+        friendly_name: office_lamp
+      '0x0017880106d9581c':
+        friendly_name: office_2
+      '0x0017880106c57232':
+        friendly_name: office_1
+      '0xb0ce1814030a449e':
+        friendly_name: liam_bathroom_tub
+      '0x00178801065d869f':
+        friendly_name: liam_playroom_1
+      '0x00178801065c6b2e':
+        friendly_name: liam_playroom_2
+      '0x00178801069607e5':
+        friendly_name: liam_bathroom_1
+      '0x0017880106a8ea65':
+        friendly_name: liam_bathroom_2
+      '0x001788010877081d':
+        friendly_name: upstairs_hall_1
+      '0x001788010d696ff0':
+        friendly_name: liam
+    groups:
+      '1':
+        friendly_name: office
+        devices:
+          - 0x0017880106d9581c/11
+          - 0x0017880106c57232/11
+          - 0x0017880106a99d9f/11
