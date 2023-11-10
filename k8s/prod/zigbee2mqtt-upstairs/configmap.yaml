@@ -58,17 +58,20 @@ data:
     groups:
       '1':
         friendly_name: office
+        retain: false
         devices:
           - 0x0017880106d9581c/11
           - 0x0017880106c57232/11
           - 0x0017880106a99d9f/11
       '2':
         friendly_name: playroom
+        retain: false
         devices:
           - 0x00178801065d869f/11
           - 0x00178801065c6b2e/11
       '3':
         friendly_name: liam_bathroom
+        retain: false
         devices:
           - 0xb0ce1814030a449e/11
           - 0x00178801069607e5/11
