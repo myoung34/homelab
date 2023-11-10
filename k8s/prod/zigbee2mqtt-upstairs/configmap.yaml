@@ -19,7 +19,7 @@ data:
       log_output:
         - console
       network_key: '!secrets network_key'
-      channel: 25
+      channel: 15
     experimental:
       new_api: true
     frontend:
