@@ -26,8 +26,7 @@ data:
       port: 8081
     homeassistant: true
     serial:
-      adapter: deconz
-      port: 'tcp://tubeszb_upstairs.service.iot:6638'
+      port: 'tcp://192.168.4.108:6638'
     mqtt:
       base_topic: zigbee2mqtt-upstairs
       include_device_information: true
