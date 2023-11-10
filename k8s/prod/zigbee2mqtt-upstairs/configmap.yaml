@@ -20,6 +20,7 @@ data:
         - console
       network_key: '!secrets network_key'
       channel: 15
+      ext_pan_id: GENERATE
     experimental:
       new_api: true
     frontend:
