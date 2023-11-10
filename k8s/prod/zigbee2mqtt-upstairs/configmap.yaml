@@ -28,7 +28,7 @@ data:
       port: 8081
     homeassistant: true
     serial:
-      port: 'tcp://192.168.4.108:6638'
+      port: 'tcp://tubeszb_upstairs.service.iot:6638'
     mqtt:
       base_topic: zigbee2mqtt-upstairs
       include_device_information: true
@@ -43,14 +43,14 @@ data:
         friendly_name: office_1
       '0xb0ce1814030a449e':
         friendly_name: liam_bathroom_tub
-      '0x00178801065d869f':
-        friendly_name: liam_playroom_1
-      '0x00178801065c6b2e':
-        friendly_name: liam_playroom_2
       '0x00178801069607e5':
         friendly_name: liam_bathroom_1
       '0x0017880106a8ea65':
         friendly_name: liam_bathroom_2
+      '0x00178801065d869f':
+        friendly_name: liam_playroom_1
+      '0x00178801065c6b2e':
+        friendly_name: liam_playroom_2
       '0x001788010877081d':
         friendly_name: upstairs_hall_1
       '0x001788010d696ff0':
@@ -62,3 +62,14 @@ data:
           - 0x0017880106d9581c/11
           - 0x0017880106c57232/11
           - 0x0017880106a99d9f/11
+      '2':
+        friendly_name: playroom
+        devices:
+          - 0x00178801065d869f/11
+          - 0x00178801065c6b2e/11
+      '3':
+        friendly_name: liam_bathroom
+        devices:
+          - 0xb0ce1814030a449e/11
+          - 0x00178801069607e5/11
+          - 0x0017880106a8ea65/11
