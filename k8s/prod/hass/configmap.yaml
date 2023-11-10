@@ -493,12 +493,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/liam_bath/set"
+              topic: "zigbee2mqtt-upstairs/liam_bathroom/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/liam_bath/set"
+              topic: "zigbee2mqtt-upstairs/liam_bathroom/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_master_bath_lights:
           friendly_name: "Toggle master bath Lights"
@@ -506,12 +506,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bath/set"
+              topic: "zigbee2mqtt-upstairs/master_bath/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bath/set"
+              topic: "zigbee2mqtt-upstairs/master_bath/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_master_bedroom_lights:
           friendly_name: "Toggle master bedroom Lights"
@@ -519,12 +519,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bedroom/set"
+              topic: "zigbee2mqtt-upstairs/master_bedroom/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/master_bedroom/set"
+              topic: "zigbee2mqtt-upstairs/master_bedroom/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_closet_lights:
           friendly_name: "Toggle closet Lights"
@@ -532,12 +532,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/closet/set"
+              topic: "zigbee2mqtt-upstairs/closet/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/closet/set"
+              topic: "zigbee2mqtt-upstairs/closet/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_upstairs_lights:
           friendly_name: "Toggle upstairs Lights"
@@ -545,12 +545,12 @@ data:
           turn_on:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/upstairs/set"
+              topic: "zigbee2mqtt-upstairs/upstairs/set"
               payload: "{\"state\": \"ON\"}"
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/upstairs/set"
+              topic: "zigbee2mqtt-upstairs/upstairs/set"
               payload: "{\"state\": \"OFF\"}"
         toggle_office_lights:
           friendly_name: "Toggle office Lights"
@@ -563,7 +563,20 @@ data:
           turn_off:
             service: mqtt.publish
             data:
-              topic: "zigbee2mqtt/office/set"
+              topic: "zigbee2mqtt-upstairs/office/set"
+              payload: "{\"state\": \"OFF\"}"
+        toggle_playroom_lights:
+          friendly_name: "Toggle playroom Lights"
+          unique_id: playroom_lights
+          turn_on:
+            service: mqtt.publish
+            data:
+              topic: "zigbee2mqtt-upstairs/playroom/set"
+              payload: "{\"state\": \"ON\"}"
+          turn_off:
+            service: mqtt.publish
+            data:
+              topic: "zigbee2mqtt-upstairs/playroom/set"
               payload: "{\"state\": \"OFF\"}"
         activate_garage:
           unique_id: garage

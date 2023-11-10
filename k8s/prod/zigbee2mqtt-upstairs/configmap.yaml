@@ -73,6 +73,6 @@ data:
         friendly_name: liam_bathroom
         retain: false
         devices:
-          - 0xb0ce1814030a449e/11
+          - 0xb0ce1814030a449e/1
           - 0x00178801069607e5/11
           - 0x0017880106a8ea65/11
