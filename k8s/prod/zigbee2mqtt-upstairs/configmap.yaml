@@ -32,4 +32,4 @@ data:
       base_topic: zigbee2mqtt-upstairs
       include_device_information: true
       server: 'mqtt://mosquitto.service.kube'
-    permit_join: false
+    permit_join: true
