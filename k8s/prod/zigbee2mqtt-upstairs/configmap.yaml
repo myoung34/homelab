@@ -27,7 +27,7 @@ data:
     homeassistant: true
     serial:
       adapter: deconz
-      port: 'tcp://ser2net.ser2net.svc.cluster.local:3001'
+      port: 'tcp://tubeszb_upstairs.service.iot:6638'
     mqtt:
       base_topic: zigbee2mqtt-upstairs
       include_device_information: true
