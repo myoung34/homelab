@@ -23,7 +23,6 @@ helmCharts:
     statefulSet:
       annotations:
         secret.reloader.stakater.com/reload: "atlantis"
-    dataStorage: []
     volumeClaim:
       enabled: false
     ingress:
@@ -40,7 +39,7 @@ helmCharts:
     - --repo-allowlist=github.com/myoung34/vps
     - --port=4141
     - --data-dir=/tmp
-    environment: []
+    environment: {}
     image:
       # run my automated fork that has my addons
       repository: ghcr.io/myoung34/atlantis
