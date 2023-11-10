@@ -56,7 +56,7 @@ spec:
         - name: SECRETS_YAML
           valueFrom:
             secretKeyRef:
-              key: secrets
+              key: upstairs_secrets
               name: zigbee2mqtt
         name: copy
         volumeMounts:
