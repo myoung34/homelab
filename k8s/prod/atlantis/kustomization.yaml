@@ -36,7 +36,7 @@ helmCharts:
     - --automerge
     - --atlantis-url=https://atlantis.marcyoung.us/
     - --default-tf-version=v1.5.6
-    - --repo-allowlist=github.com/myoung34/vps
+    - --repo-allowlist=github.com/myoung34/vps,github.com/myoung34/vps
     - --port=4141
     - --data-dir=/tmp
     environment: {}
