@@ -306,6 +306,24 @@ data:
           path: '{{ trigger.event.data.path }}'
       mode: queued
   scripts.yaml: |
+    front_door:
+      alias: Front Door
+      sequence:
+      - if:
+        - condition: state
+          entity_id: lock.front_door
+          state: unlocked
+        then:
+        - service: lock.lock
+          data: {}
+          target:
+            entity_id: lock.front_door
+        else:
+        - service: lock.unlock
+          data: {}
+          target:
+            entity_id: lock.front_door
+      mode: single
     garage_door:
       alias: Garage Door
       sequence:
@@ -657,6 +675,24 @@ data:
             data:
               topic: "zigbee2mqtt-upstairs/playroom/set"
               payload: "{\"state\": \"OFF\"}"
+        front_door:
+          unique_id: front_door
+          turn_on:
+            service: lock.lock
+            data: {}
+            target:
+              entity_id: lock.front_door
+          turn_off:
+            service: lock.unlock
+            data: {}
+            target:
+              entity_id: lock.front_door
+        toggle_front_door:
+          unique_id: toggle_front_door
+          turn_on:
+            service: script.front_door
+          turn_off:
+            service: script.front_door
         activate_garage:
           unique_id: garage
           turn_on:
