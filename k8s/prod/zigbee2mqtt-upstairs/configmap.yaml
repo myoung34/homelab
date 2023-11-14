@@ -33,7 +33,7 @@ data:
       base_topic: zigbee2mqtt-upstairs
       include_device_information: true
       server: 'mqtt://mosquitto.service.kube'
-    permit_join: true
+    permit_join: false
     devices:
       '0x0017880103a989ae':
         friendly_name: office_lamp_1
