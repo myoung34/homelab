@@ -31,7 +31,7 @@ resource "unifi_wlan" "fbi_van" {
   no2ghz_oui = false
   wlan_band  = "both"
 
-  network_id    = unifi_network.simplisafe.id
+  network_id    = unifi_network.your_mom.id
   ap_group_ids  = [data.unifi_ap_group.garage.id]
   user_group_id = data.unifi_user_group.default.id
 
