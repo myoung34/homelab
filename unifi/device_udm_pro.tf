@@ -5,37 +5,31 @@ resource "unifi_device" "udm_pro" {
   forget_on_destroy = false
 
   port_override {
-    number          = 1
-    port_profile_id = unifi_port_profile.all.id
+    number = 1
   }
 
   port_override {
-    name            = "office usw"
-    number          = 2
-    port_profile_id = unifi_port_profile.all.id
+    name   = "office usw"
+    number = 2
   }
 
   port_override {
-    name            = "bignasty"
-    number          = 4
-    port_profile_id = unifi_port_profile.nas.id
+    name   = "bignasty"
+    number = 4
   }
 
   port_override {
-    name            = "creality"
-    number          = 5
-    port_profile_id = unifi_port_profile.iot.id
+    name   = "creality"
+    number = 5
   }
 
   port_override {
-    name            = "usw"
-    number          = 7
-    port_profile_id = unifi_port_profile.all.id
+    name   = "usw"
+    number = 7
   }
 
   port_override {
-    number          = 8
-    port_profile_id = unifi_port_profile.disabled.id
+    number = 8
   }
 
 }

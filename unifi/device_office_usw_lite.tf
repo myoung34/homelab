@@ -5,27 +5,24 @@ resource "unifi_device" "office_usw_lite" {
   forget_on_destroy = false
 
   port_override {
-    number          = 5
-    port_profile_id = unifi_port_profile.lan.id
+    name    = "tubeszb_upstairs"
+    number  = 5
+    op_mode = "switch"
   }
   port_override {
-    name            = "livingroom usw"
-    number          = 1
-    port_profile_id = unifi_port_profile.all.id
+    name   = "livingroom usw"
+    number = 1
   }
   port_override {
-    name            = "office ap"
-    number          = 3
-    port_profile_id = unifi_port_profile.all.id
+    name   = "office ap"
+    number = 3
   }
   port_override {
-    name            = "printer"
-    number          = 4
-    port_profile_id = unifi_port_profile.printer.id
+    name   = "printer"
+    number = 4
   }
   port_override {
-    name            = "usw"
-    number          = 2
-    port_profile_id = unifi_port_profile.all.id
+    name   = "usw"
+    number = 2
   }
 }
