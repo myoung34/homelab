@@ -31,7 +31,21 @@ helmCharts:
     configs:
       secret:
         createSecret: false
+    repoServer:
+      metrics:
+        enabled: true
+    applicationSet:
+      metrics:
+        enabled: true
+    notifications:
+      metrics:
+        enabled: true
+    controller:
+      metrics:
+        enabled: true
     server:
+      metrics:
+        enabled: true
       extraArgs:
         - --insecure
       rbacConfig:
@@ -46,11 +60,15 @@ helmCharts:
   repo: https://argoproj.github.io/argo-helm
   valuesInline:
     controller:
+      metrics:
+        enabled: true
       logging:
         level: debug
       workflowNamespaces:
         - argocd
     server:
+      metrics:
+        enabled: true
       logging:
         level: debug
       extraArgs:

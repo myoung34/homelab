@@ -9,6 +9,9 @@ job "fluent-bit" {
       port "syslog2" {
         static = "5045"
       }
+      port "syslog3" {
+        static = "5046"
+      }
     }
     task "fluent-bit" {
 
@@ -63,10 +66,21 @@ job "fluent-bit" {
     Buffer_Chunk_Size   32000
     Buffer_Max_Size     64000
     Receive_Buffer_Size 512000
+
+[INPUT]
+    Name                tcp
+    Port                5046
+    Format              json
+    Tag                 talos
+
 [FILTER]
     Name  modify
     Match *
     Add Host bigNASty
+[FILTER]
+    Name  modify
+    Match talos
+    Add service talos
 [FILTER]
     Name  modify
     Match unifi
@@ -97,7 +111,7 @@ job "fluent-bit" {
       }
 
       config {
-        ports = ["syslog", "syslog2"]
+        ports = ["syslog", "syslog2", "syslog3"]
         image = "fluent/fluent-bit:latest"
         args = [
           "-c",

@@ -28,13 +28,31 @@ helmCharts:
   repo: https://helm.datadoghq.com
   valuesInline:
     datadog:
-
       confd:
-         kubernetes_state.yaml: |-
-           ad_identifiers:
-             - kube-state-metrics
-           instances:
-             - kube_state_url: http://10.96.0.255:8080/metrics
+        kubernetes_state.yaml: |-
+          ad_identifiers:
+            - kube-state-metrics
+          instances:
+            - kube_state_url: http://10.96.0.255:8080/metrics
+        kube_controller_manager.yaml: |-
+          ad_identifiers:
+            - kube-controller-manager
+          instances:
+            - prometheus_url: http://10.96.0.255:10257/metrics
+              bearer_token_auth: true
+        kube_scheduler.yaml: |-
+          ad_identifiers:
+            - kube-scheduler
+          instances:
+            - prometheus_url: http://10.96.0.255:10259/metrics
+              bearer_token_auth: true
+        argocd.yaml: |-
+          instances:
+            -
+              appset_controller_endpoint: http://argocd-applicationset-controller-metrics.argocd.svc.cluster.local:8080/metrics
+              app_controller_endpoint: http://argocd-application-controller-metrics.argocd.svc.cluster.local:8082/metrics
+              api_server_endpoint: http://argocd-server-metrics.argocd.svc.cluster.local:8083/metrics
+              repo_server_endpoint: http://argocd-repo-server-metrics.argocd.svc.cluster.local:8084/metrics
       livenessProbe:
         initialDelaySeconds: 60
       readinessProbe:
