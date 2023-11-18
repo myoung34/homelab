@@ -247,7 +247,7 @@ data:
             filters:
               - sliding_window_moving_average:
                   window_size: 60
-                  send_every: 60
+                  send_every: 10
               - multiply: -12.5
               - offset: -14
             on_value:
