@@ -91,7 +91,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/image
-        value: ghcr.io/home-assistant/home-assistant:2023.11.2
+        value: ghcr.io/home-assistant/home-assistant:2023.11.3
       - op: add
         path: /metadata/annotations
         value:
