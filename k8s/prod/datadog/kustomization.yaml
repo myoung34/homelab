@@ -49,7 +49,6 @@ helmCharts:
         argocd.yaml: |-
           instances:
             -
-              appset_controller_endpoint: http://argocd-applicationset-controller-metrics.argocd.svc.cluster.local:8080/metrics
               app_controller_endpoint: http://argocd-application-controller-metrics.argocd.svc.cluster.local:8082/metrics
               api_server_endpoint: http://argocd-server-metrics.argocd.svc.cluster.local:8083/metrics
               repo_server_endpoint: http://argocd-repo-server-metrics.argocd.svc.cluster.local:8084/metrics
