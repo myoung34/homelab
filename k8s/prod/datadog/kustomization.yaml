@@ -34,18 +34,6 @@ helmCharts:
             - kube-state-metrics
           instances:
             - kube_state_url: http://10.96.0.255:8080/metrics
-        kube_controller_manager.yaml: |-
-          ad_identifiers:
-            - kube-controller-manager
-          instances:
-            - prometheus_url: http://10.96.0.255:10257/metrics
-              bearer_token_auth: true
-        kube_scheduler.yaml: |-
-          ad_identifiers:
-            - kube-scheduler
-          instances:
-            - prometheus_url: http://10.96.0.255:10259/metrics
-              bearer_token_auth: true
         argocd.yaml: |-
           instances:
             -
