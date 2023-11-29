@@ -32,7 +32,7 @@ resource "unifi_wlan" "fbi_van" {
   wlan_band  = "both"
 
   network_id    = unifi_network.your_mom.id
-  ap_group_ids  = [data.unifi_ap_group.garage.id]
+  ap_group_ids  = [data.unifi_ap_group.default.id]
   user_group_id = data.unifi_user_group.default.id
 
   lifecycle {
