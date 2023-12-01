@@ -14,8 +14,8 @@ resources:
  - argocd.yaml
  - appset.yaml
  - sa-wf.yaml
-patchesStrategicMerge:
- - configmap.yaml
+patches:
+ - path: configmap.yaml
 
 helmCharts:
 - name: argo-cd
