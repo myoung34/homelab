@@ -85,15 +85,15 @@ def do_work():
         },
         {
             'upstream': 'esphome/esphome',
-            'filename_url': 'k8s/prod/esphome/kustomization.yaml',
-            'original_string': r"      tag: '[0-9\.]+'",
-            'string_to_replace': "      tag: '{}'",
+            'filename_url': 'k8s/prod/esphome/esphome.yaml',
+            'original_string': r"        image: esphome/esphome:[0-9\.]+",
+            'string_to_replace': r"        image: esphome/esphome:{}",
         },
         {
             'upstream': 'home-assistant/core',
-            'filename_url': 'k8s/prod/hass/kustomization.yaml',
-            'original_string': r"        value: ghcr.io/home-assistant/home-assistant:[0-9\.]+",
-            'string_to_replace': "        value: ghcr.io/home-assistant/home-assistant:{}",
+            'filename_url': 'k8s/prod/hass/hass.yaml',
+            'original_string': r"        image: ghcr.io/home-assistant/home-assistant:[0-9\.]+",
+            'string_to_replace': "        image: ghcr.io/home-assistant/home-assistant:{}",
         },
         {
             'upstream': 'rancher/local-path-provisioner',
@@ -103,9 +103,9 @@ def do_work():
         },
         {
             'upstream': 'eclipse/mosquitto',
-            'filename_url': 'k8s/prod/mosquitto/kustomization.yaml',
-            'original_string': r"      tag: '[0-9\.]+'",
-            'string_to_replace': r"      tag: '{}'",
+            'filename_url': 'k8s/prod/mosquitto/mosquitto.yaml',
+            'original_string': r"        image: eclipse-mosquitto:[0-9\.]+",
+            'string_to_replace': r"        image: eclipse-mosquitto:{}",
             'strip_v': True,
         },
         {

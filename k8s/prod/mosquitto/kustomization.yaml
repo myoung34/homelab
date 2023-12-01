@@ -5,16 +5,4 @@ namespace: mosquitto
 resources:
   - namespace.yaml
   - traefik.yaml
-
-helmCharts:
-- name: mosquitto
-  includeCRDs: true
-  namespace: mosquitto
-  releaseName: mosquitto
-  version: 4.8.2
-  repo: https://k8s-at-home.com/charts
-  valuesInline:
-    image:
-      tag: '2.0.18'
-    nodeSelector:
-      kubernetes.io/arch: arm64
+  - mosquitto.yaml

@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: hass
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: home-assistant
+    app.kubernetes.io/version: 2022.5.4
+    helm.sh/chart: home-assistant-13.4.2
+  name: hass-home-assistant
+  namespace: hass
+spec:
+  ports:
+  - name: http
+    port: 8123
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: hass
+    app.kubernetes.io/name: home-assistant
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: hass
+  labels:
+    app.kubernetes.io/instance: hass
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: home-assistant
+    app.kubernetes.io/version: 2022.5.4
+    helm.sh/chart: home-assistant-13.4.2
+  name: hass-home-assistant
+  namespace: hass
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: hass
+      app.kubernetes.io/name: home-assistant
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: hass
+        app.kubernetes.io/name: home-assistant
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: feature.node.kubernetes.io/usb-08_0781_5597.present
+                operator: Exists
+      automountServiceAccountToken: true
+      containers:
+      - env:
+        - name: TZ
+          value: UTC
+        image: ghcr.io/home-assistant/home-assistant:2023.11.2
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          tcpSocket:
+            port: 8123
+          timeoutSeconds: 1
+        name: hass-home-assistant
+        ports:
+        - containerPort: 8123
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          tcpSocket:
+            port: 8123
+          timeoutSeconds: 1
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
+            - SYS_ADMIN
+          privileged: true
+        startupProbe:
+          failureThreshold: 30
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          tcpSocket:
+            port: 8123
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /configmap
+          name: configmap
+        - mountPath: /run/dbus
+          name: dbus
+          readOnly: true
+      dnsPolicy: ClusterFirstWithHostNet
+      enableServiceLinks: true
+      hostNetwork: true
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - ' mkdir /config/scripts; cp /configs/*.sh /config/scripts; chmod +x /config/scripts/*.sh;
+          cp /configs/*.yaml /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml;
+          echo $SERVICE_ACCOUNT >/config/SERVICE_ACCOUNT.json;'
+        env:
+        - name: SECRETS_YAML
+          valueFrom:
+            secretKeyRef:
+              key: secrets
+              name: hass
+        - name: SERVICE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              key: service_account
+              name: hass
+        image: alpine:latest
+        imagePullPolicy: IfNotPresent
+        name: copy
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /configs/
+          name: configmap
+      serviceAccountName: default
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: hass
+      - configMap:
+          name: hass
+        name: configmap
+      - hostPath:
+          path: /var/run/dbus
+        name: dbus
