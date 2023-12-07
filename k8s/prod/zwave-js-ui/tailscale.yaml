@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zwave-js-ui
+  namespace: zwave-js-ui
+spec:
+  defaultBackend:
+    service:
+      name: zwave-js-ui
+      port:
+        number: 8091
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - zwave-js-ui

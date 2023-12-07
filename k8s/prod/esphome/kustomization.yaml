@@ -8,3 +8,4 @@ resources:
   - vault.yaml
   - configmap.yaml
   - esphome.yaml
+  - tailscale.yaml

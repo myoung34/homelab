@@ -10,3 +10,4 @@ resources:
   - pv.yaml
   - pvc.yaml
   - traefik.yaml
+  - tailscale.yaml

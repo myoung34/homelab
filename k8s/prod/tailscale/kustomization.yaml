@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tailscale
+
+resources:
+  - namespace.yaml
+  - vault.yaml
+
+helmCharts:
+- name: tailscale
+  includeCRDs: true
+  namespace: tailscale
+  releaseName: tailscale
+  version: 0.1.0
+  valuesInline:
+    operatorConfig:
+      image:
+        tag: "latest"

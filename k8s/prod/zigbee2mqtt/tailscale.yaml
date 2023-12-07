@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zigbee2mqtt
+  namespace: zigbee2mqtt
+spec:
+  defaultBackend:
+    service:
+      name: zigbee2mqtt
+      port:
+        number: 8080
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - zigbee2mqtt

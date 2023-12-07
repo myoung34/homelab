@@ -8,6 +8,7 @@ resources:
   - traefik.yaml
   - vault.yaml
   - sa.yaml
+  - tailscale.yaml
 
 helmCharts:
 - name: atlantis

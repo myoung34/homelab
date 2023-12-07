@@ -6,6 +6,7 @@ resources:
   - namespace.yaml
   - traefik.yaml
   - vault.yaml
+  - tailscale.yaml
 
 helmCharts:
 - name: pihole
