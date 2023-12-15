@@ -5,6 +5,7 @@ namespace: tailscale
 resources:
   - namespace.yaml
   - vault.yaml
+  - cr.yaml
 
 helmCharts:
 - name: tailscale
@@ -13,6 +14,8 @@ helmCharts:
   releaseName: tailscale
   version: 0.1.0
   valuesInline:
+    apiServerProxyConfig:
+      mode: "true"
     operatorConfig:
       image:
         tag: "latest"
