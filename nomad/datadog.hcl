@@ -159,6 +159,7 @@ job "datadog" {
           "local/log.d/conf.yaml:/etc/datadog-agent/conf.d/log.d/conf.yaml",
           "local/snmp.d/conf.yaml:/etc/datadog-agent/conf.d/snmp.d/conf.yaml",
         ]
+        privileged = true
         mounts = [
           {
             type = "bind"
@@ -194,7 +195,7 @@ job "datadog" {
       }
       resources {
         cpu    = 2000
-        memory = 1024
+        memory = 2048
       }
     }
   }
