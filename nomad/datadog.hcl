@@ -143,7 +143,7 @@ job "datadog" {
         data = <<EOH
         init_config:
         instances:
-        - url: http://bignasty:8500
+        - url: http://192.168.3.2:8500
         EOH
         destination = "local/consul.d/conf.yaml"
       }
