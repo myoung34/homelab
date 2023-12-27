@@ -6,7 +6,7 @@ on:
       - .github/workflows/bump.yml
       - k8s/bump.py
   schedule:
-    - cron:  '59 23 * * *'
+    - cron:  '59 04 * * *'
 
 jobs:
   bump:
