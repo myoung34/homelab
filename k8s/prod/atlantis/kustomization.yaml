@@ -20,7 +20,7 @@ helmCharts:
   valuesInline:
     orgAllowlist: github.com/myoung34/vps
     service:
-      type: LoadBalancer
+      type: ClusterIP
     statefulSet:
       annotations:
         secret.reloader.stakater.com/reload: "atlantis"
