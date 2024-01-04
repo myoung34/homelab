@@ -24,6 +24,12 @@ data:
         name: argocd-secret
         key: github_username
   resource.customizations: |
+      PersistentVolume:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/claimRef/resourceVersion
+             - /spec/claimRef/uid
+             - /status/lastPhaseTransitionTime
       StatefulSet:
           ignoreDifferences: |
              jsonPointers:
