@@ -2,6 +2,19 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: kube-system
 
+patches:
+  - target:
+      kind: Service
+      name: kube-dns
+    patch: |-
+      - op: remove
+        path: "/spec/selector/app.kubernetes.io~1instance"
+      - op: remove
+        path: "/spec/selector/app.kubernetes.io~1name"
+      - op: replace
+        path: "/spec/selector/k8s-app"
+        value: "coredns"
+
 helmCharts:
 - name: coredns
   releaseName: coredns
