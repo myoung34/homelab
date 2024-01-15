@@ -54,7 +54,7 @@ spec:
       - env:
         - name: ESPHOME_DASHBOARD_USE_PING
           value: "true"
-        image: esphome/esphome:2023.12.5
+        image: esphome/esphome:2023.12.6
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
