@@ -12,7 +12,7 @@ helmCharts:
   includeCRDs: true
   releaseName: cert-manager
   namespace: cert-manager
-  version: 0.14.1
+  version: 0.15.0
   repo: https://charts.bitnami.com/bitnami
   valuesInline:
     installCRDs: true
