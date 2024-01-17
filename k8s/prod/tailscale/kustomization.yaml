@@ -17,6 +17,7 @@ helmCharts:
     apiServerProxyConfig:
       mode: "true"
     operatorConfig:
+      hostname: "homelab-operator"
       image:
         tag: "v1.56"
       logging: debug
