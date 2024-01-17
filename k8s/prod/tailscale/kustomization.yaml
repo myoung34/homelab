@@ -24,3 +24,15 @@ helmCharts:
     proxyConfig:
       image:
         tag: "unstable"
+
+patches:
+- patch: |-
+    - op: add
+      path: "/spec/template/spec/containers/0/env/-"
+      value:
+        name: OPERATOR_INITIAL_TAGS
+        value: "tag:k8s-operator"
+  target:
+    kind: Deployment
+    namespace: tailscale
+    name: operator
