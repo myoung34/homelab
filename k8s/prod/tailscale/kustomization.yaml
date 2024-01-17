@@ -19,3 +19,6 @@ helmCharts:
     operatorConfig:
       image:
         tag: "latest"
+    proxyConfig:
+      image:
+        tag: "stable"
