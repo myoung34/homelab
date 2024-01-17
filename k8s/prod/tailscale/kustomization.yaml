@@ -19,6 +19,7 @@ helmCharts:
     operatorConfig:
       image:
         tag: "latest"
+      logging: debug
     proxyConfig:
       image:
         tag: "stable"
