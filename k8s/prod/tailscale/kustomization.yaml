@@ -18,8 +18,8 @@ helmCharts:
       mode: "true"
     operatorConfig:
       image:
-        tag: "latest"
+        tag: "unstable"
       logging: debug
     proxyConfig:
       image:
-        tag: "stable"
+        tag: "unstable"
