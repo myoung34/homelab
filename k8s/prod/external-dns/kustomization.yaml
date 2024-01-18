@@ -9,7 +9,7 @@ helmCharts:
 - name: external-dns
   releaseName: external-dns
   namespace: kube-system
-  version: 6.30.0
+  version: 6.30.1
   repo: https://charts.bitnami.com/bitnami
   valuesInline:
     logLevel: debug
