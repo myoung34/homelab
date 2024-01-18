@@ -53,7 +53,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: feature.node.kubernetes.io/usb-08_0781_5597.present
+              - key: feature.node.kubernetes.io/usb-08_058f_6387.present
                 operator: Exists
       automountServiceAccountToken: true
       containers:
