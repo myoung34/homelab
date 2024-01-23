@@ -369,7 +369,7 @@ data:
 
 
     google_assistant:
-      project_id: home-assistant-85837
+      project_id: something-99631
       service_account: !include SERVICE_ACCOUNT.json
       report_state: true
       exposed_domains:
