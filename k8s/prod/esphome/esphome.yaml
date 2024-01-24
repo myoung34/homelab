@@ -92,9 +92,6 @@ spec:
         volumeMounts:
         - mountPath: /configmap
           name: configmap
-        - mountPath: /run/dbus
-          name: dbus
-          readOnly: true
         - mountPath: /secrets
           name: secrets
         - mountPath: /config
@@ -132,9 +129,6 @@ spec:
       - configMap:
           name: esphome
         name: configmap
-      - hostPath:
-          path: /var/run/dbus
-        name: dbus
       - name: secrets
         secret:
           secretName: esphome #pragma: allowlist secret
