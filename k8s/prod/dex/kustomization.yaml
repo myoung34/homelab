@@ -13,7 +13,7 @@ helmCharts:
   includeCRDs: true
   namespace: dex
   releaseName: dex
-  version: 0.15.3
+  version: 0.16.0
   repo: https://charts.dexidp.io
   valuesInline:
     env: {}
