@@ -11,7 +11,7 @@ terraform {
       version = "~> 0.41"
     }
   }
-  required_version = "1.7.1"
+  required_version = "1.7.2"
 }
 
 provider "unifi" {
