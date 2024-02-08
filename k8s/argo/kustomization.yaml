@@ -21,20 +21,20 @@ helmCharts:
 - name: argo-cd
   releaseName: argocd
   namespace: argocd
-  version: 5.55.0
+  version: 6.0.0
   includeCRDs: true
   repo: https://argoproj.github.io/argo-helm
   valuesInline:
     global:
       deploymentAnnotations:
         configmap.reloader.stakater.com/reload: "argocd-cm,argocd-rbac-cm"
-    configs:
-      secret:
-        createSecret: false
     repoServer:
       metrics:
         enabled: true
     applicationSet:
+      webhook:
+        ingress:
+          enabled: false
       metrics:
         enabled: true
     notifications:
@@ -48,7 +48,10 @@ helmCharts:
         enabled: true
       extraArgs:
         - --insecure
-      rbacConfig:
+    configs:
+      secret:
+        createSecret: false
+      rbac:
         policy.default: role:readonly
         policy.csv: |
           g, OctoKode:admin, role:admin
