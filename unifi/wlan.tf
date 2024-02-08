@@ -5,14 +5,21 @@ data "unifi_ap_group" "garage" {
   name = "Garage"
 }
 
+data "unifi_ap_group" "misc" {
+  name = "misc"
+}
+
 data "unifi_user_group" "default" {
 }
 
+
 resource "unifi_wlan" "bill_wi_the_science_fi" {
-  name       = "Bill Wi The Science Fi"
-  security   = "wpapsk"
-  no2ghz_oui = false
-  wlan_band  = "5g"
+  name              = "Bill Wi The Science Fi"
+  security          = "wpapsk"
+  no2ghz_oui        = false
+  wlan_band         = "5g"
+  multicast_enhance = true
+
 
   network_id    = unifi_network.wifi.id
   ap_group_ids  = [data.unifi_ap_group.default.id]
@@ -65,8 +72,11 @@ resource "unifi_wlan" "the_lan_before_time" {
   no2ghz_oui = false
   wlan_band  = "both"
 
-  network_id    = unifi_network.wifi.id
-  ap_group_ids  = [data.unifi_ap_group.garage.id]
+  network_id = unifi_network.wifi.id
+  ap_group_ids = [
+    data.unifi_ap_group.garage.id,
+    data.unifi_ap_group.misc.id,
+  ]
   user_group_id = data.unifi_user_group.default.id
 
   lifecycle {
