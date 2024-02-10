@@ -13,9 +13,8 @@ metadata:
   name: datadog
 spec:
   vaultAuthRef: datadog
-  mount: secret/
+  mount: secret
   type: kv-v2
-  version: 2
   path: datadog
   refreshAfter: 60s
   destination:
