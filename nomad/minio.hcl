@@ -22,6 +22,10 @@ job "minio" {
         TZ = "America/Chicago"
       }
 
+      vault {
+        policies = ["minio"]
+      }
+
       template {
         data = <<EOH
           MINIO_ROOT_USER="{{with secret "secret/data/minio"}}{{.Data.data.MINIO_ROOT_USER}}{{end}}"
