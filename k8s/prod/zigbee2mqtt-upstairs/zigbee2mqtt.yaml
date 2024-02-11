@@ -114,7 +114,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: feature.node.kubernetes.io/usb-08_058f_6387.present
+              - key: feature.node.kubernetes.io/usb-08_0bda_9210.present
                 operator: Exists
       serviceAccountName: default
       volumes:
