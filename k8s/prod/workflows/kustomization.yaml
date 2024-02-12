@@ -3,9 +3,10 @@ kind: Kustomization
 namespace: argocd
 
 resources:
+  - default_sa.yaml
+  - vault.yaml
   - talos.yaml
   - etcdsnapshot.yaml
   - zwavejsui.yaml
   - zigbee2mqtt.yaml
-  - vault.yaml
-  - default_sa.yaml
+  - psql.yaml
