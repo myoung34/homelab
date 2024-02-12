@@ -148,6 +148,16 @@ job "datadog" {
         destination = "local/consul.d/conf.yaml"
       }
 
+      template {
+        data = <<EOH
+        init_config:
+        instances:
+        - api_url: http://192.168.3.2:8200/v1
+          no_token: true
+        EOH
+        destination = "local/vault.d/conf.yaml"
+      }
+
       config {
         ports = ["dd_statsd", "apm"]
         force_pull = true
@@ -155,6 +165,7 @@ job "datadog" {
         image = "datadog/agent:7"
         volumes = [
           "local/consul.d/conf.yaml:/etc/datadog-agent/conf.d/consul.d/conf.yaml",
+          "local/vault.d/conf.yaml:/etc/datadog-agent/conf.d/vault.d/conf.yaml",
           "local/custom_log_collection.d/conf.yaml:/etc/datadog-agent/conf.d/custom_log_collection.d/conf.yaml",
           "local/log.d/conf.yaml:/etc/datadog-agent/conf.d/log.d/conf.yaml",
           "local/snmp.d/conf.yaml:/etc/datadog-agent/conf.d/snmp.d/conf.yaml",
