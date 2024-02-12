@@ -8,4 +8,4 @@ resources:
   - zwavejsui.yaml
   - zigbee2mqtt.yaml
   - vault.yaml
-  - sa.yaml
+  - default_sa.yaml
