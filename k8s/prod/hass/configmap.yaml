@@ -701,8 +701,21 @@ data:
             entity_id: automation.liam_turn_things_off
 
     recorder:
-      purge_keep_days: 5
-      purge_interval: 1
+      purge_keep_days: 30
+      db_url: !secret psql_connector_string
+      db_retry_wait: 10 # Wait 10 seconds before retrying
+      exclude:
+        domains:
+          - automation
+          - updater
+        entity_globs:
+          - sensor.weather_*
+        entities:
+          - sun.sun # Don't record sun data
+          - sensor.last_boot # Comes from 'systemmonitor' sensor platform
+          - sensor.date
+        event_types:
+          - call_service # Don't record service calls
 
     shell_command:
       remove_backup: /config/scripts/remove_backup.sh "{{ path }}"
