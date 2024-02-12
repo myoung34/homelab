@@ -14,8 +14,7 @@ job "minio" {
 
       driver = "docker"
       resources {
-        cpu    = 1200
-        memory = 512
+        memory = 1024
       }
 
       env {
