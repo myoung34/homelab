@@ -1,0 +1,61 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: psql-backup
+spec:
+  schedule: "0 0 1 * *"
+  startingDeadlineSeconds: 0
+  suspend: false
+  workflowSpec:
+    entrypoint: main
+    templates:
+    - name: backup
+      container:
+        name: backup
+        command:
+          - sh
+          - '-c'
+        - |
+          apk add -U bash curl aws-cli pigz >/dev/null 2>&1
+          apk add -U postgresql16-client --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
+
+          aws configure set default.s3.signature_version s3v4
+
+          cat <<EOF >run.sh
+
+          _filename=/tmp/\$(date '+%Y%m%d%H%M%S').tgz
+          pg_dump \${PSQL_CONNECTION_STRING} | pigz --best > \${_filename}
+          aws --endpoint-url http://minio.service.consul:9000 s3 cp /tmp/*.tgz s3://backups/{{inputs.parameters.minio_path}}/
+          curl -XPOST -H 'Content-Type: application/json' \${ZAPIER_WEBHOOK_URL} -d '{"message": "psql backup complete"}'
+          EOF
+
+          cat run.sh
+          bash run.sh
+        image: alpine:latest
+        env:
+        - name: ZAPIER_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              key: ZAPIER_WEBHOOK_URL
+              name: argowf
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              key: MINIO_ACCESS_KEY_ID
+              name: argowf
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              key: MINIO_SECRET_ACCESS_KEY
+              name: argowf
+        - name: PSQL_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              key: PSQL_CONNECTION_STRING
+              name: argowf
+
+    - name: "psql-backup"
+      steps:
+      - - name: "backup"
+          template: backup
