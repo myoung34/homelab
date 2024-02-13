@@ -15,6 +15,12 @@ helmCharts:
     logLevel: debug
     crd:
       create: true
-    aws:
-      credentials:
-        secretName: "external-dns"
+    provider: cloudflare
+    cloudflare:
+      secretName: "external-dns"
+      email: "3vilpenguin@gmail.com"
+      proxied: false
+    sources:
+      - crd
+      - service
+      - ingress
