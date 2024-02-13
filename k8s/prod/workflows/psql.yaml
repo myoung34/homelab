@@ -26,7 +26,7 @@ spec:
 
               _filename=/tmp/\$(date '+%Y%m%d%H%M%S').gz
               pg_dump \${PSQL_CONNECTION_STRING} | pigz --best > \${_filename}
-              aws --endpoint-url http://minio.service.consul:9000 s3 cp \${_filename} s3://backups/psql/
+              aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp \${_filename} s3://backups/psql/
               curl -XPOST -H 'Content-Type: application/json' \${ZAPIER_WEBHOOK_URL} -d '{"message": "psql backup complete"}'
               EOF
 

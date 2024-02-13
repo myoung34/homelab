@@ -57,6 +57,7 @@ helmCharts:
             - "https://esphome.kube.marcyoung.us/_oauth"
             - "https://zig.kube.marcyoung.us/_oauth"
             - "https://zig-upstairs.kube.marcyoung.us/_oauth"
+            - "https://zwave.kube.marcyoung.us/_oauth"
             - "https://atlantis.marcyoung.us/_oauth"
           name: ForwardAuth
           secretEnv: FORWARD_AUTH_CLIENT_SECRET

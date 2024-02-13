@@ -47,8 +47,6 @@ helmCharts:
           fallthrough in-addr.arpa ip6.arpa
           ttl 30
 
-      - name: file /etc/coredns/kube.db service.kube
-      - name: file /etc/coredns/consul.db service.consul
       # Serves a /metrics endpoint on :9153, required for serviceMonitor
       - name: prometheus
         parameters: 0.0.0.0:9153
@@ -72,15 +70,3 @@ helmCharts:
         192.168.1.26 cluster23
         192.168.1.27 cluster24
         192.168.3.2  bignasty
-    - filename: kube.db
-      domain: service.kube
-      contents: |
-        ; service.kube
-        service.kube.              IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
-        *.service.kube.            IN      A       192.168.1.21
-    - filename: consul.db
-      domain: service.consul
-      contents: |
-        ; service.consul
-        service.consul.            IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
-        *.service.consul.          IN      A       192.168.3.2

@@ -44,7 +44,7 @@ job "minio" {
           "traefik.http.routers.minio_http.entrypoints=http",
           "traefik.http.routers.minio_http.middlewares=minio_https_redirect",
           "traefik.http.middlewares.minio_https_redirect.redirectscheme.scheme=https",
-          "traefik.http.routers.http.rule=Host(`minio.service.consul`)",
+          "traefik.http.routers.http.rule=Host(`minio.consul.marcyoung.us`)",
         ]
       }
       config {
