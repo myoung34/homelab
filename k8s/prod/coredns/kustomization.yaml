@@ -96,7 +96,6 @@ helmCharts:
         plaato_airlock.service.iot.       IN      A       192.168.4.111
         liamplug.service.iot.             IN      A       192.168.4.112
         plug1.service.iot.                IN      A       192.168.4.113
-        plug3.service.iot.                IN      A       192.168.4.114
         driveway_switch.service.iot.      IN      A       192.168.4.120
     - filename: consul.db
       domain: service.consul
