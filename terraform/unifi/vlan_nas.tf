@@ -1,8 +1,5 @@
 resource "unifi_network" "nas" {
-  dhcp_dns = [
-    "1.1.1.1",
-    "8.8.8.8",
-  ]
+  dhcp_dns                   = local.nextdns_servers
   dhcp_enabled               = true
   dhcp_relay_enabled         = false
   dhcp_start                 = "192.168.3.100"
