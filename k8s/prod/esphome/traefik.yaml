@@ -11,7 +11,7 @@ spec:
     - web
   routes:
     - kind: Rule
-      match: Host(`esphome.service.kube`)
+      match: Host(`esphome.kube.marcyoung.us`)
       middlewares:
         - name: httpredirectscheme
           namespace: traefik
@@ -31,7 +31,7 @@ spec:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`esphome.service.kube`)
+      match: Host(`esphome.kube.marcyoung.us`)
       services:
         - name: esphome
           port: 6052
