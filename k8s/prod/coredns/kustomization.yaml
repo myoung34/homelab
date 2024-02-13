@@ -49,7 +49,6 @@ helmCharts:
 
       - name: file /etc/coredns/kube.db service.kube
       - name: file /etc/coredns/consul.db service.consul
-      - name: file /etc/coredns/esphome.db iot.marcyoung.us
       # Serves a /metrics endpoint on :9153, required for serviceMonitor
       - name: prometheus
         parameters: 0.0.0.0:9153
@@ -79,11 +78,6 @@ helmCharts:
         ; service.kube
         service.kube.              IN      SOA     ns.dns.cluster.local. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
         *.service.kube.            IN      A       192.168.1.21
-    - filename: esphome.db
-      domain: iot.marcyoung.us
-      contents: |
-        ; iot.marcyoung.us
-        iot.marcyoung.us.                      IN      SOA     ns.kube.marcyoung.us. hostmaster.cluster.local. 1599315662 7200 1800 86400 5
     - filename: consul.db
       domain: service.consul
       contents: |
