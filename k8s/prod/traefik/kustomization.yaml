@@ -26,9 +26,7 @@ helmCharts:
       enabled: true
     ingressRoute:
       dashboard:
-        matchRule: "Host(`traefik.service.kube`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))"
-        entryPoints:
-          - web
+        enabled: false
     logs:
       general:
         level: INFO
