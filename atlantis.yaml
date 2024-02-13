@@ -2,7 +2,7 @@ version: 3
 automerge: true
 projects:
 - name: unifi
-  dir: unifi
+  dir: terraform/unifi
   workflow: default
   autoplan:
     enabled: true
@@ -10,7 +10,15 @@ projects:
       - '**/.terraform.lock.hcl'
       - '**/.terraform-version'
       - '**/*.tf'
-      - 'modules/aws_account/**/*.tf'
+- name: cloudflare
+  dir: terraform/cloudflare
+  workflow: default
+  autoplan:
+    enabled: true
+    when_modified:
+      - '**/.terraform.lock.hcl'
+      - '**/.terraform-version'
+      - '**/*.tf'
 workflows:
   default:
     plan:

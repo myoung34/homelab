@@ -13,8 +13,11 @@ Also see [this post](https://marcyoung.us/post/smart-home/)
 │   └── Nomad jobs that run on the synology (some may be encrypted because chicken-and-egg (vault))
 ├── talos
 │   └── Encrypted talos configs
-├── unifi
-│   └── Terraform for most of my unifi set up
+├── terraform
+│   ├── unifi
+│   ├──── Terraform for most of my unifi set up
+│   ├── cloudflare
+│   └──── DNS stuff mostly
 ```
 
 ### Network Diagram
