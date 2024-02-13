@@ -5,20 +5,16 @@ metadata:
   namespace: cert-manager
 spec:
   acme:
-    #server: https://acme-staging-v02.api.letsencrypt.org/directory
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: issuer-account-key
     email: myoung34@my.apsu.edu
     solvers:
     - dns01:
-        route53:
-          region: us-east-1
-          hostedZoneID: Z1YMUSHVI6YWWE
-          accessKeyID: AKIA4KX5NCS7ROCCRD52
-          secretAccessKeySecretRef:
+        cloudflare:
+          apiTokenSecretRef:
             name: cert-manager
-            key: le_secret_access_key
+            key: le_cloudflare_api_token
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer

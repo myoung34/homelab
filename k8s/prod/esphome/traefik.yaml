@@ -26,7 +26,7 @@ metadata:
   namespace: esphome
   annotations:
     kubernetes.io/ingress.class: traefik
-    certmanager.k8s.io/cluster-issuer: letsencrypt-esphome-staging
+    certmanager.k8s.io/cluster-issuer: letsencrypt-esphome-prod
     certmanager.k8s.io/acme-challenge-type: dns01
 spec:
   entryPoints:
