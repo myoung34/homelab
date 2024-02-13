@@ -1,0 +1,195 @@
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: pergola-lights
+spec:
+  endpoints:
+  - dnsName: pergola-lights.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.100
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: garage-switch
+spec:
+  endpoints:
+  - dnsName: garage-switch.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.101
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: front-porch-switch
+spec:
+  endpoints:
+  - dnsName: front-porch-switch.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.103
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: liam-room-starlights
+spec:
+  endpoints:
+  - dnsName: liam-room-starlights.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.104
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: ecobee
+spec:
+  endpoints:
+  - dnsName: ecobee.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.105
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: traeger-pellet
+spec:
+  endpoints:
+  - dnsName: traeger-pellet.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.106
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: plug2
+spec:
+  endpoints:
+  - dnsName: plug2.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.107
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: tubeszb-upstairs
+spec:
+  endpoints:
+  - dnsName: tubeszb-upstairs.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.108
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: plaato-keg
+spec:
+  endpoints:
+  - dnsName: plaato-keg.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.110
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: plaato-airlock
+spec:
+  endpoints:
+  - dnsName: plaato-airlock.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.111
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: liamplug
+spec:
+  endpoints:
+  - dnsName: liamplug.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.112
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: plug1
+spec:
+  endpoints:
+  - dnsName: plug1.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.113
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: driveway-switch
+spec:
+  endpoints:
+  - dnsName: driveway-switch.iot.marcyoung.us
+    recordTTL: 300
+    recordType: A
+    targets:
+    - 192.168.4.120
+    providerSpecific:
+      - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+        value: "false"

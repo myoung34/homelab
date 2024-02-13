@@ -10,3 +10,4 @@ resources:
   - configmap.yaml
   - esphome.yaml
   - tailscale.yaml
+  - dns.yaml
