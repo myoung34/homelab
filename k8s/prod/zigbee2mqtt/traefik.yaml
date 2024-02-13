@@ -10,7 +10,7 @@ spec:
     - web
   routes:
     - kind: Rule
-      match: Host(`zig.service.kube`)
+      match: Host(`zig.kube.marcyoung.us`)
       priority: 10
       middlewares:
         - name: httpredirectscheme
@@ -29,8 +29,12 @@ spec:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`zig.service.kube`)
+      match: Host(`zig.kube.marcyoung.us`)
       services:
         - name: zigbee2mqtt
           port: 8080
-  tls: {}
+      middlewares:
+        - name: traefik-forward-auth
+          namespace: traefik
+  tls:
+    secretName: zigbee2mqtt-cert

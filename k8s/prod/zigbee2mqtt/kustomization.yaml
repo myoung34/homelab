@@ -6,6 +6,7 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - vault.yaml
+  - le.yaml
   - zigbee2mqtt.yaml
   - pv.yaml
   - pvc.yaml
