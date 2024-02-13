@@ -37,4 +37,4 @@ spec:
         - name: traefik-forward-auth
           namespace: traefik
   tls:
-    secretName: zigbee2mqtt-cert
+    secretName: zigbee2mqtt-upstairs-cert
