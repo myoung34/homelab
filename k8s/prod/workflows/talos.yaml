@@ -23,7 +23,7 @@ spec:
           aws configure set default.s3.signature_version s3v4
           mkdir /tmp/backup
           cat <<EOF >run.sh
-          host=\`talosctl -n \${NODES} mounts | grep /var/mnt/storage | awk '{print \$1}'\`
+          host=\$(talosctl -n \${NODES} disks  | grep -v sda | grep -v '\*\$' | grep -v NODE | awk '{print \$1}')
           echo "got host \${host}"
           for i in \$(talosctl -n \${host} list {{inputs.parameters.talos_directory}} 2>/dev/null | grep -v '^NODE' | awk '{print \$2}'); do
             echo "copying \${i} from \${host}"
