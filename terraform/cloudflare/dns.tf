@@ -25,10 +25,9 @@ resource "cloudflare_record" "consul_fallback" {
 }
 
 resource "cloudflare_record" "kube_fallback" {
-  for_each = toset(local.pihole_nodes)
   zone_id = local.marcyoung_us_zone_id
   name    = "*.kube"
-  value   = each.value
+  value   = local.home_ip
   type    = "A"
   ttl     = "3600"
 }
