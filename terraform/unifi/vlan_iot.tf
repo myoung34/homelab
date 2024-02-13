@@ -1,8 +1,5 @@
 resource "unifi_network" "iot" {
-  dhcp_dns = [
-    "1.1.1.1",
-    "8.8.8.8",
-  ]
+  dhcp_dns = local.nextdns_servers
 
   purpose                    = "corporate"
   dhcp_start                 = "192.168.4.100"

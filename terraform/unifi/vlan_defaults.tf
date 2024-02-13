@@ -1,16 +1,13 @@
 resource "unifi_network" "default" {
-  dhcp_start         = "192.168.0.6"
-  dhcp_stop          = "192.168.0.254"
-  dhcpd_boot_enabled = false
-  domain_name        = "localdomain"
-  ipv6_ra_enable     = true
-  multicast_dns      = false
-  subnet             = "192.168.0.0/24"
-  vlan_id            = 0
-  dhcp_dns = [
-    "1.1.1.1",
-    "8.8.8.8",
-  ]
+  dhcp_start                 = "192.168.0.6"
+  dhcp_stop                  = "192.168.0.254"
+  dhcpd_boot_enabled         = false
+  domain_name                = "localdomain"
+  ipv6_ra_enable             = true
+  multicast_dns              = false
+  subnet                     = "192.168.0.0/24"
+  vlan_id                    = 0
+  dhcp_dns                   = local.nextdns_servers
   dhcp_enabled               = true
   dhcp_relay_enabled         = false
   dhcp_v6_dns                = []
@@ -32,20 +29,14 @@ resource "unifi_network" "default" {
 }
 
 resource "unifi_network" "default_wan1" {
-  dhcp_dns = [
-  ]
-  dhcp_enabled       = false
-  dhcp_lease         = 0
-  dhcpd_boot_enabled = false
-  ipv6_ra_enable     = false
-  multicast_dns      = false
-  name               = "Default (WAN1)"
-  purpose            = "wan"
-  vlan_id            = 0
-  wan_dns = [
-    "1.1.1.1",
-    "8.8.8.8",
-  ]
+  dhcp_dns                   = local.nextdns_servers
+  dhcpd_boot_enabled         = false
+  ipv6_ra_enable             = false
+  multicast_dns              = false
+  name                       = "Default (WAN1)"
+  purpose                    = "wan"
+  vlan_id                    = 0
+  wan_dns                    = local.nextdns_servers
   network_group              = ""
   wan_networkgroup           = "WAN"
   wan_type                   = "dhcp"
@@ -62,20 +53,11 @@ resource "unifi_network" "default_wan1" {
 }
 
 resource "unifi_network" "default_wan2" {
-  dhcp_dns = [
-  ]
-  dhcp_enabled       = false
-  dhcp_lease         = 0
-  dhcpd_boot_enabled = false
-  ipv6_ra_enable     = false
-  multicast_dns      = false
-  name               = "Backup (WAN2)"
-  purpose            = "wan"
-  vlan_id            = 0
-  wan_dns = [
-    "1.1.1.1",
-    "8.8.8.8",
-  ]
+  dhcp_dns                   = local.nextdns_servers
+  name                       = "Backup (WAN2)"
+  purpose                    = "wan"
+  vlan_id                    = 0
+  wan_dns                    = local.nextdns_servers
   network_group              = ""
   wan_networkgroup           = "WAN2"
   wan_type                   = "dhcp"
