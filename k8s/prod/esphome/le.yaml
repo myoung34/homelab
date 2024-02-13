@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: esphome-cert
+  namespace:  esphome
+spec:
+  secretName: esphome-cert
+  commonName: "esphome.kube.marcyoung.us"
+  dnsNames:
+  - esphome.kube.marcyoung.us
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
