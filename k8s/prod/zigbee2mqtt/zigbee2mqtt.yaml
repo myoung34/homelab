@@ -36,7 +36,6 @@ metadata:
   namespace: zigbee2mqtt
 spec:
   replicas: 1
-  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app.kubernetes.io/instance: zigbee2mqtt

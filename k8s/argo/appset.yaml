@@ -33,3 +33,4 @@ spec:
         automated:
           prune: true
           selfHeal: true
+      revisionHistoryLimit: 5

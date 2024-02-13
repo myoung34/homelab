@@ -35,7 +35,6 @@ metadata:
   namespace: hass
 spec:
   replicas: 1
-  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app.kubernetes.io/instance: hass
