@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zigbee2mqtt-cert
+  namespace:  zigbee2mqtt
+spec:
+  secretName: zigbee2mqtt-cert
+  commonName: "zig.kube.marcyoung.us"
+  dnsNames:
+  - zig.kube.marcyoung.us
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

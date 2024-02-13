@@ -4,5 +4,4 @@ namespace: mosquitto
 
 resources:
   - namespace.yaml
-  - traefik.yaml
   - mosquitto.yaml
