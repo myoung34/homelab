@@ -7,6 +7,4 @@ resources:
   - zigbee2mqtt.yaml
   - pv.yaml
   - pvc.yaml
-  - traefik.yaml
-  - le.yaml
   - tailscale.yaml
