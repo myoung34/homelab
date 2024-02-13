@@ -16,14 +16,24 @@ helmCharts:
   version: 26.0.0
   repo: https://helm.traefik.io/traefik
   valuesInline:
-    nodeSelector:
-      kubernetes.io/hostname: cluster12
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - cluster12
+              - cluster24
     service:
       type: ClusterIP
       externalIPs:
         - 192.168.1.21
+        - 192.168.1.27
     deployment:
       enabled: true
+      replicas: 2
     ingressRoute:
       dashboard:
         enabled: false

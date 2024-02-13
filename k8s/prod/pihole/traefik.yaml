@@ -1,0 +1,26 @@
+---
+# Source: pihole/templates/ingress.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: pihole-dns
+spec:
+  entryPoints:
+    - dns
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: pihole-dns-tcp
+          port: 53
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteUDP
+metadata:
+  name: pihole-dns
+spec:
+  entryPoints:
+    - dnsudp
+  routes:
+    - services:
+      - name: pihole-dns-udp
+        port: 53
