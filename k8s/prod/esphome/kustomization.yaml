@@ -4,8 +4,6 @@ namespace: esphome
 
 resources:
   - namespace.yaml
-  - traefik.yaml
-  - le.yaml
   - vault.yaml
   - configmap.yaml
   - esphome.yaml
