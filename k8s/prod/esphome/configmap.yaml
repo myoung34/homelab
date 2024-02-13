@@ -75,11 +75,11 @@ data:
       }
     };
 
-  tubeszb_upstairs.yaml: |
+  tubeszb-upstairs.yaml: |
     substitutions:
       human_devicename: Zigbee Coordinator Upstairs
     esphome:
-      name: tubeszb_upstairs
+      name: tubeszb-upstairs
       project:
         name: tubezb.cc2652-poe-2023
         version: "1.0"
@@ -211,7 +211,7 @@ data:
 
   traeger.yaml: |
     esphome:
-      name: traeger_pellet
+      name: traeger-pellet
       includes:
         - ultrasonic_sensor.h
 
@@ -361,9 +361,9 @@ data:
               then:
                 - light.turn_off: led
 
-  plaato_airlock.yaml: |
+  plaato-airlock.yaml: |
     esphome:
-      name: plaato_airlock
+      name: plaato-airlock
       includes:
         - airlock.h
 
@@ -682,7 +682,7 @@ data:
 
   pergola.yaml: |
     esphome:
-      name: pergola_lights
+      name: pergola-lights
       platform: ESP8266
       board: esp01_1m
 
@@ -735,9 +735,9 @@ data:
         id: output_component5
         pin: 16
 
-  liam_room_starlights.yaml: |
+  liam-room-starlights.yaml: |
     esphome:
-      name: liam_room_starlights
+      name: liam-room-starlights
       platform: ESP8266
       board: esp01_1m
 
@@ -793,7 +793,7 @@ data:
 
   garage.yaml: |
      esphome:
-       name: garage_switch
+       name: garage-switch
        platform: ESP8266
        board: esp01_1m
 
@@ -818,9 +818,9 @@ data:
          name: "garage"
          pin: 5
 
-  front_porch_switch.yaml: |
+  front-porch-switch.yaml: |
     esphome:
-      name: front_porch_switch
+      name: front-porch-switch
       platform: ESP8266
       board: esp01_1m
 
