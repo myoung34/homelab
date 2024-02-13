@@ -41,9 +41,8 @@ job "minio" {
         tags = [
           "traefik.http.routers.minio_https.entrypoints=https",
           "traefik.http.routers.minio_https.tls=true",
-          "traefik.http.routers.minio_http.entrypoints=http",
-          "traefik.http.routers.minio_http.middlewares=minio_https_redirect",
-          "traefik.http.middlewares.minio_https_redirect.redirectscheme.scheme=https",
+
+          "traefik.http.routers.minio_http.entrypoints=api",
           "traefik.http.routers.http.rule=Host(`minio.consul.marcyoung.us`)",
         ]
       }
