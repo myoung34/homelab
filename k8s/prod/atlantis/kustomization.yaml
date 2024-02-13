@@ -36,8 +36,8 @@ helmCharts:
     - --write-git-creds
     - --automerge
     - --atlantis-url=https://atlantis.marcyoung.us/
-    - --default-tf-version=v1.5.6
     - --repo-allowlist=github.com/myoung34/vps,github.com/myoung34/homelab
+    - --gh-team-allowlist="OctoKode:admin"
     - --port=4141
     - --data-dir=/tmp
     environment: {}
