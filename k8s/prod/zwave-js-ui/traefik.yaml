@@ -10,7 +10,7 @@ spec:
     - web
   routes:
     - kind: Rule
-      match: Host(`zwave.service.kube`)
+      match: Host(`zwave.kube.marcyoung.us`)
       priority: 10
       middlewares:
         - name: httpredirectscheme
@@ -29,8 +29,12 @@ spec:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`zwave.service.kube`)
+      match: Host(`zwave.kube.marcyoung.us`)
       services:
         - name: zwave-js-ui
           port: 8091
-  tls: {}
+      middlewares:
+        - name: traefik-forward-auth
+          namespace: traefik
+  tls:
+    secretName: zwave-js-ui-cert

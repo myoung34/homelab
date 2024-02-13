@@ -30,7 +30,7 @@ spec:
             talosctl -n \${host} read {{inputs.parameters.talos_directory}}/\${i} >/tmp/backup/\${i}
           done
           tar czf /tmp/\$(date '+%Y%m%d%H%M%S').tgz /tmp/backup
-          aws --endpoint-url http://minio.service.consul:9000 s3 cp /tmp/*.tgz s3://backups/{{inputs.parameters.minio_path}}/
+          aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp /tmp/*.tgz s3://backups/{{inputs.parameters.minio_path}}/
           curl -XPOST -H 'Content-Type: application/json' \${ZAPIER_WEBHOOK_URL} -d '{"message": "{{inputs.parameters.slack_message}}"}'
           EOF
           cat run.sh

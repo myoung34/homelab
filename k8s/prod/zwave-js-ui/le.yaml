@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zwave-js-ui-cert
+  namespace:  zwave-js-ui
+spec:
+  secretName: zwave-js-ui-cert
+  commonName: "zwave.kube.marcyoung.us"
+  dnsNames:
+  - zwave.kube.marcyoung.us
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

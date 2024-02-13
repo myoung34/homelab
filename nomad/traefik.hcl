@@ -3,9 +3,6 @@ job "traefik" {
 
   group "traefik" {
     network {
-      port "dash" {
-        static = 8888
-      }
       port "lb" {
         static = 80
       }
@@ -17,7 +14,7 @@ job "traefik" {
       driver = "docker"
 
       config {
-        ports = ["lb", "lbssl", "dash"]
+        ports = ["lb", "lbssl"]
         volumes = [
           "/var/run/docker.sock:/var/run/docker.sock",
         ]
@@ -27,10 +24,10 @@ job "traefik" {
 
         args = [
           "--accesslog",
-          "--api.dashboard=true",
+          "--api.dashboard=false",
           "--api.insecure=true",
           "--providers.consulcatalog.endpoint.address=192.168.3.2:8500",
-          "--providers.consulcatalog.defaultrule=Host(`{{ normalize .Name }}.service.consul`)",
+          "--providers.consulcatalog.defaultrule=Host(`{{ normalize .Name }}.consul.marcyoung.us`)",
           "--entryPoints.http.address=:80/tcp",
           "--entryPoints.https.address=:443/tcp",
           "--entryPoints.traefik.address=:8888/tcp",

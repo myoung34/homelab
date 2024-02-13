@@ -27,7 +27,7 @@ spec:
             chmod +x /usr/local/bin/talosctl
             aws configure set default.s3.signature_version s3v4
             talosctl -n 192.168.1.22 etcd snapshot $(date '+%Y%m%d%H%M%S').snapshot
-            aws --endpoint-url http://minio.service.consul:9000 s3 cp *.snapshot s3://backups/talos-etcd/
+            aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp *.snapshot s3://backups/talos-etcd/
             curl -XPOST -H 'Content-Type: application/json' ${ZAPIER_WEBHOOK_URL} -d '{"message": "etcd snapshot complete"}'
           env:
           - name: ZAPIER_WEBHOOK_URL
