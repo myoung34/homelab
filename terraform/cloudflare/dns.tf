@@ -23,11 +23,3 @@ resource "cloudflare_record" "consul_fallback" {
   type    = "A"
   ttl     = "3600"
 }
-
-resource "cloudflare_record" "kube_fallback" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "*.kube"
-  value   = local.home_ip
-  type    = "A"
-  ttl     = "3600"
-}
