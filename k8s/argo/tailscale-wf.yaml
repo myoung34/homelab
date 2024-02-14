@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-workflows-argo-workflows-server
+spec:
+  defaultBackend:
+    service:
+      name: argocd-workflows-argo-workflows-server
+      port:
+        number: 2746
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - argowf

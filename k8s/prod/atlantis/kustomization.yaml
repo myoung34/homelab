@@ -4,8 +4,6 @@ namespace: atlantis
 
 resources:
   - namespace.yaml
-  - le.yaml
-  - traefik.yaml
   - vault.yaml
   - sa.yaml
   - tailscale.yaml
@@ -35,7 +33,7 @@ helmCharts:
     extraArgs:
     - --write-git-creds
     - --automerge
-    - --atlantis-url=https://atlantis.marcyoung.us/
+    - --atlantis-url=https://atlantis.king-gila.ts.net/
     - --repo-allowlist=github.com/myoung34/vps,github.com/myoung34/homelab
     - --port=4141
     - --data-dir=/tmp
