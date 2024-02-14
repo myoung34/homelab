@@ -4,7 +4,6 @@ namespace: traefik
 
 resources:
   - namespace.yaml
-  - forward-auth.yaml
   - vault.yaml
   - middleware.yaml
 

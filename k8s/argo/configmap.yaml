@@ -8,13 +8,8 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   kustomize.buildOptions: --enable-helm
-  url: https://argocd.marcyoung.us
-  admin.enabled: "false"
-  oidc.config: |
-    name: SSO
-    issuer: https://dex.marcyoung.us
-    clientID: argocd
-    clientSecret: $client.secret
+  url: https://argocd.king-gila.ts.net
+  admin.enabled: "true"
   repositories: |
     - url: https://github.com/myoung34/homelab
       passwordSecret:

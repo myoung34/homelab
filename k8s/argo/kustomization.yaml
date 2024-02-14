@@ -7,13 +7,11 @@ metadata:
 resources:
  - namespace.yaml
  - vault.yaml
- - traefik.yaml
- - traefik-wf.yaml
- - le.yaml
- - le-wf.yaml
  - argocd.yaml
  - appset.yaml
  - sa-wf.yaml
+ - tailscale.yaml
+ - tailscale-wf.yaml
 patches:
  - path: configmap.yaml
 
@@ -48,13 +46,6 @@ helmCharts:
         enabled: true
       extraArgs:
         - --insecure
-    configs:
-      secret:
-        createSecret: false
-      rbac:
-        policy.default: role:readonly
-        policy.csv: |
-          g, OctoKode:admin, role:admin
 - name: argo-workflows
   releaseName: argocd-workflows
   namespace: argocd
@@ -75,33 +66,11 @@ helmCharts:
       logging:
         level: debug
       extraArgs:
-        - --auth-mode=sso
         - --insecure-skip-verify=true
-      sso:
-        enabled: true
-        issuer: https://dex.marcyoung.us
-        clientId:
-          name: argocd-secret
-          key: client.id
-        clientSecret:
-          name: argocd-secret
-          key: client.secret
-        redirectUrl: https://argowf.marcyoung.us/oauth2/callback
-        scopes:
-          - openid
-          - email
-          - profile
-          - groups
     workflow:
       logging:
         level: debug
       serviceAccount:
         create: true
         labels: {}
-        annotations:
-          workflows.argoproj.io/rbac-rule: "'OctoKode:admin' in groups"
-          workflows.argoproj.io/rbac-rule-precedence: "1"
-          workflows.argoproj.io/service-account-token.name: admin-user
         name: "admin-user"
-      rbac:
-        create: true
