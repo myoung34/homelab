@@ -31,3 +31,5 @@ jobs:
     - name: run_and_bump
       shell: bash
       run: python k8s/bump.py
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
