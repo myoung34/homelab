@@ -41,9 +41,6 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
         "sha": req.json()['sha'],
         "content": base64_content,
     }
-    print(f'Debug: base64 content of change -> {base64_content}')
-
-    time.sleep(10)
     _req = requests.put(
         filename_url,
         headers={'Accept': 'application/vnd.github.v3+json'},
