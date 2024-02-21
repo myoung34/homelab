@@ -8,11 +8,12 @@ resources:
   - cr.yaml
 
 helmCharts:
-- name: tailscale
+- name: tailscale-operator
   includeCRDs: true
   namespace: tailscale
   releaseName: tailscale
-  version: 0.1.0
+  version: 1.58.2
+  repo: https://pkgs.tailscale.com/helmcharts
   valuesInline:
     apiServerProxyConfig:
       mode: "true"
