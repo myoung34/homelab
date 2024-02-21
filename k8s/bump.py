@@ -3,6 +3,7 @@ import re
 import json
 import base64
 import os
+import time
 
 GH_USER='myoung34',
 GH_TOKEN=os.environ.get('GH_TOKEN')
@@ -30,6 +31,7 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
     )
 
     # Update the real file
+    base64_content = base64.b64encode(new_contents.encode('ascii')).decode('utf-8')
     payload_body = {
         "message": f"[Automated :robot: ] Bump {upstream} from {current_version.text.strip()} to {tag}",
         "committer": {
@@ -37,9 +39,11 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
             "email": "myoung34@my.apsu.edu"
         },
         "sha": req.json()['sha'],
-        "content": base64.b64encode(new_contents.encode('ascii')).decode('utf-8')
+        "content": base64_content,
     }
+    print(f'Debug: base64 content of change -> {base64_content}')
 
+    time.sleep(10)
     _req = requests.put(
         filename_url,
         headers={'Accept': 'application/vnd.github.v3+json'},
@@ -86,8 +90,8 @@ def do_work():
         {
             'upstream': 'esphome/esphome',
             'filename_url': 'k8s/prod/esphome/esphome.yaml',
-            'original_string': r"        image: esphome/esphome:[0-9\.]+",
-            'string_to_replace': r"        image: esphome/esphome:{}",
+            'original_string': r'        image: "esphome/esphome:[0-9\.]+"',
+            'string_to_replace': r'        image: "esphome/esphome:{}"',
         },
         {
             'upstream': 'home-assistant/core',
