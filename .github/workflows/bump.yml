@@ -1,12 +1,16 @@
 name: bump
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - .github/workflows/bump.yml
       - k8s/bump.py
   schedule:
     - cron:  '59 04 * * *'
+
+permissions:
+  contents: write
 
 jobs:
   bump:
