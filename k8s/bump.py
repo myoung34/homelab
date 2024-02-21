@@ -86,8 +86,8 @@ def do_work():
         {
             'upstream': 'esphome/esphome',
             'filename_url': 'k8s/prod/esphome/esphome.yaml',
-            'original_string': r"        image: esphome/esphome:[0-9\.]+",
-            'string_to_replace': r"        image: esphome/esphome:{}",
+            'original_string': r'        image: "esphome/esphome:[0-9\.]+"',
+            'string_to_replace': r'        image: "esphome/esphome:{}"',
         },
         {
             'upstream': 'home-assistant/core',
