@@ -19,11 +19,11 @@ helmCharts:
     operatorConfig:
       hostname: "homelab-operator"
       image:
-        tag: "v1.56"
+        tag: "v1.61"
       logging: debug
     proxyConfig:
       image:
-        tag: "unstable"
+        tag: "v1.61"
 
 patches:
 - patch: |-
