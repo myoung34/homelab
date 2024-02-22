@@ -57,22 +57,6 @@ helmCharts:
       envFrom:
         - secretRef:
             name: datadog
-      env:
-        - name: DD_CRI_SOCKET_PATH
-          value: /var/run/containerd/containerd.sock
-      volumes:
-        - hostPath:
-            path: /var/run/containerd/containerd.sock
-          name: containerdsocket
-        - hostPath:
-            path: /var/run
-          name: var-run
-      volumeMounts:
-        - name: containerdsocket
-          mountPath: /var/run/containerd/containerd.sock
-        - name: var-run
-          mountPath: /var/run
-          readOnly: true
     clusterChecksRunner:
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
@@ -88,9 +72,6 @@ helmCharts:
         limits:
           cpu: 200m
           memory: 256Mi
-      envFrom:
-        - secretRef:
-            name: datadog
       livenessProbe:
         initialDelaySeconds: 60
       readinessProbe:
@@ -126,12 +107,35 @@ helmCharts:
       image:
         tag: 7
       containers:
+        agent:
+          livenessProbe:
+            initialDelaySeconds: 60
+          readinessProbe:
+            initialDelaySeconds: 60
+          env:
+            - name: DD_CRI_SOCKET_PATH
+              value: /var/run/containerd/containerd.sock
         traceAgent:
           livenessProbe:
             initialDelaySeconds: 60
           readinessProbe:
             initialDelaySeconds: 60
-        agent:
+        processAgent:
+          livenessProbe:
+            initialDelaySeconds: 60
+          readinessProbe:
+            initialDelaySeconds: 60
+        systemProbe:
+          livenessProbe:
+            initialDelaySeconds: 60
+          readinessProbe:
+            initialDelaySeconds: 60
+        securityAgent:
+          livenessProbe:
+            initialDelaySeconds: 60
+          readinessProbe:
+            initialDelaySeconds: 60
+        initContainers:
           livenessProbe:
             initialDelaySeconds: 60
           readinessProbe:
@@ -142,6 +146,16 @@ helmCharts:
       podAnnotations:
         container.apparmor.security.beta.kubernetes.io/agent: unconfined
         container.apparmor.security.beta.kubernetes.io/process-agent: unconfined
-      envFrom:
-        - secretRef:
-            name: datadog
+      volumes:
+        - hostPath:
+            path: /var/run/containerd/containerd.sock
+          name: containerdsocket
+        - hostPath:
+            path: /var/run
+          name: var-run
+      volumeMounts:
+        - name: containerdsocket
+          mountPath: /var/run/containerd/containerd.sock
+        - name: var-run
+          mountPath: /var/run
+          readOnly: true
