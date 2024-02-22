@@ -150,6 +150,12 @@ helmCharts:
         - hostPath:
             path: /run/containerd/containerd.sock
           name: containerdsocket
+        - hostPath:
+            path: /run
+          name: run
       volumeMounts:
         - name: containerdsocket
-          mountPath: /host/var/run/containerd/containerd.sock
+          mountPath: /var/run/containerd/containerd.sock
+        - name: run
+          mountPath: /var/run
+          readOnly: true
