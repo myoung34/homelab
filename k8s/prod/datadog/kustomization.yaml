@@ -57,6 +57,22 @@ helmCharts:
       envFrom:
         - secretRef:
             name: datadog
+      env:
+        - name: DD_CRI_SOCKET_PATH
+          value: /var/run/containerd/containerd.sock
+      volumes:
+        - hostPath:
+            path: /var/run/containerd/containerd.sock
+          name: containerdsocket
+        - hostPath:
+            path: /var/run
+          name: var-run
+      volumeMounts:
+        - name: containerdsocket
+          mountPath: /var/run/containerd/containerd.sock
+        - name: var-run
+          mountPath: /var/run
+          readOnly: true
     clusterChecksRunner:
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
@@ -83,16 +99,10 @@ helmCharts:
         - key: "node-role.kubernetes.io/control-plane"
           effect: "NoSchedule"
       volumes:
-        - hostPath:
-            path: /run/containerd/containerd.sock
-          name: containerdsocket
         - name: secrets
           secret:
             secretName: "datadog"
       volumeMounts:
-        - name: containerdsocket
-          mountPath: /var/run/containerd/containerd.sock
-          readOnly: true
         - name: secrets
           mountPath: /etc/secrets
           readOnly: true
