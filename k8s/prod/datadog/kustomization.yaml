@@ -92,6 +92,7 @@ helmCharts:
       volumeMounts:
         - name: containerdsocket
           mountPath: /var/run/containerd/containerd.sock
+          readOnly: true
         - name: secrets
           mountPath: /etc/secrets
           readOnly: true
