@@ -114,7 +114,7 @@ helmCharts:
             initialDelaySeconds: 60
           env:
             - name: DD_CRI_SOCKET_PATH
-              value: /var/run/containerd/containerd.sock
+              value: /host/var/run/containerd/containerd.sock
         traceAgent:
           livenessProbe:
             initialDelaySeconds: 60
@@ -150,12 +150,6 @@ helmCharts:
         - hostPath:
             path: /var/run/containerd/containerd.sock
           name: containerdsocket
-        - hostPath:
-            path: /var/run
-          name: var-run
       volumeMounts:
         - name: containerdsocket
-          mountPath: /var/run/containerd/containerd.sock
-        - name: var-run
-          mountPath: /var/run
-          readOnly: true
+          mountPath: /host/var/run/containerd/containerd.sock
