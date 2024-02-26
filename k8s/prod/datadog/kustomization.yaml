@@ -34,6 +34,20 @@ helmCharts:
             - kube-state-metrics
           instances:
             - kube_state_url: http://10.96.0.255:8080/metrics
+        kube_controller_manager.yaml: |-
+          ad_identifiers:
+            - kube-controller-manager
+          instances:
+            - prometheus_url: https://127.0.0.1:10257/metrics
+              bearer_token_auth: true
+              tls_verify: false
+        kube_scheduler.yaml: |-
+          ad_identifiers:
+            - kube-scheduler
+          instances:
+            - prometheus_url: https://127.0.0.1:10259/metrics
+              bearer_token_auth: true
+              tls_verify: false
         argocd.yaml: |-
           instances:
             -
@@ -65,6 +79,7 @@ helmCharts:
         - secretRef:
             name: datadog
     clusterAgent:
+      useHostNetwork: true
       resources:
         requests:
           cpu: 200m
@@ -104,6 +119,7 @@ helmCharts:
         - secretRef:
             name: datadog
     agents:
+      useHostNetwork: true
       image:
         tag: 7
       containers:
