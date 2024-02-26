@@ -131,6 +131,10 @@ helmCharts:
           env:
             - name: DD_CRI_SOCKET_PATH
               value: /host/var/run/containerd/containerd.sock
+            - name: DD_HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
         traceAgent:
           livenessProbe:
             initialDelaySeconds: 60
