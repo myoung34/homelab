@@ -1,0 +1,74 @@
+machine:
+  network:
+    interfaces:
+      - deviceSelector:
+          hardwareAddr: ${network_hardware_addr}
+        dhcp: true
+        vip:
+          ip: 192.168.1.254
+  features:
+    kubernetesTalosAPIAccess:
+      enabled: true
+      allowedRoles:
+        - os:admin
+      allowedKubernetesNamespaces:
+        - argocd
+cluster:
+  network:
+    dnsDomain: cluster.local
+    podSubnets:
+      - 10.244.0.0/16
+    serviceSubnets:
+      - 10.96.0.0/12
+  proxy:
+    image: registry.k8s.io/kube-proxy:${kubernetes_version}
+  apiServer:
+    image: registry.k8s.io/kube-apiserver:${kubernetes_version}
+    certSANs:
+      - 192.168.1.22
+      - 192.168.1.25
+      - 192.168.1.26
+    disablePodSecurityPolicy: true
+    admissionControl:
+      - configuration:
+          apiVersion: pod-security.admission.config.k8s.io/v1alpha1
+          defaults:
+            audit: restricted
+            audit-version: latest
+            enforce: baseline
+            enforce-version: latest
+            warn: restricted
+            warn-version: latest
+          exemptions:
+            namespaces:
+              - argocd
+              - actions-runner
+              - datadog
+              - hass
+              - esphome
+              - reloader
+              - local-path-storage
+              - node-feature-discovery
+              - ser2net
+              - zigbee2mqtt
+              - teleport
+              - metallb
+              - default
+            runtimeClasses: []
+            usernames: []
+          kind: PodSecurityConfiguration
+        name: PodSecurity
+    auditPolicy:
+      apiVersion: audit.k8s.io/v1
+      kind: Policy
+      rules:
+        - level: Metadata
+  discovery:
+    enabled: true
+    registries:
+      kubernetes:
+        disabled: true
+  extraManifests:
+    - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml
+    - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+  inlineManifests: []
