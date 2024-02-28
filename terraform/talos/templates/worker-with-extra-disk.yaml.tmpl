@@ -1,0 +1,14 @@
+machine:
+  kubelet:
+    extraMounts: # changeme
+      - destination: ${mount_point}
+        type: bind
+        source: ${mount_point}
+        options:
+          - bind
+          - rshared
+          - rw
+  disks: # changeme
+      - device: ${extra_device}
+        partitions:
+          - mountpoint: ${mount_point}

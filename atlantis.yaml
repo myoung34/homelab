@@ -19,6 +19,15 @@ projects:
       - '**/.terraform.lock.hcl'
       - '**/.terraform-version'
       - '**/*.tf'
+- name: talos
+  dir: terraform/talos
+  workflow: default
+  autoplan:
+    enabled: true
+    when_modified:
+      - '**/.terraform.lock.hcl'
+      - '**/.terraform-version'
+      - '**/*.tf'
 workflows:
   default:
     plan:

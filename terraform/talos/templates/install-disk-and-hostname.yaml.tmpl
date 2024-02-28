@@ -1,0 +1,47 @@
+machine:
+  token: ${machine_token}
+  logging:
+    destinations:
+      - endpoint: "tcp://192.168.3.2:5046/"
+        format: "json_lines"
+  kubelet:
+    image: ghcr.io/siderolabs/kubelet:${kubernetes_version}
+    defaultRuntimeSeccompProfileEnabled: true
+    disableManifestsDirectory: true
+    extraArgs:
+      rotate-server-certificates: true
+  network:
+    hostname: ${hostname}
+    nameservers:
+      - 10.96.0.10
+      - 45.90.28.103
+      - 45.90.30.103
+    extraHostEntries:
+        - ip: 192.168.1.254
+          aliases:
+            - controlplane.cluster.local
+  install:
+    disk: ${install_disk}
+    image: ghcr.io/siderolabs/installer:${talos_version}
+    bootloader: true
+    wipe: true
+    extraKernelArgs:
+      - talos.logging.kernel=tcp://192.168.3.2:5046/
+      - reboot=k
+  features:
+    rbac: true
+    stableHostname: true
+    apidCheckExtKeyUsage: true
+    diskQuotaSupport: false
+    kubePrism:
+        enabled: false
+        port: null
+  time:
+    disabled: false
+    servers:
+      - time.cloudflare.com
+      - time.windows.com
+  sysctls:
+    fs.inotify.max_user_instances: "256"
+    vm.swappiness: "1"
+    net.ipv4.ip_forward: "1"
