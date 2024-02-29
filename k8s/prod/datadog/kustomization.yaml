@@ -168,8 +168,8 @@ helmCharts:
         container.apparmor.security.beta.kubernetes.io/process-agent: unconfined
       volumes:
         - hostPath:
-            path: /run/containerd
+            path: /run/containerd/containerd.sock
           name: containerdsocket
       volumeMounts:
         - name: containerdsocket
-          mountPath: /host/var/run/containerd
+          mountPath: /host/var/run/containerd/containerd.sock
