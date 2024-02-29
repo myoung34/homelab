@@ -81,9 +81,6 @@ helmCharts:
             name: datadog
     clusterAgent:
       useHostNetwork: true
-      env:
-        - name: DD_CLUSTER_NAME
-          value: prod
       resources:
         requests:
           cpu: 200m
