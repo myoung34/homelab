@@ -68,6 +68,7 @@ helmCharts:
         enabled: true
       serviceMonitoring:
         enabled: true
+
       envFrom:
         - secretRef:
             name: datadog
@@ -80,6 +81,9 @@ helmCharts:
             name: datadog
     clusterAgent:
       useHostNetwork: true
+      env:
+        - name: DD_CLUSTER_NAME
+          value: prod
       resources:
         requests:
           cpu: 200m
@@ -128,13 +132,6 @@ helmCharts:
             initialDelaySeconds: 60
           readinessProbe:
             initialDelaySeconds: 60
-          env:
-            - name: DD_CRI_SOCKET_PATH
-              value: /host/var/run/containerd/containerd.sock
-            - name: DD_HOSTNAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
         traceAgent:
           livenessProbe:
             initialDelaySeconds: 60
@@ -172,4 +169,5 @@ helmCharts:
           name: containerdsocket
       volumeMounts:
         - name: containerdsocket
-          mountPath: /host/var/run/containerd/containerd.sock
+          mountPath: /var/run/containerd/containerd.sock
+          readOnly: true
