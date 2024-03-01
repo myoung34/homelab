@@ -46,7 +46,3 @@ jobs:
         run: |
           modified_dirs=$(echo ${{ steps.changed-dirs.outputs.all_changed_and_modified_files }} | sed 's/ /","/g' | sed 's/^/["/g' | sed 's/$/"]/g')
           echo "value=$modified_dirs" >> "$GITHUB_OUTPUT"
-      - name: Use that secret output (protected by a mask)
-        run: |
-          echo "the secret number is ${{ steps.matrix.outputs.value }}"
-
