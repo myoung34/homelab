@@ -22,6 +22,8 @@ Also see [this post](https://marcyoung.us/post/smart-home/)
 │   └──── DNS stuff mostly
 ```
 
+test
+
 ### Network Diagram
 
 ![](https://marcyoung.us/images/router.jpg)
