@@ -1,0 +1,57 @@
+name: Create terraform plan
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  setup:
+    runs-on: self-hosted
+    name: set up directories for terraform
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+    steps:
+      - id: auth_check
+        uses: morfien101/actions-authorized-user@v3
+        with:
+          username: ${{ github.actor }}
+          team: "admin"
+          org: "OctoKode"
+          whitelist: "myoung34,renovate[bot]"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: can continue
+        shell: bash
+        run: |
+          if [ ${{ steps.auth_check.outputs.authorized }} != "true" ]; then
+            echo "::error title=User Unauthorized::User ${{ github.actor }} is not authorized to run this workflow!"
+            exit 1
+          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: tj-actions/changed-files@v42
+        id: changed-dirs
+        with:
+          dir_names: true
+          dir_names_exclude_current_dir: true
+          dir_names_max_depth: 2
+      - id: matrix
+        run: |
+          echo ${{ steps.changed-dirs.outputs.all_changed_and_modified_files }} | sed 's/ /,/g' | sed 's/^/[/g' | sed 's/$/]/g' >> $GITHUB_OUTPUT
+  plan:
+    runs-on: self-hosted
+    name: Create a plan for an example terraform configuration
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      matrix:
+        value: ${{fromJSON(needs.setup.outputs.matrix)}}
+    steps:
+      - run: |
+          echo "${{ matrix.value }}"
