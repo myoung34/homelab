@@ -20,10 +20,6 @@ spec:
       labels:
         app: actions-runner
     spec:
-      volumes:
-      - name: containerdsock
-        hostPath:
-          path: /run/containerd/containerd.sock
       containers:
       - name: runner
         image: myoung34/github-runner:latest
@@ -31,9 +27,9 @@ spec:
         - name: START_DOCKER_SERVICE
           value: "true"
         - name: RUNNER_SCOPE
-          value: "org"
-        - name: ORG_NAME
-          value: octokode
+          value: "repo"
+        - name: REPO_URL
+          value: "https://github.com/myoung34/homelab"
         - name: ACCESS_TOKEN
           valueFrom:
             secretKeyRef:
@@ -43,9 +39,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        volumeMounts:
-        - name: containerdsock
-          mountPath: /run/containerd/containerd.sock
         securityContext:
           privileged: true
         resources:
