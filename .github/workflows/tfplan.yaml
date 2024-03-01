@@ -64,7 +64,7 @@ jobs:
           role-session-name: ${{ secrets.AWS_ROLE_ARN_TO_ASSUME_SESSION_NAME }}
           role-skip-session-tagging: true
 
-      - uses: hashicorp/setup-terraform@v2
+      - uses: hashicorp/setup-terraform@v3
 
       - name: Terraform fmt
         id: fmt
