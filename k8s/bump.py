@@ -79,12 +79,6 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
 def do_work():
     updates = [
         {
-            'upstream': 'myoung34/atlantis',
-            'filename_url': 'k8s/prod/atlantis/kustomization.yaml',
-            'original_string': r"      tag: 'v[0-9\.]+'",
-            'string_to_replace': "      tag: '{}'",
-        },
-        {
             'upstream': 'esphome/esphome',
             'filename_url': 'k8s/prod/esphome/esphome.yaml',
             'original_string': r'        image: "esphome/esphome:[0-9\.]+"',
@@ -112,6 +106,12 @@ def do_work():
         {
             'upstream': 'Koenkk/zigbee2mqtt',
             'filename_url': 'k8s/prod/zigbee2mqtt/zigbee2mqtt.yaml',
+            'original_string': r"        image: koenkk/zigbee2mqtt:[0-9\.]+",
+            'string_to_replace': r"        image: koenkk/zigbee2mqtt:{}",
+        },
+        {
+            'upstream': 'Koenkk/zigbee2mqtt',
+            'filename_url': 'k8s/prod/zigbee2mqtt-upstairs/zigbee2mqtt.yaml',
             'original_string': r"        image: koenkk/zigbee2mqtt:[0-9\.]+",
             'string_to_replace': r"        image: koenkk/zigbee2mqtt:{}",
         },
