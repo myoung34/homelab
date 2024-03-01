@@ -23,5 +23,5 @@ helmCharts:
               maxPodLifeTimeSeconds: 86400 #1 day
             namespaces:
               include:
-              - "atlantis"
-              - "reloader"
+              - "actions-runner"
+              - "ser2net"
