@@ -24,10 +24,10 @@ spec:
       - name: runner
         image: myoung34/github-runner:latest
         env:
-        - name: START_DOCKER_SERVICE
-          value: "true"
         - name: RUNNER_SCOPE
           value: "repo"
+        - name: DISABLE_AUTOMATIC_DEREGISTRATION
+          value: "true"
         - name: REPO_URL
           value: "https://github.com/myoung34/homelab"
         - name: ACCESS_TOKEN
@@ -39,6 +39,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        envFrom:
+        - secretRef:
+            name: actions-runner
         securityContext:
           privileged: true
         resources:

@@ -6,6 +6,8 @@ on:
     paths:
       - .github/workflows/bump.yml
       - k8s/bump.py
+    paths-ignore:
+      - 'terraform/**'
   schedule:
     - cron:  '59 04 * * *'
 
