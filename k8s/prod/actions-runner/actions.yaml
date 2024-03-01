@@ -20,25 +20,19 @@ spec:
       labels:
         app: actions-runner
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - cluster14
-      volumes:
-      - name: containerdsock
-        hostPath:
-          path: /run/containerd/containerd.sock
+      #affinity:
+      #  nodeAffinity:
+      #    requiredDuringSchedulingIgnoredDuringExecution:
+      #      nodeSelectorTerms:
+      #      - matchExpressions:
+      #        - key: kubernetes.io/hostname
+      #          operator: In
+      #          values:
+      #          - cluster14
       containers:
       - name: runner
         image: myoung34/github-runner:latest
         env:
-        - name: START_DOCKER_SERVICE
-          value: "true"
         - name: RUNNER_SCOPE
           value: "repo"
         - name: REPO_URL
@@ -57,9 +51,6 @@ spec:
             name: actions-runner
         securityContext:
           privileged: true
-        volumeMounts:
-        - name: containerdsock
-          mountPath: /run/containerd/containerd.sock
         resources:
           limits:
             cpu: 2
