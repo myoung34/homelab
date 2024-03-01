@@ -16,6 +16,8 @@ Also see [this post](https://marcyoung.us/post/smart-home/)
 ├── terraform
 │   ├── unifi
 │   ├──── Terraform for most of my unifi set up
+│   ├── talos
+│   ├──── Terraform for my talos nodes
 │   ├── cloudflare
 │   └──── DNS stuff mostly
 ```
