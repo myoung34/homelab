@@ -39,6 +39,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        envFrom:
+        - secretRef:
+            name: actions-runner
         securityContext:
           privileged: true
         resources:
