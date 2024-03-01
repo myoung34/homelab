@@ -1,8 +1,6 @@
 Unifi
 =====
 
-Todo: tf my Unifi set up
-
 Notes
 =====
 
