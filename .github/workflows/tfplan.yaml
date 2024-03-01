@@ -44,14 +44,3 @@ jobs:
       - id: matrix
         run: |
           echo ${{ steps.changed-dirs.outputs.all_changed_and_modified_files }} | sed 's/ /","/g' | sed 's/^/["/g' | sed 's/$/"]/g' >> $GITHUB_OUTPUT
-  plan:
-    runs-on: self-hosted
-    name: Create a plan for an example terraform configuration
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    strategy:
-      matrix:
-        value: ${{fromJSON(needs.setup.outputs.matrix)}}
-    steps:
-      - run: |
-          echo "${{ matrix.value }}"
