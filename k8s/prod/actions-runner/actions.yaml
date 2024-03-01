@@ -11,7 +11,7 @@ metadata:
   name: actions-runner
   namespace: runners
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: actions-runner
