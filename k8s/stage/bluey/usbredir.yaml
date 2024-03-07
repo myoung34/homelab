@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+automountServiceAccountToken: true
+kind: ServiceAccount
+metadata:
+  name: usbredir
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind:       ClusterRole
+metadata:
+  name: usbredir-cluster-read
+  namespace: default
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind:       ClusterRoleBinding
+metadata:
+  name: usbredir-cluster-read-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: usbredir
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: usbredir-cluster-read
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: usbredir
+spec:
+  selector:
+    matchLabels:
+      app: usbredir
+  template:
+    metadata:
+      labels:
+        app: usbredir
+    spec:
+      serviceAccountName: usbredir
+      containers:
+      - name: app
+        image: alpine:latest
+        command:
+        - /bin/sh
+        - -c
+        - apk add --no-cache -U usbredir; wget
+          https://github.com/kubevirt/kubevirt/releases/download/v1.2.0/virtctl-v1.2.0-linux-amd64
+          -O /usr/bin/virtctl; chmod +x /usr/bin/virtctl;
+          virtctl usbredir 0a12:0001 testvm
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: dev
+            mountPath: /dev
+      volumes:
+      - name: dev
+        hostPath:
+          path: /dev

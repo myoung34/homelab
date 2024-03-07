@@ -1,0 +1,116 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ubuntu
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 9Gi
+  hostPath:
+    path: /var/mnt/storage/kubevirt/ubuntu
+    type: DirectoryOrCreate
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ubuntu
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 8Gi
+  volumeMode: Filesystem
+  volumeName: ubuntu
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: testvm
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        kubevirt.io/size: small
+        kubevirt.io/domain: testvm
+    spec:
+      domain:
+        devices:
+          clientPassthrough: {}
+          disks:
+            - disk:
+                bus: virtio
+              name: disk0
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+          - name: default
+            masquerade: {}
+        resources:
+          requests:
+            memory: 4Gi
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+        - name: disk0
+          persistentVolumeClaim:
+            claimName: ubuntu
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              write_files:
+                - path: /etc/bluey.toml
+                  content: |
+                    [general]
+                    logfile = "/var/log/bluey.log"
+
+                    [stdout]
+                  owner: 'root:root'
+                  permissions: '0644'
+                - path: /lib/systemd/system/bluey.service
+                  content: |
+                    [Unit]
+                    Description=bluey
+                    Documentation=man:bluetoothd(8)
+
+                    [Service]
+                    ExecStart=/usr/bin/bluey -c /etc/bluey.toml
+                    NotifyAccess=main
+                    Restart=on-failure
+
+                    [Install]
+                    Alias=bluey.service
+                  owner: 'root:root'
+                  permissions: '0644'
+              packages:
+                - vim
+                - curl
+                - bluez
+                - strace
+              runcmd:
+                - wget https://raw.githubusercontent.com/pimlie/ubuntu-mainline-kernel.sh/master/ubuntu-mainline-kernel.sh -O /usr/bin/ubuntu-mainline-kernel.sh
+                - yes | sudo bash ubuntu-mainline-kernel.sh -i
+                - systemctl enable bluey
+              package_update: true
+              package_upgrade: true
+              groups:
+                - admin: [root,sys]
+              users:
+                - default
+                - name: myoung
+                  passwd: "$6$3WHxe81cww9PtzvX$OE9GNv2fJ7kWrDcTD5Owj/SXAKluU24daI2fWyxGKIAFwUyOalYrkOETZjp4bybSwBCiRzjlaf7E6KKH3sX4C1"
+                  shell: /bin/bash
+                  lock-passwd: false
+                  chpasswd: { expire: False }
+                  sudo: ALL=(ALL) NOPASSWD:ALL
+                  groups: users, admin
