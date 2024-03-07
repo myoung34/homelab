@@ -5,7 +5,23 @@ namespace: esphome
 resources:
   - namespace.yaml
   - vault.yaml
-  - configmap.yaml
   - esphome.yaml
   - tailscale.yaml
   - dns.yaml
+
+configMapGenerator:
+- name: esphome
+  files:
+  - devices/airlock.h
+  - devices/front-porch-switch.yaml
+  - devices/garage.yaml
+  - devices/liam-room-starlights.yaml
+  - devices/liamplug.yaml
+  - devices/pergola.yaml
+  - devices/plaato-airlock.yaml
+  - devices/plug1.yaml
+  - devices/plug2.yaml
+  - devices/traeger.yaml
+  - devices/tubeszb-upstairs.yaml
+  - devices/ultrasonic_sensor.h
+  - devices/bluey.yaml

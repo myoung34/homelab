@@ -1,0 +1,100 @@
+esphome:
+  name: plug1
+  platform: ESP8266
+  board: esp01_1m
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+
+# Enable logging
+logger:
+  baud_rate: 0
+
+uart:
+  rx_pin: RX
+  baud_rate: 4800
+
+api:
+  encryption:
+    key: !secret plug1_key
+
+ota:
+  password: !secret ota_password
+
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: True
+    name: "plug1_button"
+    on_press:
+      - switch.toggle: fakebutton
+  - platform: template
+    name: "plug1_running"
+    filters:
+      - delayed_off: 15s
+    lambda: |-
+      if (isnan(id(power).state)) {
+        return {};
+      } else if (id(power).state > 4) {
+        // Running
+        return true;
+      } else {
+        // Not running
+        return false;
+      }
+
+switch:
+  - platform: template
+    name: "plug1_pow_relay"
+    optimistic: true
+    id: fakebutton
+    turn_on_action:
+    - switch.turn_on: relay
+    - light.turn_on: led
+    turn_off_action:
+    - switch.turn_off: relay
+    - light.turn_off: led
+  - platform: gpio
+    id: relay
+    pin: GPIO12
+    restore_mode: ALWAYS_ON
+
+output:
+  - platform: esp8266_pwm
+    id: pow_blue_led
+    pin:
+      number: GPIO13
+      inverted: True
+
+light:
+  - platform: monochromatic
+    name: "plug1_blue_led"
+    output: pow_blue_led
+    id: led
+    restore_mode: ALWAYS_ON
+
+sensor:
+  - platform: wifi_signal
+    name: "plug1_wifi_signal"
+    update_interval: 60s
+  - platform: cse7766
+    update_interval: 2s
+    current:
+      name: "plug1_current"
+    voltage:
+      name: "plug1_voltage"
+    power:
+      name: "plug1_pow_power"
+      id: power
+      on_value_range:
+        - above: 4.0
+          then:
+            - light.turn_on: led
+        - below: 3.0
+          then:
+            - light.turn_off: led
