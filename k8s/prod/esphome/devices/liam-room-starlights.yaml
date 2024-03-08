@@ -1,0 +1,54 @@
+esphome:
+  name: liam-room-starlights
+  platform: ESP8266
+  board: esp01_1m
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret liam_room_starlights_key
+
+ota:
+  password: !secret ota_password
+
+
+light:
+  - platform: rgbww
+    name: "Liam Starlight"
+    red: output_component1
+    green: output_component2
+    blue: output_component3
+    cold_white: output_component4
+    cold_white_color_temperature: 6536 K
+    warm_white: output_component5
+    warm_white_color_temperature: 2000 K
+#    restore_mode: ALWAYS_ON
+
+output:
+  - platform: esp8266_pwm
+    id: output_component1
+    pin: 5
+
+  - platform: esp8266_pwm
+    id: output_component2
+    pin: 12
+
+  - platform: esp8266_pwm
+    id: output_component3
+    pin: 13
+
+  - platform: esp8266_pwm
+    id: output_component4
+    pin: 15
+
+  - platform: esp8266_pwm
+    id: output_component5
+    pin: 16
