@@ -83,7 +83,6 @@ sensor:
     name: "liam_plug_wifi_signal"
     update_interval: 60s
   - platform: cse7766
-    update_interval: 2s
     current:
       name: "liam_plug_current"
     voltage:

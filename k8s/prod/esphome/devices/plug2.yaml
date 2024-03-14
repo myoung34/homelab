@@ -85,7 +85,6 @@ sensor:
   - platform: uptime
     name: "Uptime"
   - platform: cse7766
-    update_interval: 2s
     current:
       name: "Current"
     voltage:

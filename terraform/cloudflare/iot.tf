@@ -101,3 +101,11 @@ resource "cloudflare_record" "driveway-switch" {
   type    = "A"
   ttl     = "3600"
 }
+
+resource "cloudflare_record" "ble-proxy" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "ble-proxy.iot.marcyoung.us"
+  value   = "192.168.4.230"
+  type    = "A"
+  ttl     = "3600"
+}
