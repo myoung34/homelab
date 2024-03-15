@@ -38,9 +38,9 @@ resource "cloudflare_record" "ecobee" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "traeger-pellet" {
+resource "cloudflare_record" "traeger" {
   zone_id = local.marcyoung_us_zone_id
-  name    = "traeger-pellet.iot.marcyoung.us"
+  name    = "traeger.iot.marcyoung.us"
   value   = "192.168.4.106"
   type    = "A"
   ttl     = "3600"

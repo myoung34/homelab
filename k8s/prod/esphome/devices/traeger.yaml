@@ -1,8 +1,9 @@
 esphome:
-  name: traeger-pellet
+  name: traeger
   includes:
     - ultrasonic_sensor.h
-
+  libraries:
+    - "Grove Ultrasonic Ranger"
 esp32:
   board: nodemcu-32s
 
@@ -12,10 +13,11 @@ wifi:
  domain: !secret wifi_domain
 
 logger:
+  level: VERBOSE
 
 api:
  encryption:
-    key: !secret traeger_pellet_key
+    key: !secret traeger_key
 
 ota:
   password: !secret ota_password
@@ -23,13 +25,21 @@ ota:
 http_request:
   useragent: esphome/device
   timeout: 60s
+# mac Found via logs with name = MEATER
+# text_sensor:
+#- platform: ble_scanner
+#  name: "BLE Devices Scanner"
+
+ble_client:
+  - mac_address: B8:1F:5E:AB:4B:60
+    id: meater
 
 sensor:
   - platform: custom
     lambda: |-
-      auto sensor = new UltrasonicSensor(1000);
+      auto sensor = new UltrasonicSensor(3000);
       App.register_component(sensor);
-      return {sensor->ultrasonic_sensor};
+      return {sensor};
     sensors:
       - name: ultrasonic_sensor
         filters:
@@ -40,9 +50,51 @@ sensor:
           - offset: -14
         on_value:
           - http_request.post:
-              url: !secret traeger_pellet_hook_url
+              url: !secret traeger_hook_url
               headers:
                 Content-Type: application/json
               json: |-
                 root["distance"] = x;
               verify_ssl: false # ESPHome ssl doesnt support strict checks
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: meater
+    name: "MEATER tip temperature"
+    service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
+    characteristic_uuid: '7edda774-045e-4bbf-909b-45d1991a2876'
+    icon: 'mdi:thermometer'
+    unit_of_measurement: '°C'
+    accuracy_decimals: 2
+    notify: true
+    lambda: |-
+      uint16_t tip_temp = (x[0] + (x[1] << 8) + 8.0) / 16.0;
+      return (float)tip_temp;
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: meater
+    name: "MEATER ambient temperature"
+    service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
+    characteristic_uuid: '7edda774-045e-4bbf-909b-45d1991a2876'
+    icon: 'mdi:thermometer'
+    unit_of_measurement: '°C'
+    accuracy_decimals: 2
+    notify: true
+    lambda: |-
+      uint16_t tip = x[0] + (x[1] << 8);
+      uint16_t ra = x[2] + (x[3] << 8);
+      uint16_t oa = x[4] + (x[5] << 8);
+      uint16_t min_val = 48;
+      uint16_t ambient = (tip + std::max(0, (((ra - std::min(min_val, oa)) * 16 * 589) / 1487)) + 8.0) / 16;
+      return (float)ambient;
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: meater
+    name: "MEATER battery level"
+    service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
+    characteristic_uuid: '2adb4877-68d8-4884-bd3c-d83853bf27b8'
+    icon: 'mdi:battery'
+    unit_of_measurement: '%'
+    notify: true
+    lambda: |-
+      uint16_t battery = (x[0] + x[1]) * 10;
+      return (float)battery;
