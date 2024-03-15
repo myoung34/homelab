@@ -41,7 +41,9 @@ sensor:
       App.register_component(sensor);
       return {sensor};
     sensors:
-      - name: ultrasonic_sensor
+      - name: Pellet Level
+        unit_of_measurement: '%'
+        icon: 'mdi:propane-tank'
         filters:
           - sliding_window_moving_average:
               window_size: 60
@@ -63,12 +65,12 @@ sensor:
     service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
     characteristic_uuid: '7edda774-045e-4bbf-909b-45d1991a2876'
     icon: 'mdi:thermometer'
-    unit_of_measurement: '°C'
+    unit_of_measurement: '°F'
     accuracy_decimals: 2
     notify: true
     lambda: |-
       uint16_t tip_temp = (x[0] + (x[1] << 8) + 8.0) / 16.0;
-      return (float)tip_temp;
+      return (float)((tip_temp * 1.8) + 32);
   - platform: ble_client
     type: characteristic
     ble_client_id: meater
@@ -76,7 +78,7 @@ sensor:
     service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
     characteristic_uuid: '7edda774-045e-4bbf-909b-45d1991a2876'
     icon: 'mdi:thermometer'
-    unit_of_measurement: '°C'
+    unit_of_measurement: '°F'
     accuracy_decimals: 2
     notify: true
     lambda: |-
@@ -85,7 +87,7 @@ sensor:
       uint16_t oa = x[4] + (x[5] << 8);
       uint16_t min_val = 48;
       uint16_t ambient = (tip + std::max(0, (((ra - std::min(min_val, oa)) * 16 * 589) / 1487)) + 8.0) / 16;
-      return (float)ambient;
+      return (float)((ambient * 1.8) + 32); 
   - platform: ble_client
     type: characteristic
     ble_client_id: meater
