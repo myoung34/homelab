@@ -87,7 +87,7 @@ sensor:
       uint16_t oa = x[4] + (x[5] << 8);
       uint16_t min_val = 48;
       uint16_t ambient = (tip + std::max(0, (((ra - std::min(min_val, oa)) * 16 * 589) / 1487)) + 8.0) / 16;
-      return (float)((ambient * 1.8) + 32); 
+      return (float)((ambient * 1.8) + 32);
   - platform: ble_client
     type: characteristic
     ble_client_id: meater

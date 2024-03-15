@@ -1,0 +1,39 @@
+esphome:
+  name: unicorn
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/myoung34/esphome-galactic-unicorn
+      ref: main
+    components: [ esphome_galactic_unicorn ]
+
+rp2040:
+  board: rpipicow
+  framework:
+    # Required until https://github.com/platformio/platform-raspberrypi/pull/36 is merged
+    platform_version: https://github.com/maxgerhardt/platform-raspberrypi.git
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+  manual_ip:
+    static_ip: 192.168.4.166
+    gateway: 192.168.4.1
+    subnet: 255.255.255.0
+ 
+api:
+  encryption:
+    key: !secret unicorn_key
+
+ota:
+  password: !secret ota_password
+
+
+logger:
+  level: VERBOSE
+
+
+esphome_galactic_unicorn:
+  id: empty_component_1
