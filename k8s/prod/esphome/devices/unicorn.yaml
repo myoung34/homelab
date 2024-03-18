@@ -22,7 +22,7 @@ wifi:
     static_ip: 192.168.4.166
     gateway: 192.168.4.1
     subnet: 255.255.255.0
- 
+
 api:
   encryption:
     key: !secret unicorn_key
