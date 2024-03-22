@@ -59,7 +59,7 @@ spec:
       - env:
         - name: TZ
           value: UTC
-        image: ghcr.io/home-assistant/home-assistant:2024.3.2
+        image: ghcr.io/home-assistant/home-assistant:2024.3.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
