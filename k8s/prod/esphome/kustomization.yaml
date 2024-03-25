@@ -24,5 +24,4 @@ configMapGenerator:
   - devices/traeger.yaml
   - devices/tubeszb-upstairs.yaml
   - devices/ultrasonic_sensor.h
-  - devices/ble_proxy.yaml
   - devices/unicorn.yaml
