@@ -1,7 +1,7 @@
 locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.6.5"
+  talos_version      = "v1.6.7"
   kubernetes_version = "v1.29.0"
 
   node_data = {
