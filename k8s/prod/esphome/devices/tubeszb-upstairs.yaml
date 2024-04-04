@@ -44,11 +44,6 @@ ethernet:
   phy_addr: 0
   power_pin: GPIO12
 
-  manual_ip:
-    static_ip: 192.168.4.108
-    gateway: 192.168.4.1
-    subnet: 255.255.255.0
-
 web_server:
 
 preferences:

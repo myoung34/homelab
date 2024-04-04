@@ -25,3 +25,4 @@ configMapGenerator:
   - devices/tubeszb-upstairs.yaml
   - devices/ultrasonic_sensor.h
   - devices/unicorn.yaml
+  - devices/neon-lights.yaml

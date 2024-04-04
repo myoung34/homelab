@@ -1,0 +1,43 @@
+esphome:
+  name: neon-lights
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+logger:
+
+api:
+  encryption:
+    key: !secret neon_lights_key
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+bluetooth_proxy:
+web_server:
+
+light:
+  - platform: neopixelbus
+    type: grb
+    pin: GPIO2
+    num_leds: 42
+    name: "neon"
+    variant: ws2812x
+    default_transition_length: 3s
+    effects:
+      - addressable_random_twinkle:
+          progress_interval: 250ms
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+          name: Scan Effect With Custom Values
+          move_interval: 100ms
+          scan_width: 6

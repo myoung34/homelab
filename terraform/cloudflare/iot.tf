@@ -117,3 +117,11 @@ resource "cloudflare_record" "unicorn" {
   type    = "A"
   ttl     = "3600"
 }
+
+resource "cloudflare_record" "neon-lights" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "unicorn.iot.marcyoung.us"
+  value   = "192.168.4.250"
+  type    = "A"
+  ttl     = "3600"
+}
