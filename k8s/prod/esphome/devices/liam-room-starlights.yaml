@@ -19,7 +19,6 @@ api:
 ota:
   password: !secret ota_password
 
-
 light:
   - platform: rgbww
     name: "Liam Starlight"
@@ -35,20 +34,25 @@ light:
 output:
   - platform: esp8266_pwm
     id: output_component1
+    max_power: 1%
     pin: 5
 
   - platform: esp8266_pwm
     id: output_component2
+    max_power: 1%
     pin: 12
 
   - platform: esp8266_pwm
     id: output_component3
+    max_power: 1%
     pin: 13
 
   - platform: esp8266_pwm
     id: output_component4
+    max_power: 1%
     pin: 15
 
   - platform: esp8266_pwm
     id: output_component5
+    max_power: 1%
     pin: 16
