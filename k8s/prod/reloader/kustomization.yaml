@@ -10,7 +10,7 @@ helmCharts:
   includeCRDs: true
   namespace: reloader
   releaseName: reloader
-  version: 1.0.75
+  version: 1.0.76
   repo: https://stakater.github.io/stakater-charts
   valuesInline:
     reloader:
