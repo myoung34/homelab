@@ -44,22 +44,6 @@ helmCharts:
     globalArguments: []
     additionalArguments:
       - "--serverstransport.insecureskipverify=true"
-    ports:
-      mqtt:
-        port: 1883
-        expose: true
-        exposedPort: 1883
-        protocol: TCP
-      dns:
-        port: 8853
-        expose: true
-        exposedPort: 53
-        protocol: TCP
-      dnsudp:
-        port: 8854
-        expose: true
-        exposedPort: 53
-        protocol: UDP
     providers:
       kubernetesCRD:
         allowCrossNamespace: true
