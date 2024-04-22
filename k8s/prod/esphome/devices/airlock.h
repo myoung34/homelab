@@ -1,4 +1,5 @@
 #include "esphome.h"
+#include <Wire.h>
 
 const uint16_t POLLING_PERIOD = 1000; //milliseconds
 int original = -1; //Initial value of the register

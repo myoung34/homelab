@@ -1,5 +1,7 @@
 esphome:
   name: plaato-airlock
+  libraries:
+    - "Wire"
   includes:
     - airlock.h
 
