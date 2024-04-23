@@ -20,9 +20,6 @@ helmCharts:
       requests:
         cpu: 15m
         memory: 105M
-      limits:
-        cpu: 15m
-        memory: 105M
     config:
       input:
         http_server:
