@@ -13,4 +13,6 @@ helmCharts:
   releaseName: goldilocks
   version: 8.0.1
   repo: https://charts.fairwinds.com/stable
-  valuesInline: {}
+  valuesInline:
+    dashboard:
+      replicaCount: 1

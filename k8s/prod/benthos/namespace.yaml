@@ -5,3 +5,4 @@ metadata:
   name: benthos
   labels:
     name: benthos
+    goldilocks.fairwinds.com/enabled: "true"

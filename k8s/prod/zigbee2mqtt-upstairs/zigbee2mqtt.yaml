@@ -67,27 +67,41 @@ spec:
       - env:
         - name: ZIGBEE2MQTT_DATA
           value: /data
+        resources:
+          requests:
+            cpu: 64m
+            memory: 256M
+          limits:
+            cpu: 64m
+            memory: 256M
         image: koenkk/zigbee2mqtt:1.36.0
         imagePullPolicy: IfNotPresent
-        livenessProbe:
-          failureThreshold: 3
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          tcpSocket:
-            port: 8081
-          timeoutSeconds: 1
         name: zigbee2mqtt
         ports:
         - containerPort: 8081
           name: http
           protocol: TCP
-        readinessProbe:
-          failureThreshold: 3
+        livenessProbe:
+          failureThreshold: 5
           initialDelaySeconds: 0
           periodSeconds: 10
           tcpSocket:
             port: 8081
-          timeoutSeconds: 1
+          timeoutSeconds: 3
+        readinessProbe:
+          failureThreshold: 5
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          tcpSocket:
+            port: 8081
+          timeoutSeconds: 3
+        startupProbe:
+          failureThreshold: 30
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          tcpSocket:
+            port: 8081
+          timeoutSeconds: 3
         securityContext:
           capabilities:
             add:
@@ -95,13 +109,6 @@ spec:
             - NET_RAW
             - SYS_ADMIN
           privileged: true
-        startupProbe:
-          failureThreshold: 30
-          initialDelaySeconds: 0
-          periodSeconds: 5
-          tcpSocket:
-            port: 8081
-          timeoutSeconds: 1
         volumeMounts:
         - mountPath: /data
           name: data

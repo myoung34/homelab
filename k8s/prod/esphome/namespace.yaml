@@ -5,3 +5,4 @@ metadata:
   name: esphome
   labels:
     name: esphome
+    goldilocks.fairwinds.com/enabled: "true"

@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vpa
+
+resources:
+  - namespace.yaml
+
+helmCharts:
+- name: vpa
+  includeCRDs: true
+  namespace: vpa
+  releaseName: vpa
+  version: 4.4.6
+  repo: https://charts.fairwinds.com/stable
+  valuesInline: {}

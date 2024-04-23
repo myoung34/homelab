@@ -5,3 +5,4 @@ metadata:
   name: goldilocks
   labels:
     name: goldilocks
+    goldilocks.fairwinds.com/enabled: "true"

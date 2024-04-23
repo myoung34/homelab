@@ -2,7 +2,7 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: cert-manager
+  name: vpa
   labels:
-    name: cert-manager
+    name: vpa
     goldilocks.fairwinds.com/enabled: "true"

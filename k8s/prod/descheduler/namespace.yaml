@@ -5,3 +5,4 @@ metadata:
   name: descheduler
   labels:
     name: descheduler
+    goldilocks.fairwinds.com/enabled: "true"

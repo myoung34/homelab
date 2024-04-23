@@ -5,3 +5,4 @@ metadata:
   name: traefik
   labels:
     name: traefik
+    goldilocks.fairwinds.com/enabled: "true"

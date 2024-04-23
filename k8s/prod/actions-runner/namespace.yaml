@@ -5,3 +5,4 @@ metadata:
   name: actions-runner
   labels:
     name: actions-runner
+    goldilocks.fairwinds.com/enabled: "true"
