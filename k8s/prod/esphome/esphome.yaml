@@ -55,6 +55,10 @@ spec:
           value: "true"
         image: "esphome/esphome:2024.4.1"
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256M
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0

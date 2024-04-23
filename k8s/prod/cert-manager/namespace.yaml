@@ -5,4 +5,3 @@ metadata:
   name: cert-manager
   labels:
     name: cert-manager
-    goldilocks.fairwinds.com/enabled: "true"

@@ -87,21 +87,21 @@ spec:
           periodSeconds: 10
           tcpSocket:
             port: 8081
-          timeoutSeconds: 3
+          timeoutSeconds: 1
         readinessProbe:
           failureThreshold: 5
           initialDelaySeconds: 0
           periodSeconds: 10
           tcpSocket:
             port: 8081
-          timeoutSeconds: 3
+          timeoutSeconds: 1
         startupProbe:
           failureThreshold: 30
           initialDelaySeconds: 0
           periodSeconds: 5
           tcpSocket:
             port: 8081
-          timeoutSeconds: 3
+          timeoutSeconds: 1
         securityContext:
           capabilities:
             add:

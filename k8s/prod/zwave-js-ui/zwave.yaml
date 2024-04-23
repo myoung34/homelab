@@ -83,7 +83,7 @@ spec:
               cpu: 300m
               memory: 256Mi
             requests:
-              cpu: 200m
+              cpu: 30m
               memory: 192Mi
           volumeMounts:
             - name: store

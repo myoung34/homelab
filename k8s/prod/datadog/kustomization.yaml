@@ -83,11 +83,11 @@ helmCharts:
       useHostNetwork: true
       resources:
         requests:
-          cpu: 200m
-          memory: 256Mi
+          cpu: 78m
+          memory: 105M
         limits:
-          cpu: 200m
-          memory: 256Mi
+          cpu: 78m
+          memory: 105M
       livenessProbe:
         initialDelaySeconds: 60
       readinessProbe:
@@ -129,16 +129,37 @@ helmCharts:
             initialDelaySeconds: 60
           readinessProbe:
             initialDelaySeconds: 60
+          resources:
+            requests:
+              cpu: 1469m
+              memory: 381M
+            limits:
+              cpu: 1469m
+              memory: 381M
         traceAgent:
           livenessProbe:
             initialDelaySeconds: 60
           readinessProbe:
             initialDelaySeconds: 60
+          resources:
+            requests:
+              cpu: 35m
+              memory: 94M
+            limits:
+              cpu: 35m
+              memory: 94M
         processAgent:
           livenessProbe:
             initialDelaySeconds: 60
           readinessProbe:
             initialDelaySeconds: 60
+          resources:
+            requests:
+              cpu: 49m
+              memory: 110M
+            limits:
+              cpu: 49m
+              memory: 110M
         systemProbe:
           livenessProbe:
             initialDelaySeconds: 60

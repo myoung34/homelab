@@ -32,6 +32,13 @@ spec:
       containers:
       - name: runner
         image: myoung34/github-runner:latest
+        resources:
+          requests:
+            cpu: 30m
+            memory: 128M
+          limits:
+            cpu: 30m
+            memory: 128M
         env:
         - name: RUNNER_SCOPE
           value: "repo"
@@ -51,10 +58,3 @@ spec:
             name: actions-runner
         securityContext:
           privileged: true
-        resources:
-          limits:
-            cpu: 2
-            memory: 512Mi
-          requests:
-            cpu: 2
-            memory: 256Mi
