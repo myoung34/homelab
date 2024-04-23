@@ -69,10 +69,7 @@ spec:
           value: /data
         resources:
           requests:
-            cpu: 64m
-            memory: 256M
-          limits:
-            cpu: 64m
+            cpu: 100m
             memory: 256M
         image: koenkk/zigbee2mqtt:1.36.0
         imagePullPolicy: IfNotPresent
