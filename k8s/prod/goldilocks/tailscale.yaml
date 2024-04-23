@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: goldilocks
+  namespace: goldilocks
+spec:
+  defaultBackend:
+    service:
+      name: goldilocks-dashboard
+      port:
+        number: 80
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - goldilocks
