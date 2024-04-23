@@ -33,7 +33,7 @@ helmCharts:
         enabled: true
       resources:
         requests:
-          cpu: 49m
+          cpu: 100m
           memory: 512M
     applicationSet:
       webhook:
