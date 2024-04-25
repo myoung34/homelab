@@ -20,25 +20,16 @@ spec:
       labels:
         app: actions-runner
     spec:
-      #affinity:
-      #  nodeAffinity:
-      #    requiredDuringSchedulingIgnoredDuringExecution:
-      #      nodeSelectorTerms:
-      #      - matchExpressions:
-      #        - key: kubernetes.io/hostname
-      #          operator: In
-      #          values:
-      #          - cluster14
       containers:
       - name: runner
         image: myoung34/github-runner:latest
         resources:
-          requests:
-            cpu: 30m
-            memory: 128M
           limits:
-            cpu: 30m
-            memory: 128M
+            cpu: 2
+            memory: 512Mi
+          requests:
+            cpu: 2
+            memory: 256Mi
         env:
         - name: RUNNER_SCOPE
           value: "repo"
