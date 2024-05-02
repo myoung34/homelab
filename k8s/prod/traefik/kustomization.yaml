@@ -32,7 +32,7 @@ helmCharts:
         - 192.168.1.27
     deployment:
       enabled: true
-      replicas: 2
+      replicas: 1
     ingressRoute:
       dashboard:
         enabled: false
