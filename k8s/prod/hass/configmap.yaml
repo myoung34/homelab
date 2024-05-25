@@ -627,8 +627,3 @@ data:
 
     shell_command:
       remove_backup: /config/scripts/remove_backup.sh "{{ path }}"
-
-    folder_watcher:
-      - folder: '/config/backups'
-        patterns:
-          - '*.tar'
