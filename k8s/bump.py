@@ -10,7 +10,14 @@ GH_TOKEN = os.environ.get("GH_TOKEN")
 
 
 def image_exists(provider, image_namespace, image_name, tag) -> bool:
-    if provider == "dockerhub":
+    if provider == "officialdockerhub":
+        return (
+            requests.get(
+                f"https://hub.docker.com/v2/repositories/library/{image_namespace}-{image_name}/tags/{tag}"
+            ).status_code
+            == 200
+        )
+    elif provider == "dockerhub":
         return (
             requests.get(
                 f"https://hub.docker.com/v2/namespaces/{image_namespace}/repositories/{image_name}/tags/{tag}"
@@ -97,9 +104,17 @@ def whatever(upstream, filename_url, original_string, string_to_replace, tag) ->
 
     return True
 
-
 def do_work():
     updates = [
+        {
+            "provider": "officialdockerhub",
+            "image_namespace": "eclipse",
+            "image_name": "mosquitto",
+            "filename_url": "k8s/prod/mosquitto/mosquitto.yaml",
+            "original_string": r"        image: eclipse-mosquitto:[0-9\.]+",
+            "string_to_replace": r"        image: eclipse-mosquitto:{}",
+            "strip_v": True,
+        },
         {
             "provider": "dockerhub",
             "image_namespace": "esphome",
@@ -126,16 +141,7 @@ def do_work():
         },
         {
             "provider": "dockerhub",
-            "image_namespace": "eclipse",
-            "image_name": "mosquitto",
-            "filename_url": "k8s/prod/mosquitto/mosquitto.yaml",
-            "original_string": r"        image: eclipse-mosquitto:[0-9\.]+",
-            "string_to_replace": r"        image: eclipse-mosquitto:{}",
-            "strip_v": True,
-        },
-        {
-            "provider": "dockerhub",
-            "image_namespace": "Koenkk",
+            "image_namespace": "koenkk",
             "image_name": "zigbee2mqtt",
             "filename_url": "k8s/prod/zigbee2mqtt/zigbee2mqtt.yaml",
             "original_string": r"        image: koenkk/zigbee2mqtt:[0-9\.]+",
@@ -143,7 +149,7 @@ def do_work():
         },
         {
             "provider": "dockerhub",
-            "image_namespace": "Koenkk",
+            "image_namespace": "koenkk",
             "image_name": "zigbee2mqtt",
             "filename_url": "k8s/prod/zigbee2mqtt-upstairs/zigbee2mqtt.yaml",
             "original_string": r"        image: koenkk/zigbee2mqtt:[0-9\.]+",
@@ -152,6 +158,7 @@ def do_work():
         {
             "provider": "dockerhub",
             "image_namespace": "zwave-js",
+            "image_namespace_override": "zwavejs",
             "image_name": "zwave-js-ui",
             "filename_url": "k8s/prod/zwave-js-ui/zwave.yaml",
             "original_string": r'          image: "zwavejs/zwave-js-ui:[0-9\.]+"',
@@ -188,7 +195,7 @@ def do_work():
             f'Want to update {update["image_namespace"]}/{update["image_name"]} from {tag} to {update["string_to_replace"].format(tag)}'
         )
         if image_exists(
-            update["provider"], update["image_namespace"], update["image_name"], tag
+            update["provider"], update.get("image_namespace_override", update["image_namespace"]), update["image_name"], tag
         ):
             print("Image exists. all good.")
         else:
