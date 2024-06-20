@@ -12,7 +12,7 @@ helmCharts:
   includeCRDs: true
   namespace: tailscale
   releaseName: tailscale
-  version: 1.66.4
+  version: 1.68.1
   repo: https://pkgs.tailscale.com/helmcharts
   valuesInline:
     apiServerProxyConfig:
