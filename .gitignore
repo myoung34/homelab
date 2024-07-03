@@ -1,5 +1,6 @@
 talos/*.yaml
 talos/talosconfig
+talos/kubeconfig
 nomad/vault.hcl
 **/*.tfstate
 **/*.backup
