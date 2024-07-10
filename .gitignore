@@ -6,3 +6,7 @@ nomad/vault.hcl
 **/*.backup
 .terraform
 *.sw[op]
+
+# Because we want no oopsies
+k8s/prod/vault-secrets-operator/ca.crt
+k8s/prod/vault-secrets-operator/sa.token
