@@ -20,6 +20,7 @@ api:
     key: !secret traeger_key
 
 ota:
+- platform: esphome
   password: !secret ota_password
 
 http_request:

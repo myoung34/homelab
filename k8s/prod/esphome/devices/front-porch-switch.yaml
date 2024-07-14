@@ -17,6 +17,7 @@ api:
     key: !secret front_porch_switch_key
 
 ota:
+- platform: esphome
   password: !secret ota_password
 
 sensor:

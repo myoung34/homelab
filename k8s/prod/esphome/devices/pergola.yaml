@@ -17,6 +17,7 @@ api:
     key: !secret pergola_lights_key
 
 ota:
+- platform: esphome
   password: !secret ota_password
 
 

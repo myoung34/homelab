@@ -24,6 +24,7 @@ api:
     key: !secret plaato_airlock_key
 
 ota:
+- platform: esphome
   password: !secret ota_password
 
 i2c:
