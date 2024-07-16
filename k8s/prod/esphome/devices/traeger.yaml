@@ -26,6 +26,7 @@ ota:
 http_request:
   useragent: esphome/device
   timeout: 60s
+  verify_ssl: false # ESPHome ssl doesnt support strict checks
 # mac Found via logs with name = MEATER
 # text_sensor:
 #- platform: ble_scanner
@@ -58,7 +59,6 @@ sensor:
                 Content-Type: application/json
               json: |-
                 root["distance"] = x;
-              verify_ssl: false # ESPHome ssl doesnt support strict checks
   - platform: ble_client
     type: characteristic
     ble_client_id: meater
