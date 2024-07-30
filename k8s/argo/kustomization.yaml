@@ -76,7 +76,7 @@ helmCharts:
 - name: argo-workflows
   releaseName: argocd-workflows
   namespace: argocd
-  version: 0.41.11
+  version: 0.41.12
   includeCRDs: true
   repo: https://argoproj.github.io/argo-helm
   valuesInline:
