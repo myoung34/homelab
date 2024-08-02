@@ -28,10 +28,7 @@ ota:
   password: !secret ota_password
 
 external_components:
-  # This isn't building on the most recent version of esphome. See:
-  # https://github.com/tube0013/esphome-stream-server-v2/pull/7
-  #- source: github://tube0013/esphome-stream-server-v2
-  - source: github://ctvedt/esphome-stream-server-v2
+  - source: github://tube0013/esphome-stream-server-v2
   - source: github://syssi/esphome-zeroconf@main
 
 dashboard_import:
