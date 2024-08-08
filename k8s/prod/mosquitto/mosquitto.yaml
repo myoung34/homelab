@@ -26,6 +26,7 @@ metadata:
     helm.sh/chart: mosquitto-4.8.2
   annotations:
     tailscale.com/expose: "true"
+    tailscale.com/funnel: "true"
   name: mosquitto
   namespace: mosquitto
 spec:
