@@ -5,4 +5,3 @@ namespace: mosquitto
 resources:
   - namespace.yaml
   - mosquitto.yaml
-  - tailscale.yaml
