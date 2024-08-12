@@ -16,3 +16,13 @@ helmCharts:
     reloader:
       reloadOnCreate: true
       ignoreSecrets: false
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: reloader-reloader
+      namespace: reloader
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/containers/0/env
