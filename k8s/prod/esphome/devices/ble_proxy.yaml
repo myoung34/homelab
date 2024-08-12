@@ -1,0 +1,25 @@
+esphome:
+  name: ble-proxy
+  friendly_name: ble-proxy
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+
+logger:
+
+api:
+  encryption:
+    key: !secret ble_proxy_key
+
+ota:
+- platform: esphome
+  password: !secret ota_password
+
+bluetooth_proxy:
