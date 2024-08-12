@@ -1,0 +1,33 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: default
+spec:
+  address: http://192.168.3.2:8200
+  skipTLSVerify: true
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: mosquitto
+spec:
+  vaultAuthRef: mosquitto
+  mount: secret/
+  type: kv-v2
+  path: mosquitto
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: mosquitto
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: mosquitto
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: mosquitto
+    serviceAccount: default

@@ -5,3 +5,4 @@ namespace: mosquitto
 resources:
   - namespace.yaml
   - mosquitto.yaml
+  - vault.yaml
