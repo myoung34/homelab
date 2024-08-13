@@ -125,3 +125,11 @@ resource "cloudflare_record" "neon-lights" {
   type    = "A"
   ttl     = "3600"
 }
+
+resource "cloudflare_record" "octopi" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "octopi.iot.marcyoung.us"
+  content = "192.168.0.69"
+  type    = "A"
+  ttl     = "3600"
+}
