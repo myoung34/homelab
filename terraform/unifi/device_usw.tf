@@ -5,6 +5,12 @@ resource "unifi_device" "usw" {
   forget_on_destroy = false
 
   port_override {
+    name    = "Port 11"
+    number  = 11
+    op_mode = "switch"
+  }
+
+  port_override {
     name   = "cluster 1,1"
     number = 7
   }

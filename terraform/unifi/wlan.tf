@@ -74,8 +74,7 @@ resource "unifi_wlan" "the_lan_before_time" {
 
   network_id = unifi_network.wifi.id
   ap_group_ids = [
-    data.unifi_ap_group.garage.id,
-    data.unifi_ap_group.misc.id,
+    data.unifi_ap_group.default.id,
   ]
   user_group_id = data.unifi_user_group.default.id
 

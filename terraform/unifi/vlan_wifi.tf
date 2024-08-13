@@ -6,7 +6,7 @@ resource "unifi_network" "wifi" {
   dhcp_v6_dns_auto           = true
   dhcp_v6_enabled            = false
   dhcp_v6_lease              = 86400
-  dhcpd_boot_enabled         = true
+  dhcpd_boot_enabled         = false
   dhcpd_boot_filename        = "netboot.xyz.kpxe"
   dhcpd_boot_server          = "192.168.3.2"
   igmp_snooping              = false
