@@ -2,13 +2,8 @@ apiVersion: v1
 data:
   mosquitto.conf: |
     per_listener_settings true
-
     listener 1883
     allow_anonymous true
-
-    listener 1884
-    allow_anonymous false
-    password_file /mosquitto/config/passwd/users
 kind: ConfigMap
 metadata:
   labels:
@@ -40,31 +35,6 @@ spec:
     port: 1883
     protocol: TCP
     targetPort: mqtt
-  selector:
-    app.kubernetes.io/instance: mosquitto
-    app.kubernetes.io/name: mosquitto
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/instance: mosquitto
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: mosquitto
-    app.kubernetes.io/version: 2.0.14
-    helm.sh/chart: mosquitto-4.8.2
-  annotations:
-    tailscale.com/expose: "true"
-    tailscale.com/funnel: "true"
-  name: mosquitto-auth
-  namespace: mosquitto
-spec:
-  ports:
-  - name: mqtt
-    port: 1884
-    protocol: TCP
-    targetPort: mqttauth
   selector:
     app.kubernetes.io/instance: mosquitto
     app.kubernetes.io/name: mosquitto
@@ -111,9 +81,6 @@ spec:
         - containerPort: 1883
           name: mqtt
           protocol: TCP
-        - containerPort: 1884
-          name: mqttauth
-          protocol: TCP
         readinessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0
@@ -139,9 +106,6 @@ spec:
         - mountPath: /mosquitto/config/mosquitto.conf
           name: mosquitto-config
           subPath: mosquitto.conf
-        - name: passwd-file
-          readOnly: true
-          mountPath: /mosquitto/config/passwd
       dnsPolicy: ClusterFirst
       enableServiceLinks: true
       nodeSelector:
@@ -151,6 +115,3 @@ spec:
       - configMap:
           name: mosquitto-config
         name: mosquitto-config
-      - name: passwd-file
-        secret:
-          secretName: mosquitto
