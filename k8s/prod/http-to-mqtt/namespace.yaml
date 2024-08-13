@@ -1,0 +1,7 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: http-to-mqtt
+  labels:
+    name: http-to-mqtt

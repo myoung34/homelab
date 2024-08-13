@@ -25,3 +25,4 @@ helmCharts:
               include:
               - "actions-runner"
               - "ser2net"
+              - "http-to-mqtt"

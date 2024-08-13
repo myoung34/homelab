@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: http-to-mqtt
+spec:
+  vaultAuthRef: http-to-mqtt
+  mount: secret/
+  type: kv-v2
+  path: http-to-mqtt
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: http-to-mqtt
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: http-to-mqtt
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: http-to-mqtt
+    serviceAccount: default

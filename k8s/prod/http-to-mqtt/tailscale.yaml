@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: http-to-mqtt
+  namespace: http-to-mqtt
+  annotations:
+    tailscale.com/funnel: "true"
+spec:
+  defaultBackend:
+    service:
+      name: http-to-mqtt
+      port:
+        number: 3000
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - http-to-mqtt
