@@ -1,13 +1,5 @@
 ---
 apiVersion: secrets.hashicorp.com/v1beta1
-kind: VaultConnection
-metadata:
-  name: default
-spec:
-  address: http://192.168.3.2:8200
-  skipTLSVerify: true
----
-apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
   name: cert-manager
