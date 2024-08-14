@@ -39,3 +39,4 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |PicoW|28:cd:c1:08:08:09|WIFI|192.168.2.145|
 |barcaderator|f8:e4:e3:75:0e:3b|WIFI|192.168.2.70|
 |ble-proxy|ec:da:3b:be:6b:ac|WIFI|192.168.4.109|
+|neon-lights|40:22:d8:e3:f4:d8|WIFI|192.168.4.250|
