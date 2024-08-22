@@ -36,7 +36,7 @@ jobs:
           fi
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: tj-actions/changed-files@v44
+      - uses: tj-actions/changed-files@v45
         id: changed-dirs
         with:
           dir_names: true
