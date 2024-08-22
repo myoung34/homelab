@@ -1,6 +1,6 @@
 ## Homelab ##
 
-Also see [this post](https://marcyoung.us/post/smart-home/)
+Also see [this post](https://markyoung.us/post/smart-home/)
 
 ### Layout
 
@@ -24,7 +24,7 @@ Also see [this post](https://marcyoung.us/post/smart-home/)
 
 ### Network Diagram
 
-![](https://marcyoung.us/images/router.jpg)
+![](https://markyoung.us/images/router.jpg)
 
 Todo. In the meantime a tl;dr:
 
@@ -44,7 +44,7 @@ Todo. In the meantime a tl;dr:
   * In the rooms as needed are [Unifi flex mini's](https://store.ui.com/us/en/pro/category/all-switching/products/usw-flex-mini)
   * For wireless I use [Unifi AP U6 Lites](https://store.ui.com/us/en/pro/category/all-wifi/products/u6-lite)
 * Smart stuff
-  * Most of this is covered [here - although not up to date](https://marcyoung.us/post/smart-home/)
+  * Most of this is covered [here - although not up to date](https://markyoung.us/post/smart-home/)
   * I run ESPHome where I can: garage door, outside lights, keg scale, sonoff S31 plugs, kids room stuff. Everything is source controlled at `prod/esphome/configmap.yaml`. Secrets and the configs are pulled and rendered via an init container.
   * Zigbee - [Conbee II](https://phoscon.de/en/conbee2) - For lights because I got a killer deal. Runs on k8s. Pinned to a specific node using [node feature discovery](https://github.com/kubernetes-sigs/node-feature-discovery) for [ser2net](https://github.com/cminyard/ser2net). That exposes it via TCP so that [zigbee2mqtt](https://www.zigbee2mqtt.io/) can schedule anywhere and talk over TCP via coredns. Backups are handled with an argocd workflow in `k8s/prod/workflows/zigbee2mqtt.yaml` to minio.
   * Zwave - [Zooz 700](https://www.thesmartesthouse.com/products/zooz-usb-700-series-z-wave-plus-s2-stick-zst10-700) - Because Im masochistic but also had a zwave garage door sensor. Pinned to a specific node using [node feature discovery](https://github.com/kubernetes-sigs/node-feature-discovery) for [ser2net](https://github.com/cminyard/ser2net). That exposes it via TCP so that [zwave-js-ui](https://github.com/zwave-js/zwave-js-ui) can schedule anywhere and talk over TCP via coredns. Backups are handled with an argocd workflow in `k8s/prod/workflows/zwavejsui.yaml` to minio.
