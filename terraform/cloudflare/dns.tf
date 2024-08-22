@@ -1,8 +1,8 @@
 resource "cloudflare_record" "github_blog" {
   for_each = toset(local.github_a_records)
-  zone_id  = local.marcyoung_us_zone_id
-  name     = "marcyoung.us"
-  value    = each.value
+  zone_id  = local.markyoung_us_zone_id
+  name     = "markyoung.us"
+  content  = each.value
   type     = "A"
   ttl      = "3600"
 }
