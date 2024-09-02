@@ -285,6 +285,22 @@ data:
         - light
       entity_config: {}
 
+    template:
+      - sensor:
+          - name: "Dog Food Status"
+            unique_id: "dog_food_status_sensor"
+            state: >
+              {% set last_changed = states.sensor.dog_food_action.last_changed %}
+              {% set morning_target = now().replace(hour=6, minute=0, second=0, microsecond=0) %}
+              {% set evening_target = now().replace(hour=17, minute=0, second=0, microsecond=0) %}
+
+              {% if morning_target - timedelta(hours=3) <= last_changed <= morning_target + timedelta(hours=3) or
+                    evening_target - timedelta(hours=3) <= last_changed <= evening_target + timedelta(hours=3) %}
+                OK
+              {% else %}
+                NOT OK
+              {% endif %}
+
     light:
       - platform: switch
         name: "Kitchen Lights"
