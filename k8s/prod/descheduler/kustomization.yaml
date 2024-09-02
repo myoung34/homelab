@@ -13,16 +13,29 @@ helmCharts:
   version: 0.30.1
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
+    #schedule: "0 4 */3 * *" # every 3 days at 4am
     schedule: "*/30 * * * *"
     deschedulerPolicy:
-      strategies:
-        PodLifeTime:
-          enabled: true
-          params:
-            podLifeTime:
-              maxPodLifeTimeSeconds: 86400 #1 day
-            namespaces:
-              include:
-              - "actions-runner"
-              - "ser2net"
-              - "http-to-mqtt"
+      profiles:
+        - name: default
+          pluginConfig:
+            - name: DefaultEvictor
+              args:
+                ignorePvcPods: true
+                evictLocalStoragePods: true
+            - name: RemoveDuplicates
+            - name: PodLifeTime
+              args:
+                maxPodLifeTimeSeconds: 86400
+                namespaces:
+                  include:
+                  - "actions-runner"
+                  - "ser2net"
+                  - "http-to-mqtt"
+          plugins:
+            balance:
+              enabled:
+                - RemoveDuplicates
+            deschedule:
+              enabled:
+                - PodLifeTime
