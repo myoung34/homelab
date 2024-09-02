@@ -18,6 +18,17 @@ data:
   groups.yaml: |
     #todo
   automations.yaml: |
+    - alias: "Update Dog Food Sensor Based on Z Angle"
+      trigger:
+        - platform: numeric_state
+          entity_id: sensor.dog_food_angle_z
+          above: 0
+      action:
+        - service: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.dog_food_last_positive_time
+          data:
+            timestamp: "{{ now().timestamp() }}"
     - alias: All inside lights on
       id: all_inside_lights_on
       description: "Turn All Inside Lights On"
@@ -285,20 +296,37 @@ data:
         - light
       entity_config: {}
 
+    # Dog food sensors
+    input_datetime:
+      dog_food_last_positive_time:
+        name: "Dog Food Last Positive Time"
+        has_date: true
+        has_time: true
+
     template:
       - sensor:
-          - name: "Dog Food Status"
-            unique_id: "dog_food_status_sensor"
+          - name: "Dog Food Last Positive Angle Hours"
+            unique_id: "dog_food_last_positive_angle_hours"
             state: >
-              {% set last_changed = states.sensor.dog_food_action.last_changed %}
-              {% set morning_target = now().replace(hour=6, minute=0, second=0, microsecond=0) %}
-              {% set evening_target = now().replace(hour=17, minute=0, second=0, microsecond=0) %}
-
-              {% if morning_target - timedelta(hours=3) <= last_changed <= morning_target + timedelta(hours=3) or
-                    evening_target - timedelta(hours=3) <= last_changed <= evening_target + timedelta(hours=3) %}
-                OK
+              {% set last_positive = states.input_datetime.dog_food_last_positive_time.state %}
+              {% if last_positive %}
+                {% set last_positive_time = strptime(last_positive, '%Y-%m-%d %H:%M:%S') %}
+                {% set hours_since_positive = (now() - last_positive_time).total_seconds() / 3600 %}
+                {{ "%.1f" | format(hours_since_positive) }} hours
               {% else %}
-                NOT OK
+                unknown
+              {% endif %}
+      - sensor:
+          - name: "Formatted Dog Food Last Positive Time"
+            unique_id: "formatted_dog_food_last_positive_time"
+            state: >
+              {% set last_positive = states('input_datetime.dog_food_last_positive_time') %}
+              {% if last_positive != 'unknown' %}
+                {% set last_positive_time = strptime(last_positive, '%Y-%m-%d %H:%M:%S') %}
+                {% set formatted_time = last_positive_time.strftime('%m/%d %I:%M%p') %}
+                {{ formatted_time }}
+              {% else %}
+                unknown
               {% endif %}
 
     light:
