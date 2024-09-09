@@ -7,10 +7,18 @@ resource "cloudflare_record" "github_blog" {
   ttl      = "3600"
 }
 
+resource "cloudflare_record" "homelab_main" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "marcyoung.us"
+  content = local.home_ip
+  type    = "A"
+  ttl     = "3600"
+}
+
 resource "cloudflare_record" "fallback_homelab" {
   zone_id = local.marcyoung_us_zone_id
   name    = "*"
-  value   = local.home_ip
+  content = local.home_ip
   type    = "A"
   ttl     = "3600"
 }
@@ -19,7 +27,7 @@ resource "cloudflare_record" "consul_fallback" {
   for_each = toset(local.consul_nodes)
   zone_id  = local.marcyoung_us_zone_id
   name     = "*.consul"
-  value    = each.value
+  content  = each.value
   type     = "A"
   ttl      = "3600"
 }
