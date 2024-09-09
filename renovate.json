@@ -13,5 +13,8 @@
       "automerge": true
     }
   ],
+  "kubernetes": {
+    "fileMatch": ["k8s/.+\\.yaml$"]
+  },
   "platformAutomerge": true
 }
