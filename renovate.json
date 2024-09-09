@@ -14,7 +14,10 @@
     }
   ],
   "kubernetes": {
-    "fileMatch": ["k8s/.+\\.yaml$"]
+    "fileMatch": [
+      "k8s/argo/.+\\.yaml$",
+      "k8s/prod/.+\\.yaml$"
+    ]
   },
   "platformAutomerge": true
 }
