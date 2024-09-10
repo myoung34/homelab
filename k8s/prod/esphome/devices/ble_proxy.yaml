@@ -28,7 +28,7 @@ bluetooth_proxy:
 ble_client:
   - mac_address: B8:1F:5E:AB:4B:60
     id: meater
-    
+
 sensor:
   - platform: ble_client
     type: characteristic
@@ -72,4 +72,3 @@ sensor:
     lambda: |-
       uint16_t battery = (x[0] + x[1]) * 10;
       return (float)battery;
-
