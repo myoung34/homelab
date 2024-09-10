@@ -34,7 +34,6 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |garage-switch|68:c6:3a:9f:bb:55|IoT|192.168.4.101|
 |cluster21|00:e0:4c:88:00:cd|cluster|192.168.1.24|
 |pergola-lights|c4:4f:33:81:ba:cf|IoT|192.168.4.100|
-|traeger|5c:cf:7f:c6:d9:2b|IoT|192.168.4.106|
 |tubeszb-upstairs|08:b6:1f:71:18:b7|IoT|192.168.4.108|
 |PicoW|28:cd:c1:08:08:09|WIFI|192.168.2.145|
 |barcaderator|f8:e4:e3:75:0e:3b|WIFI|192.168.2.70|

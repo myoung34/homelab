@@ -7,14 +7,6 @@ resource "cloudflare_record" "github_blog" {
   ttl      = "3600"
 }
 
-resource "cloudflare_record" "homelab_main" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "marcyoung.us"
-  content = local.home_ip
-  type    = "A"
-  ttl     = "3600"
-}
-
 resource "cloudflare_record" "fallback_homelab" {
   zone_id = local.marcyoung_us_zone_id
   name    = "*"

@@ -24,3 +24,52 @@ ota:
 
 bluetooth_proxy:
   active: True
+
+ble_client:
+  - mac_address: B8:1F:5E:AB:4B:60
+    id: meater
+    
+sensor:
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: meater
+    name: "MEATER tip temperature"
+    service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
+    characteristic_uuid: '7edda774-045e-4bbf-909b-45d1991a2876'
+    icon: 'mdi:thermometer'
+    unit_of_measurement: '°F'
+    accuracy_decimals: 2
+    notify: true
+    lambda: |-
+      uint16_t tip_temp = (x[0] + (x[1] << 8) + 8.0) / 16.0;
+      return (float)((tip_temp * 1.8) + 32);
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: meater
+    name: "MEATER ambient temperature"
+    service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
+    characteristic_uuid: '7edda774-045e-4bbf-909b-45d1991a2876'
+    icon: 'mdi:thermometer'
+    unit_of_measurement: '°F'
+    accuracy_decimals: 2
+    notify: true
+    lambda: |-
+      uint16_t tip = x[0] + (x[1] << 8);
+      uint16_t ra = x[2] + (x[3] << 8);
+      uint16_t oa = x[4] + (x[5] << 8);
+      uint16_t min_val = 48;
+      uint16_t ambient = (tip + std::max(0, (((ra - std::min(min_val, oa)) * 16 * 589) / 1487)) + 8.0) / 16;
+      return (float)((ambient * 1.8) + 32);
+  - platform: ble_client
+    type: characteristic
+    ble_client_id: meater
+    name: "MEATER battery level"
+    service_uuid: 'a75cc7fc-c956-488f-ac2a-2dbc08b63a04'
+    characteristic_uuid: '2adb4877-68d8-4884-bd3c-d83853bf27b8'
+    icon: 'mdi:battery'
+    unit_of_measurement: '%'
+    notify: true
+    lambda: |-
+      uint16_t battery = (x[0] + x[1]) * 10;
+      return (float)battery;
+

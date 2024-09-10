@@ -21,7 +21,5 @@ configMapGenerator:
   - devices/plaato-airlock.yaml
   - devices/plug1.yaml
   - devices/plug2.yaml
-  - devices/traeger.yaml
   - devices/tubeszb-upstairs.yaml
-  - devices/ultrasonic_sensor.h
   - devices/ble_proxy.yaml
