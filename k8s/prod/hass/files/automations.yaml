@@ -188,3 +188,31 @@
     data_template:
       path: '{{ trigger.event.data.path }}'
   mode: queued
+- alias: Low Battery Webhook
+  id: low_battery_webhook
+  description: "Fires a webhook when any binary_sensor reports low battery"
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.keypad_battery
+        - binary_sensor.back_door_entry_battery
+        - binary_sensor.garage_entry_battery
+        - binary_sensor.front_door_entry_battery
+        - binary_sensor.family_room_motion_battery
+        - binary_sensor.front_door_motion_battery
+        - binary_sensor.fr_win_1_entry_battery
+        - binary_sensor.fr_win_2_entry_battery
+        - binary_sensor.liv_win_1_entry_battery
+        - binary_sensor.liv_win_2_entry_battery
+        - binary_sensor.back_win_1_entry_battery
+        - binary_sensor.back_win_2_entry_battery
+        - binary_sensor.back_win_3_entry_battery
+        - binary_sensor.front_door_low_battery_level
+        - binary_sensor.front_door_replace_battery_now
+        - binary_sensor.front_door_replace_battery_soon
+        - binary_sensor.garage_door_low_battery_level
+      to: "on"
+  action:
+    - service: rest_command.fire_simplisafe_battery_webhook
+      data_template:
+        device_name: "{{ trigger.to_state.name }}"
