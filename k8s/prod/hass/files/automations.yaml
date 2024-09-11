@@ -178,9 +178,27 @@
       path: '{{ trigger.event.data.path }}'
   mode: queued
 - alias: Low Battery Webhook
-  id: low_battery_webhook
-  description: "Fires a webhook when any binary_sensor reports low battery"
+  id: low_battery_webhook_binary_sensor
+  description: "Fires a webhook when any sensor reports low battery"
   trigger:
+    - platform: numeric_state
+      entity_id:
+        - sensor.temperature_sensor
+        - sensor.garage_door_battery_level # garage tilt sensor (zwave)
+        - sensor.bedroom_battery # ecobee
+        - sensor.upstairs_battery # ecobee
+        - sensor.kids_room_battery # ecobee
+        - sensor.ble_proxy_meater_battery_level # actual MEATER
+        - sensor.front_door_battery_level # front door lock
+        #- sensor.dog_food_battery
+      below: 20
+    - platform: numeric_state
+      entity_id:
+        - sensor.front_door_battery_level # front door lock
+      below: 70 # door gets weird after 70%
+    - platform: template
+      value_template: >
+        {{ state_attr('sensor.dog_food_battery', 'battery') | float < 20 }}
     - platform: state
       entity_id:
         - binary_sensor.keypad_battery
@@ -204,4 +222,4 @@
   action:
     - service: rest_command.fire_webhook
       data_template:
-        message: "{{ trigger.to_state.name }} battery is low"
+        message: "home-assistant: device {{ trigger.to_state.name }} battery is low"
