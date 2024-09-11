@@ -48,39 +48,6 @@ google_assistant:
     - light
   entity_config: {}
 
-# Dog food sensors
-input_datetime:
-  dog_food_last_positive_time:
-    name: "Dog Food Last Positive Time"
-    has_date: true
-    has_time: true
-
-template:
-  - sensor:
-      - name: "Dog Food Last Positive Angle Hours"
-        unique_id: "dog_food_last_positive_angle_hours"
-        state: >
-          {% set last_positive = states.input_datetime.dog_food_last_positive_time.state %}
-          {% if last_positive %}
-            {% set last_positive_time = strptime(last_positive, '%Y-%m-%d %H:%M:%S') %}
-            {% set hours_since_positive = (now() - last_positive_time).total_seconds() / 3600 %}
-            {{ "%.1f" | format(hours_since_positive) }} hours
-          {% else %}
-            unknown
-          {% endif %}
-  - sensor:
-      - name: "Formatted Dog Food Last Positive Time"
-        unique_id: "formatted_dog_food_last_positive_time"
-        state: >
-          {% set last_positive = states('input_datetime.dog_food_last_positive_time') %}
-          {% if last_positive != 'unknown' %}
-            {% set last_positive_time = strptime(last_positive, '%Y-%m-%d %H:%M:%S') %}
-            {% set formatted_time = last_positive_time.strftime('%m/%d %I:%M%p') %}
-            {{ formatted_time }}
-          {% else %}
-            unknown
-          {% endif %}
-
 light:
   - platform: switch
     name: "Kitchen Lights"

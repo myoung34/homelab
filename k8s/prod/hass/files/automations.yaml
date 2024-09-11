@@ -1,14 +1,3 @@
-- alias: "Update Dog Food Sensor Based on Z Angle"
-  trigger:
-    - platform: numeric_state
-      entity_id: sensor.dog_food_angle_z
-      above: 0
-  action:
-    - service: input_datetime.set_datetime
-      target:
-        entity_id: input_datetime.dog_food_last_positive_time
-      data:
-        timestamp: "{{ now().timestamp() }}"
 - alias: All inside lights on
   id: all_inside_lights_on
   description: "Turn All Inside Lights On"
