@@ -392,9 +392,9 @@ shell_command:
   remove_backup: /config/scripts/remove_backup.sh "{{ path }}"
 
 rest_command:
-  fire_simplisafe_battery_webhook:
+  fire_webhook:
     url: !secret slack_webhook_url
     method: "POST"
     headers:
       Content-Type: "application/json"
-    payload: '{"event": "battery_low", "device": "{{ device_name }}"}'
+    payload: '{"message": "{{ message }}"}'

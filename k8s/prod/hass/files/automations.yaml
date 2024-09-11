@@ -202,6 +202,6 @@
         - binary_sensor.garage_door_low_battery_level
       to: "on"
   action:
-    - service: rest_command.fire_simplisafe_battery_webhook
+    - service: rest_command.fire_webhook
       data_template:
-        device_name: "{{ trigger.to_state.name }}"
+        message: "{{ trigger.to_state.name }} battery is low"
