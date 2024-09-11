@@ -4,7 +4,7 @@ repos:
   hooks:
   - id: check-yaml
     args: [--allow-multiple-documents]
-    exclude: 'k8s/prod/tailscale/charts/.*|k8s/prod/esphome/devices/.*'
+    exclude: 'k8s/prod/tailscale/charts/.*|k8s/prod/esphome/devices/.*|k8s/prod/hass/files/configuration.yaml'
   - id: end-of-file-fixer
   - id: trailing-whitespace
   - id: check-case-conflict
