@@ -1,0 +1,190 @@
+- alias: "Update Dog Food Sensor Based on Z Angle"
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.dog_food_angle_z
+      above: 0
+  action:
+    - service: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.dog_food_last_positive_time
+      data:
+        timestamp: "{{ now().timestamp() }}"
+- alias: All inside lights on
+  id: all_inside_lights_on
+  description: "Turn All Inside Lights On"
+  mode: single
+  trigger: []
+  condition: []
+  action:
+    - service: mqtt.publish
+      data:
+        qos: 0
+        retain: false
+        topic: zigbee2mqtt/downstairs/set
+        payload: "{\"state\": \"ON\"}"
+    - service: mqtt.publish
+      data:
+        qos: 0
+        retain: false
+        topic: zigbee2mqtt/upstairs/set
+        payload: "{\"state\": \"ON\"}"
+- alias: All inside lights off
+  id: all_inside_lights_off
+  description: "Turn All Inside Lights Off"
+  mode: single
+  trigger: []
+  condition: []
+  action:
+    - service: mqtt.publish
+      data:
+        qos: 0
+        retain: false
+        topic: zigbee2mqtt/downstairs/set
+        payload: "{\"state\": \"OFF\"}"
+    - service: mqtt.publish
+      data:
+        qos: 0
+        retain: false
+        topic: zigbee2mqtt/upstairs/set
+        payload: "{\"state\": \"OFF\"}"
+- alias: Outside lights on
+  id: outside_lights_on
+  description: "Turn on outside lights"
+  mode: single
+  trigger: []
+  condition: []
+  action:
+    - type: turn_on
+      device_id: ac2a71a69775690f92866121735a0739
+      entity_id: light.pergola_lights
+      domain: light
+    - type: turn_on
+      device_id: 022c8a09ea2d67c7886de4fe883cef62
+      entity_id: switch.front_porch_relay
+      domain: switch
+- alias: Outside lights off
+  id: outside_lights_off
+  description: "Turn off outside lights"
+  mode: single
+  trigger: []
+  condition: []
+  action:
+    - type: turn_off
+      device_id: ac2a71a69775690f92866121735a0739
+      entity_id: light.pergola_lights
+      domain: light
+    - type: turn_off
+      device_id: 022c8a09ea2d67c7886de4fe883cef62
+      entity_id: switch.front_porch_relay
+      domain: switch
+- alias: Liam - turn things on
+  id: liams_room_on
+  description: "Turn things on in liams room"
+  mode: single
+  trigger: []
+  condition: []
+  action:
+    - type: turn_on
+      device_id: ebe254c5092831e687e3cb0f21cf2c91
+      entity_id: light.liam_starlight
+      domain: light
+    - type: turn_on
+      device_id: d3ddbb16235c592ebcaab802e074b854
+      entity_id: switch.liam_plug_pow_relay
+      domain: switch
+- alias: Liam - turn things off
+  id: liams_room_off
+  description: "Turn things off in liams room"
+  mode: single
+  trigger: []
+  condition: []
+  action:
+    - type: turn_off
+      device_id: ebe254c5092831e687e3cb0f21cf2c91
+      entity_id: light.liam_starlight
+      domain: light
+    - type: turn_off
+      device_id: d3ddbb16235c592ebcaab802e074b854
+      entity_id: switch.liam_plug_pow_relay
+      domain: switch
+- alias: Nighttime - Turn on things
+  id: nighttime_on
+  description: "Turn things on at night"
+  mode: single
+  trigger:
+    - platform: time
+      at: "18:30:00"
+  condition: []
+  action:
+    - type: turn_on
+      device_id: ac2a71a69775690f92866121735a0739
+      entity_id: light.pergola_lights
+      domain: light
+    - type: turn_on
+      device_id: 022c8a09ea2d67c7886de4fe883cef62
+      entity_id: switch.front_porch_relay
+      domain: switch
+    - type: turn_on
+      device_id: ebe254c5092831e687e3cb0f21cf2c91
+      entity_id: light.liam_starlight
+      domain: light
+    - type: turn_on
+      device_id: d3ddbb16235c592ebcaab802e074b854
+      entity_id: switch.liam_plug_pow_relay
+      domain: switch
+- alias: Nighttime - Turn off things
+  id: nighttime_off
+  description: Turn things off at night
+  trigger:
+    - platform: time
+      at: "01:00:00"
+  condition: []
+  action:
+    - type: turn_off
+      device_id: ebe254c5092831e687e3cb0f21cf2c91
+      entity_id: light.liam_starlight
+      domain: light
+    - type: turn_off
+      device_id: d3ddbb16235c592ebcaab802e074b854
+      entity_id: switch.liam_plug_pow_relay
+      domain: switch
+    - type: turn_off
+      device_id: ac2a71a69775690f92866121735a0739
+      entity_id: light.pergola_lights
+      domain: light
+    - type: turn_off
+      device_id: 022c8a09ea2d67c7886de4fe883cef62
+      entity_id: switch.front_porch_relay
+      domain: switch
+  mode: single
+- alias: Utility - backup
+  id: utility_backup
+  trigger:
+  - platform: time
+    at: 03:00:00
+  condition:
+    - condition: template
+      value_template: "{{ now().day == 1 }}"
+  action:
+  - service: backup.create
+    data:
+      homeassistant: true
+  mode: queued
+- alias: Upload and remove backup
+  id: upload_and_remove_backup
+  description: 'Remove local back up and upload to s3'
+  trigger:
+  - platform: event
+    event_type: folder_watcher
+    event_data:
+      event_type: closed
+  action:
+  - service: minio.put
+    data:
+      bucket: backups
+      file_path: '{{ trigger.event.data.path }}'
+      key: hass/{{ now().strftime('%Y%m%dT%H%M%S.tar') }}
+  - service: shell_command.remove_backup
+    data_template:
+      path: '{{ trigger.event.data.path }}'
+  mode: queued

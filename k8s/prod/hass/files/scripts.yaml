@@ -1,0 +1,35 @@
+front_door:
+  alias: Front Door
+  sequence:
+  - if:
+    - condition: state
+      entity_id: lock.front_door
+      state: unlocked
+    then:
+    - service: lock.lock
+      data: {}
+      target:
+        entity_id: lock.front_door
+    else:
+    - service: lock.unlock
+      data: {}
+      target:
+        entity_id: lock.front_door
+  mode: single
+garage_door:
+  alias: Garage Door
+  sequence:
+  - type: toggle
+    device_id: 5cc3f414b31653c3b2a25597f11ffe0e
+    entity_id: switch.garage
+    domain: switch
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 1
+      milliseconds: 0
+  - type: toggle
+    device_id: 5cc3f414b31653c3b2a25597f11ffe0e
+    entity_id: switch.garage
+    domain: switch
+  mode: single

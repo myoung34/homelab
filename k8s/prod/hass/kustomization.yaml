@@ -4,10 +4,20 @@ namespace: hass
 
 resources:
   - namespace.yaml
-  - configmap.yaml
   - traefik.yaml
   - le.yaml
   - pv.yaml
   - pvc.yaml
   - vault.yaml
   - hass.yaml
+
+configMapGenerator:
+- name: hass
+  files:
+  - files/automations.yaml
+  - files/configuration.yaml
+  - files/customize.yaml
+  - files/groups.yaml
+  - files/remove_backup.sh
+  - files/scenes.yaml
+  - files/scripts.yaml
