@@ -10,6 +10,6 @@ helmCharts:
   includeCRDs: true
   namespace: vpa
   releaseName: vpa
-  version: 4.5.0
+  version: 4.6.0
   repo: https://charts.fairwinds.com/stable
   valuesInline: {}
