@@ -12,7 +12,7 @@ helmCharts:
   includeCRDs: true
   namespace: traefik
   releaseName: traefik
-  version: 31.1.1
+  version: 32.0.0
   repo: https://helm.traefik.io/traefik
   valuesInline:
     affinity:
