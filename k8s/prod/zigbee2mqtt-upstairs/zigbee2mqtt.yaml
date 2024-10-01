@@ -71,7 +71,7 @@ spec:
           requests:
             cpu: 100m
             memory: 256M
-        image: koenkk/zigbee2mqtt:1.40.1
+        image: koenkk/zigbee2mqtt:1.40.2
         imagePullPolicy: IfNotPresent
         name: zigbee2mqtt
         ports:
