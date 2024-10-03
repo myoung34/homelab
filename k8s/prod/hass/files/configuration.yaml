@@ -8,12 +8,6 @@ homeassistant:
   customize: !include customize.yaml
   allowlist_external_dirs:
     - /config
-minio:
-  host: 192.168.3.2
-  port: 9000
-  secure: false
-  access_key: !secret minio_access_key
-  secret_key: !secret minio_secret_key
 
 logger:
   default: error
