@@ -159,24 +159,6 @@
     data:
       homeassistant: true
   mode: queued
-- alias: Upload and remove backup
-  id: upload_and_remove_backup
-  description: 'Remove local back up and upload to s3'
-  trigger:
-  - platform: event
-    event_type: folder_watcher
-    event_data:
-      event_type: closed
-  action:
-  - service: minio.put
-    data:
-      bucket: backups
-      file_path: '{{ trigger.event.data.path }}'
-      key: hass/{{ now().strftime('%Y%m%dT%H%M%S.tar') }}
-  - service: shell_command.remove_backup
-    data_template:
-      path: '{{ trigger.event.data.path }}'
-  mode: queued
 - alias: Low Battery Webhook
   id: low_battery_webhook_binary_sensor
   description: "Fires a webhook when any sensor reports low battery"
