@@ -110,7 +110,8 @@ spec:
       - command:
         - /bin/sh
         - -c
-        - ' mkdir /config/scripts; cp /configs/*.sh /config/scripts; chmod +x /config/scripts/*.sh;
+        - 'apk add -U --no-cache git;
+          mkdir -p /config/scripts; cp /configs/*.sh /config/scripts; chmod +x /config/scripts/*.sh;
           cp /configs/*.yaml /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml;
           echo $SERVICE_ACCOUNT >/config/SERVICE_ACCOUNT.json;
           [[ ! -d "custom_components/traeger" ]] && (mkdir -p custom_components; git clone https://github.com/njobrien1006/hass_traeger custom_components/hass;
