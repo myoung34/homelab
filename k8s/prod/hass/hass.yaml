@@ -60,7 +60,7 @@ spec:
         - name: TZ
           value: UTC
         image: ghcr.io/home-assistant/home-assistant:2024.9.3
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0
