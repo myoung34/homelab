@@ -50,8 +50,6 @@ spec:
       labels:
         app.kubernetes.io/name: ser2net-zwave
         app.kubernetes.io/instance: rfxcom
-      annotations:
-        descheduler.alpha.kubernetes.io/evict: "true"
     spec:
       containers:
         - name: ser2net-zwave

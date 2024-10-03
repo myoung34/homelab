@@ -40,8 +40,6 @@ spec:
       labels:
         app.kubernetes.io/instance: http-to-mqtt
         app.kubernetes.io/name: http-to-mqtt
-      annotations:
-        descheduler.alpha.kubernetes.io/evict: "true"
     spec:
       automountServiceAccountToken: true
       containers:
