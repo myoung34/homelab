@@ -13,8 +13,7 @@ helmCharts:
   version: 0.31.0
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
-    #schedule: "0 4 */3 * *" # every 3 days at 4am
-    schedule: "*/30 * * * *"
+    schedule: "0 4 */3 * *" # every 3 days at 4am
     deschedulerPolicy:
       profiles:
         - name: default
@@ -30,8 +29,6 @@ helmCharts:
                 namespaces:
                   include:
                   - "actions-runner"
-                  - "ser2net"
-                  - "http-to-mqtt"
           plugins:
             balance:
               enabled:
