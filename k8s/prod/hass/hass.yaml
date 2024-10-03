@@ -114,8 +114,9 @@ spec:
           mkdir -p /config/scripts; cp /configs/*.sh /config/scripts; chmod +x /config/scripts/*.sh;
           cp /configs/*.yaml /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml;
           echo $SERVICE_ACCOUNT >/config/SERVICE_ACCOUNT.json;
-          [[ ! -d "custom_components/traeger" ]] && (mkdir -p custom_components; git clone https://github.com/njobrien1006/hass_traeger custom_components/hass;
-          mv custom_components/hass/custom_components/traeger custom_components; rm -rf custom_components/hass);'
+          cd /config;
+          [[ -d "custom_components/traeger" ]] && (rm -rf "custom_components/traeger"); 
+          (mkdir -p custom_components; git clone https://github.com/njobrien1006/hass_traeger custom_components/hass; mv custom_components/hass/custom_components/traeger custom_components; rm -rf custom_components/hass);'
         env:
         - name: SECRETS_YAML
           valueFrom:
