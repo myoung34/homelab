@@ -198,7 +198,7 @@
       below: 70 # door gets weird after 70%
     - platform: template
       value_template: >
-        {{ state_attr('sensor.dog_food_battery', 'battery') | float(0) < 20 }}
+        {{ 10 < state_attr('sensor.dog_food_battery', 'battery') | float(0) < 30 }}
     - platform: state
       entity_id:
         - binary_sensor.keypad_battery
