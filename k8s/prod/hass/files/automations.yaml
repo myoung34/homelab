@@ -223,3 +223,9 @@
     - service: rest_command.fire_webhook
       data_template:
         message: "home-assistant: device {{ trigger.to_state.name }} battery is low"
+- alias: "Run scripts at startup"
+  trigger:
+    platform: homeassistant
+    event: start
+  action:
+    - service: shell_command.pip_extras

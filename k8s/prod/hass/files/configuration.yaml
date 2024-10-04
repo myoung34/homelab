@@ -390,6 +390,7 @@ recorder:
 
 shell_command:
   remove_backup: /config/scripts/remove_backup.sh "{{ path }}"
+  pip_extras: pip3 install gkeepapi
 
 rest_command:
   fire_webhook:
