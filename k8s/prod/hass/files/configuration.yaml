@@ -400,10 +400,13 @@ rest_command:
       Content-Type: "application/json"
     payload: '{"message": "{{ message }}"}'
 
-panel_custom:
-  - name: my_custom_panel
-    sidebar_title: "My Custom Panel"
-    sidebar_icon: "mdi:star"
-    url_path: my-custom-panel
-    js_url: /local/my_custom_panel.js
-    config: {}
+input_boolean:
+  liam_sample_task_done:
+    name: Liam Sample Task Done
+    initial: false
+
+frontend:
+  extra_module_url:
+    - /local/card-mod.js
+    - /local/week-planner-card.js
+    - /local/kiosk-mode.js

@@ -229,3 +229,13 @@
     event: start
   action:
     - service: shell_command.pip_extras
+- id: reset_liam_chores
+  alias: Reset Liam Chores at Midnight
+  trigger:
+    - platform: time
+      at: '00:00:00'  # Triggers at midnight
+  action:
+    - service: input_boolean.turn_off
+      target:
+        entity_id:
+          - input_boolean.liam_sample_task_done
