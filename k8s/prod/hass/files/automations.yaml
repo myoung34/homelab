@@ -239,3 +239,17 @@
       target:
         entity_id:
           - input_boolean.liam_sample_task_done
+- alias: "Check Dog Food Action Trigger - Morning and Evening"
+  trigger:
+    - platform: time
+      at: "07:00:00"
+    - platform: time
+      at: "18:00:00"
+  condition:
+    - condition: template
+      value_template: >
+        {{ (as_timestamp(now().utcnow()) - as_timestamp(states.sensor.dog_food_action.last_changed)) > 3600 }}
+  action:
+    - service: rest_command.fire_webhook
+      data_template:
+        message: "Dog has not been fed"
