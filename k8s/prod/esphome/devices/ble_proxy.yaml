@@ -26,7 +26,7 @@ bluetooth_proxy:
   active: True
 
 ble_client:
-  - mac_address: B8:1F:5E:AB:4B:60
+  - mac_address: '64:E8:33:84:06:9A'
     id: meater
 
 sensor:
