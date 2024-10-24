@@ -5,6 +5,17 @@ namespace: datadog
 resources:
   - namespace.yaml
   - vault.yaml
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: DaemonSet
+      name: datadog
+      namespace: datadog
+    patch: |-
+      - op: remove
+        path: /spec/template/metadata/annotations/container.apparmor.security.beta.kubernetes.io~1system-probe
+        value: unconfined
 patchesStrategicMerge:
  - patch.yaml
 
