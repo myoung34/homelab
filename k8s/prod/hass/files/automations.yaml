@@ -96,6 +96,23 @@
       device_id: d3ddbb16235c592ebcaab802e074b854
       entity_id: switch.liam_plug_pow_relay
       domain: switch
+- alias: Decorations - keep on
+  id: decorations_on
+  description: "keep decorations on"
+  mode: single
+  trigger:
+    - platform: time
+      at: "6:00:00"
+    - platform: time
+      at: "12:00:00"
+    - platform: time
+      at: "18:00:00"
+  condition: []
+  action:
+    - type: turn_on
+      device_id: 885230fdc728915ff5a2b5a61930b845
+      entity_id: switch.plug1_pow_relay
+      domain: switch
 - alias: Nighttime - Turn on things
   id: nighttime_on
   description: "Turn things on at night"
@@ -121,10 +138,6 @@
       device_id: d3ddbb16235c592ebcaab802e074b854
       entity_id: switch.liam_plug_pow_relay
       domain: switch
-    - type: turn_on
-      device_id: 885230fdc728915ff5a2b5a61930b845
-      entity_id: switch.plug1_pow_relay
-      domain: switch
 - alias: Nighttime - Turn off things
   id: nighttime_off
   description: Turn things off at night
@@ -148,10 +161,6 @@
     - type: turn_off
       device_id: 022c8a09ea2d67c7886de4fe883cef62
       entity_id: switch.front_porch_relay
-      domain: switch
-    - type: turn_off
-      device_id: 885230fdc728915ff5a2b5a61930b845
-      entity_id: switch.plug1_pow_relay
       domain: switch
   mode: single
 - alias: Utility - backup
