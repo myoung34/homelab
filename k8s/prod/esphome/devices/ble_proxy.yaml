@@ -26,7 +26,9 @@ bluetooth_proxy:
   active: True
 
 ble_client:
-  - mac_address: '64:E8:33:84:06:9A'
+  # use thingsup ble scanner on android
+  # use 'meater' app first to cause it to start showing up as a beacon
+  - mac_address: 'B8:1F:5E:AB:4B:60'
     id: meater
 
 sensor:
