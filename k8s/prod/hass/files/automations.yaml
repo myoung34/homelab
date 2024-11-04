@@ -260,13 +260,13 @@
   alias: "Check Dog Food Action Trigger - Morning and Evening"
   trigger:
     - platform: time
-      at: "07:00:00"
+      at: "08:00:00"
     - platform: time
-      at: "18:00:00"
+      at: "19:00:00"
   condition:
     - condition: template
       value_template: >
-        {{ (as_timestamp(now().utcnow()) - as_timestamp(states.sensor.dog_food_action.last_changed)) > 3600 }}
+        {{ (as_timestamp(now().utcnow()) - as_timestamp(states.sensor.dog_food_action.last_changed)) > 10800 }}
   action:
     - service: rest_command.fire_webhook
       data_template:
