@@ -1,40 +1,68 @@
 #include "esphome.h"
-#include <Wire.h>
+#include "plaato_stm8.h"
+#include "pct2075.h"
 
 const uint16_t POLLING_PERIOD = 1000; //milliseconds
-int original = -1; //Initial value of the register
 
-class Foo : public PollingComponent {
+const enum Led_mode {
+  NO_MODE,
+  COUNTING1,
+  COUNTING2,
+  SLOWBREATHING,
+  FASTBREATHING,
+  SLOWFLASH,
+  FASTFLASH,
+  ALLOFF,
+  ALLON,
+  BOT,
+  MID,
+  TOP,
+  SLOWDOWN,
+  FASTDOWN,
+  SLOWUP,
+  FASTUP,
+  BOTSLOWFLASH,
+  BOTFASTFLASH,
+  MIDSLOWFLASH,
+  MIDFASTFLASH,
+  TOPSLOWFLASH,
+  TOPFASTFLASH,
+  BOTONBUBBLE
+};
+
+class PlaatoAirlock : public PollingComponent {
  public:
-  Foo() : PollingComponent(POLLING_PERIOD) {}
+  PlaatoAirlock() : PollingComponent(POLLING_PERIOD) {}
   float get_setup_priority() const override { return esphome::setup_priority::BUS; } //Access I2C bus
-  Sensor *foo = new Sensor();
+  Sensor *bubble_count_sensor = new Sensor();
+  Sensor *temperature_sensor = new Sensor();
+
+
+  void setup() override {
+    stm8.setup();             // This sets up I2C.
+    delay(100);               // Delay for I2C to work
+  }
 
   void update() override {
+    temperature_sensor.wake_up();
+    temperature_sensor.read_temperature();
+    temperature_sensor.shut_down();
 
-    byte error, address;
-    int nDevices;
+    // Check for reset and get bubblecount
+    stm8.sync();
 
-    nDevices = 0;
-    //char register_value = id(input_1).state; //Read the number set on the dashboard
-    int register_value = id(input_1).state - '0' + 48; //Read the number set on the dashboard
-    //Did the user change the input?
-    if(register_value != original){
-      //ESP_LOGD("custom", "Trying 0x%d", register_value);
-      char register_as_char = register_value;
-      Wire.beginTransmission(0x00);
-      error = Wire.endTransmission();
-      // Looking for error code "0" to know we found the device over i2c
-      foo->publish_state(error);
+    // Set LED on STM8
+    stm8.set_led(SLOWBREATHING);
 
-      Wire.requestFrom(0x00, 1);
-      if (Wire.available()) { // slave may send less than requested
-        char c = Wire.read(); // receive a byte as character
-        ESP_LOGD("custom", "read %s", c);
-      }
+    // Get values and publish them
+    float temp = temperature_sensor.get_temperature();
+    int bubble_count = stm8.get_count();
 
+    bubble_count_sensor->publish_state(bubble_count)
+    temperature_sensor->publish_state(temp)
 
-      original = register_value; //Swap in the new value
-    }
+    ESP_LOGD("main", "temperature: %0.2f°C", temp);
+    ESP_LOGD("main", "bubbles: %0.2f°C", bubble_count);
+
   }
 };

@@ -49,11 +49,12 @@ number:
 sensor:
   - platform: custom
     lambda: |-
-      auto asdf = new Foo();
-      App.register_component(asdf);
-      return {asdf->foo};
+      auto airlock = new PlaatoAirlock();
+      App.register_component(airlock);
+      return {airlock};
     sensors:
-      - name: foo
+      - name: airlock
+
 status_led:
     pin: GPIO2
 
