@@ -12,7 +12,9 @@ resources:
 configMapGenerator:
 - name: esphome
   files:
-  - devices/airlock.h
+  - devices/pct2075.h
+  - devices/plaato_stm8.h
+  - devices/plaatoairlock.h
   - devices/front-porch-switch.yaml
   - devices/garage.yaml
   - devices/liam-room-starlights.yaml
