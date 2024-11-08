@@ -7,7 +7,6 @@ resources:
   - vault.yaml
   - esphome.yaml
   - tailscale.yaml
-  - dns.yaml
 
 configMapGenerator:
 - name: esphome
