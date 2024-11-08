@@ -23,6 +23,7 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |plug3|48:3f:da:2a:d7:01|IoT|192.168.4.114|
 |cluster11|00:e0:4c:88:0b:85|cluster|192.168.1.19|
 |plaato-keg|84:0d:8e:e3:01:78|IoT|192.168.4.110|
+|plaato-airlock|2c:f4:32:0f:78:68|IoT|192.168.4.111|
 |liamplug|48:3f:da:27:7c:c3|IoT|192.168.4.112|
 |cluster12|d8:3a:dd:28:50:51|cluster|192.168.1.21|
 |cluster14|d8:3a:dd:55:cb:5e|cluster|192.168.1.23|
