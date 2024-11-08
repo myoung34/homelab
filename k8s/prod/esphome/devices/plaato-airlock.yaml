@@ -3,7 +3,9 @@ esphome:
   libraries:
     - "Wire"
   includes:
-    - airlock.h
+    - plaatoairlock.h
+    - pct2075.h
+    - plaato_stm8.h
 
 esp8266:
   board: nodemcuv2
@@ -28,86 +30,21 @@ ota:
   password: !secret ota_password
 
 i2c:
-  sda: GPIO4
-  scl: GPIO5
+  sda: GPIO14
+  scl: GPIO12
   scan: false
   frequency: 100kHz
   id: bus_a
-
-number:
-  - platform: template
-    name: "Input 1"
-    optimistic: true
-    min_value: 0
-    max_value: 127
-    initial_value: -1
-    step: 1
-    mode: box
-    id: input_1
-    icon: "mdi:counter"
 
 sensor:
   - platform: custom
     lambda: |-
       auto airlock = new PlaatoAirlock();
       App.register_component(airlock);
-      return {airlock};
+      return {airlock->bubble_esp_sensor,airlock->temperature_esp_sensor};
     sensors:
       - name: airlock
+      - name: temperature
 
 status_led:
     pin: GPIO2
-
-light:
-  - platform: monochromatic
-    output: led1
-    name: "LED1"
-
-output:
-  - platform: esp8266_pwm
-    pin: GPIO14
-    frequency: 3000 Hz
-    id: led1
-  - platform: gpio
-    pin: GPIO0
-    id: GPIO0
-  - platform: gpio
-    pin: GPIO12
-    id: GPIO12
-  - platform: gpio
-    pin: GPIO16
-    id: GPIO16
-    inverted: True
-
-switch:
-  - platform: output
-    name: "GPIO0"
-    output: GPIO0
-  - platform: output
-    name: "GPIO12"
-    output: GPIO12
-  - platform: output
-    name: "GPIO16"
-    output: GPIO16
-
-binary_sensor:
-  - platform: gpio
-    pin:
-      number: 4
-      inverted: False
-    name: "4"
-  - platform: gpio
-    pin:
-      number: 5
-      inverted: False
-    name: "5"
-  - platform: gpio
-    pin:
-      number: 13
-      inverted: False
-    name: "13"
-  - platform: gpio
-    pin:
-      number: 15
-      inverted: False
-    name: "15"
