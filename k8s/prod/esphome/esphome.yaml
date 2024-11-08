@@ -103,11 +103,7 @@ spec:
         - /bin/sh
         - -c
         - apk add -U --no-cache curl; cp /configs/*.h /config/; cp /configs/*.yaml
-          /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml; curl -sL
-          https://raw.githubusercontent.com/myoung34/plaato-keg-esphome/main/plaato_keg.yaml
-          -o /config/plaato_keg.yaml; curl -sL
-          https://raw.githubusercontent.com/myoung34/plaato-keg-esphome/main/keg_sensor.h
-          -o /config/keg_sensor.h
+          /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml;
         env:
         - name: SECRETS_YAML
           valueFrom:
