@@ -4,11 +4,18 @@ locals {
   talos_version      = "v1.8.3"
   kubernetes_version = "v1.31.2"
 
+  # Installer on rpi_4 board is unsupported without using the factory built one with overlays
+  rpi_overlay_sha   = "893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b"
+  rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
+
+  normal_image = "ghcr.io/siderolabs/installer:${local.talos_version}"
+
   node_data = {
     controlplanes = {
       "192.168.1.22" = {
         hostname              = "cluster13"
         install_disk          = "/dev/sda"
+        image                 = local.rpi_overlay_image
         network_hardware_addr = "d*"
         talos_version         = ""
         kubernetes_version    = ""
@@ -16,6 +23,7 @@ locals {
       "192.168.1.25" = {
         hostname              = "cluster22"
         install_disk          = "/dev/sda"
+        image                 = local.rpi_overlay_image
         network_hardware_addr = "e4*"
         talos_version         = ""
         kubernetes_version    = ""
@@ -23,6 +31,7 @@ locals {
       "192.168.1.26" = {
         hostname              = "cluster23"
         install_disk          = "/dev/sda"
+        image                 = local.rpi_overlay_image
         network_hardware_addr = "e4*"
         talos_version         = ""
         kubernetes_version    = ""
@@ -32,6 +41,7 @@ locals {
       "192.168.1.19" = {
         hostname           = "cluster11"
         install_disk       = "/dev/sda"
+        image              = local.normal_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
@@ -40,6 +50,7 @@ locals {
       "192.168.1.21" = {
         hostname           = "cluster12"
         install_disk       = "/dev/sda"
+        image              = local.rpi_overlay_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
@@ -48,6 +59,7 @@ locals {
       "192.168.1.23" = {
         hostname           = "cluster14"
         install_disk       = "/dev/sda"
+        image              = local.rpi_overlay_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = "/dev/disk/by-id/usb-SSK_SSK_Storage_012345678923-0:0"
@@ -57,6 +69,7 @@ locals {
       "192.168.1.24" = {
         hostname           = "cluster21"
         install_disk       = "/dev/sda"
+        image              = local.normal_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
@@ -65,6 +78,7 @@ locals {
       "192.168.1.27" = {
         hostname           = "cluster24"
         install_disk       = "/dev/sda"
+        image              = local.rpi_overlay_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
