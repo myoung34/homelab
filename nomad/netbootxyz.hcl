@@ -6,12 +6,6 @@ job "netbootxyz" {
       mode = "host"
     }
 
-    volume "netbootxyz" {
-      type      = "host"
-      source    = "netbootxyz"
-      read_only = false
-    }
-
     task "tftp" {
       template {
         data = <<EOH
@@ -119,11 +113,8 @@ job "netbootxyz" {
         TZ = "America/Chicago"
         PGID = "100"
         PUID = "1026"
-      }
-
-      volume_mount {
-        volume      = "netbootxyz"
-        destination = "/config"
+        NGINX_PORT = "8080"
+        WEB_APP_PORT = "3000"
       }
 
       config {
