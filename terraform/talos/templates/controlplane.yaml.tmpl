@@ -20,6 +20,10 @@ cluster:
       - 10.244.0.0/16
     serviceSubnets:
       - 10.96.0.0/12
+    cni:
+      name: custom
+      urls:
+        - https://raw.githubusercontent.com/myoung34/homelab/refs/heads/main/k8s/prod/cilium/cilium.yaml
   proxy:
     image: registry.k8s.io/kube-proxy:${kubernetes_version}
   apiServer:
