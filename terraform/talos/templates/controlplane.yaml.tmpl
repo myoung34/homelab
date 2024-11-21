@@ -23,7 +23,7 @@ cluster:
     cni:
       name: custom
       urls:
-        - https://raw.githubusercontent.com/myoung34/homelab/refs/heads/main/k8s/prod/cilium/cilium.yaml
+        - https://raw.githubusercontent.com/myoung34/homelab/refs/heads/cilium/terraform/talos/cilium.yaml
   proxy:
     image: registry.k8s.io/kube-proxy:${kubernetes_version}
   apiServer:

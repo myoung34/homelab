@@ -22,7 +22,7 @@ machine:
             - controlplane.cluster.local
   install:
     disk: ${install_disk}
-    image: ghcr.io/siderolabs/installer:${talos_version}
+    image: ${image}
     bootloader: true
     wipe: true
     extraKernelArgs:
@@ -33,9 +33,6 @@ machine:
     stableHostname: true
     apidCheckExtKeyUsage: true
     diskQuotaSupport: false
-    kubePrism:
-        enabled: false
-        port: null
   time:
     disabled: false
     servers:
