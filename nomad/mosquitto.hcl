@@ -27,14 +27,11 @@ job "mosquitto" {
       service {
         name = "mosquitto"
         port = "mqtt"
-        tags = [
-          "traefik.tcp.routers.mosquitto_http.entrypoints=mqtt",
-          "traefik.tcp.routers.http.rule=Host(`mosquitto.consul.marcyoung.us`)",
-        ]
+        tags = []
       }
       config {
         ports = ["mqtt"]
-        image = "eclipse-mosquitto:2.0.18"
+        image = "eclipse-mosquitto:2.0.20"
         force_pull = true
         volumes = [
           "local/mosquittoconf:/mosquitto/config/mosquitto.conf",
