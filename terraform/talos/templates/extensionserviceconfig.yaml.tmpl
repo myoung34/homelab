@@ -1,0 +1,8 @@
+---
+apiVersion: v1alpha1
+kind: ExtensionServiceConfig
+name: ${name}
+environment:
+%{ for key, value in env ~}
+  - ${key}=${value}
+  %{ endfor ~}

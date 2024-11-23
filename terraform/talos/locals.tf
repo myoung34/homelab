@@ -10,6 +10,15 @@ locals {
 
   normal_image = "ghcr.io/siderolabs/installer:${local.talos_version}"
 
+  extensions = {
+    tailscale = {
+      version = "1.76.0"
+      env = {
+        TS_AUTHKEY = data.vault_generic_secret.talos.data["tailscale_authkey"]
+      }
+    }
+  }
+
   node_data = {
     controlplanes = {
       "192.168.1.22" = {

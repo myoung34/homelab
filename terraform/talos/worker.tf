@@ -18,8 +18,15 @@ resource "talos_machine_configuration_apply" "worker" {
       machine_token      = local.machine_secrets.secrets.machine_token
       talos_version      = length(each.value.talos_version) == 0 ? local.talos_version : each.value.talos_version
       kubernetes_version = length(each.value.kubernetes_version) == 0 ? local.kubernetes_version : each.value.kubernetes_version
-      }), length(each.value.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
-        mount_point  = each.value.mount_point
-        extra_device = each.value.extra_device
-  })]])
+      tailscale_version  = local.extensions.tailscale.version
+    }),
+    templatefile("${path.module}/templates/extensionserviceconfig.yaml.tmpl", {
+      name = "tailscale"
+      env  = local.extensions.tailscale.env
+    }),
+    length(each.value.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
+      mount_point  = each.value.mount_point
+      extra_device = each.value.extra_device
+    })]
+  ])
 }
