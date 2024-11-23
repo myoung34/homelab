@@ -26,6 +26,10 @@ cluster:
         - https://raw.githubusercontent.com/myoung34/homelab/refs/heads/cilium/terraform/talos/cilium.yaml
   proxy:
     image: registry.k8s.io/kube-proxy:${kubernetes_version}
+  etcd:
+    extraArgs:
+      election-timeout: "50000"
+      heartbeat-interval: "5000"
   apiServer:
     image: registry.k8s.io/kube-apiserver:${kubernetes_version}
     certSANs:
