@@ -101,12 +101,20 @@ isset ${talos_platform} || set talos_platform metal
 set boot_params page_poison=1 printk.devkmsg=on slab_nomerge slub_debug=P pti=on talos.platform=${talos_platform} ${talos_board} ${talos_hostname} ${talos_config} ${talos_hostname} initrd=initrd.magic ${cmdline}
 imgfree
 
+if ${os_arch} == amd64 (
+    set talos_kernel https://pxe.factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.8.3/kernel-amd64
+    set talos_initrd https://pxe.factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.8.3/initramfs-amd64.xz
+) || if ${os_arch} == arm64 (
+    set talos_kernel https://pxe.factory.talos.dev/image/893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b/v1.8.3/kernel-arm64
+    set talos_initrd https://pxe.factory.talos.dev/image/893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b/v1.8.3/initramfs-arm64.xz
+)
+
 echo
 echo Booting with the following kernel args:
 echo ${boot_params}
 echo
-initrd http://marcyoung-talos.s3-website-us-east-1.amazonaws.com/initramfs-${os_arch}.xz
-kernel http://marcyoung-talos.s3-website-us-east-1.amazonaws.com/vmlinuz-${os_arch} ${boot_params}
+initrd ${talos_initrd}
+kernel ${talos_kernel} ${boot_params}
 
 boot
         EOH
