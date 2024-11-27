@@ -41,7 +41,7 @@ spec:
         - "sleep"
         - "600"
         volumeMounts:
-        - mountPath: /usr/src/app/store
+        - mountPath: /opt/storage
           name: store
       volumes:
       - name: store
