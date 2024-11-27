@@ -62,14 +62,12 @@ light:
   - platform: switch
     name: "Closet Lights"
     entity_id: switch.toggle_closet_lights
-  - platform: group
+  - platform: switch
     name: "Downstairs Hall Lights"
-    entities:
-      - light.downstairs_hall_1
-  - platform: group
+    entity_id: switch.toggle_downstairs_hall_lights
+  - platform: switch
     name: "Front Door Lights"
-    entities:
-      - light.front_door_1
+    entity_id: switch.toggle_front_door_lights
   - platform: switch
     name: "Half Bath Lights"
     entity_id: switch.toggle_half_bath_lights
@@ -115,6 +113,34 @@ light:
 switch:
   platform: template
   switches:
+
+
+    toggle_downstairs_hall_lights:
+      friendly_name: "Toggle downstairs hal Lights"
+      unique_id: downstairs_hall_lights
+      turn_on:
+        service: mqtt.publish
+        data:
+          topic: "zigbee2mqtt/downstairs_hall/set"
+          payload: "{\"state\": \"ON\"}"
+      turn_off:
+        service: mqtt.publish
+        data:
+          topic: "zigbee2mqtt/downstairs_hall/set"
+          payload: "{\"state\": \"OFF\"}"
+    toggle_front_door_lights:
+      friendly_name: "Toggle front door Lights"
+      unique_id: front_door_lights
+      turn_on:
+        service: mqtt.publish
+        data:
+          topic: "zigbee2mqtt/front_door/set"
+          payload: "{\"state\": \"ON\"}"
+      turn_off:
+        service: mqtt.publish
+        data:
+          topic: "zigbee2mqtt/front_door/set"
+          payload: "{\"state\": \"OFF\"}"
     toggle_kitchen_lights:
       friendly_name: "Toggle kitchen Lights"
       unique_id: kitchen_lights

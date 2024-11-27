@@ -31,11 +31,11 @@ data:
     homeassistant: true
     serial:
       adapter: deconz
-      port: 'tcp://ser2net.ser2net.svc.cluster.local:3001'
+      port: tcp://ser2net.ser2net.svc.cluster.local:3001
     mqtt:
       base_topic: zigbee2mqtt
       include_device_information: true
-      server: 'mqtt://mosquitto.mosquitto.svc.cluster.local'
+      server: mqtt://mosquitto.mosquitto.svc.cluster.local
     permit_join: false
     devices:
       '0x001788010694ee2d':
@@ -70,8 +70,6 @@ data:
         friendly_name: living_room_2
       '0x00178801063b3145':
         friendly_name: living_room_1
-      '0x00178801087745db':
-        friendly_name: downstairs_hall_1
       '0x001788010877486e':
         friendly_name: front_door_1
       '0x0017880106c41569':
@@ -82,8 +80,12 @@ data:
         friendly_name: half_bath_2
       '0x0017880106a97503':
         friendly_name: half_bath_1
+      '0x00178801087745db':
+        friendly_name: downstairs_hall_1
       '0xb0ce1814032e09c8':
         friendly_name: downstairs_hall_2
+      '0x00158d00096fcc44':
+        friendly_name: dog_food
     groups:
       '1':
         friendly_name: kitchen
@@ -150,6 +152,16 @@ data:
           - 0x00178801065d6823/11
           - 0x0017880106a97503/11
       '8':
+        friendly_name: front_door
+        devices:
+          - 0x001788010877486e/11
+          - 0x0017880106c41569/11
+      '9':
+        friendly_name: downstairs_hall
+        devices:
+          - 0x00178801087745db/11
+          - 0xb0ce1814032e09c8/11
+      '10':
         friendly_name: all
         devices:
           - 0xb0ce1814032e8038/1
