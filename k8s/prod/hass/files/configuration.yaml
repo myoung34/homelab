@@ -417,7 +417,6 @@ recorder:
 
 shell_command:
   remove_backup: /config/scripts/remove_backup.sh "{{ path }}"
-  pip_extras: pip3 install gkeepapi==0.15.1
 
 rest_command:
   fire_webhook:
@@ -426,14 +425,3 @@ rest_command:
     headers:
       Content-Type: "application/json"
     payload: '{"message": "{{ message }}"}'
-
-input_boolean:
-  liam_sample_task_done:
-    name: Liam Sample Task Done
-    initial: false
-
-frontend:
-  extra_module_url:
-    - /local/card-mod.js
-    - /local/week-planner-card.js
-    - /local/kiosk-mode.js
