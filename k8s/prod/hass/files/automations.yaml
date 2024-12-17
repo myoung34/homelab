@@ -240,22 +240,6 @@
     - service: rest_command.fire_webhook
       data_template:
         message: "home-assistant: device {{ trigger.to_state.name }} battery is low"
-- alias: "Run scripts at startup"
-  trigger:
-    platform: homeassistant
-    event: start
-  action:
-    - service: shell_command.pip_extras
-- id: reset_liam_chores
-  alias: Reset Liam Chores at Midnight
-  trigger:
-    - platform: time
-      at: '00:00:00'  # Triggers at midnight
-  action:
-    - service: input_boolean.turn_off
-      target:
-        entity_id:
-          - input_boolean.liam_sample_task_done
 - id: check_dog_food
   alias: "Check Dog Food Action Trigger - Morning and Evening"
   trigger:
