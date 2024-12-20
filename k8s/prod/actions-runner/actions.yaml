@@ -23,13 +23,6 @@ spec:
       containers:
       - name: runner
         image: myoung34/github-runner:latest
-        resources:
-          limits:
-            cpu: 2
-            memory: 512Mi
-          requests:
-            cpu: 2
-            memory: 256Mi
         env:
         - name: RUNNER_SCOPE
           value: "repo"
