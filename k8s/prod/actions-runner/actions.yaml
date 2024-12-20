@@ -47,5 +47,7 @@ spec:
         envFrom:
         - secretRef:
             name: actions-runner
+        nodeSelector:
+          kubernetes.io/arch: arm64
         securityContext:
           privileged: true
