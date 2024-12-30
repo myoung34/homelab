@@ -119,10 +119,26 @@ resource "cloudflare_record" "neon-lights" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "octopi" {
+resource "cloudflare_record" "klipper" {
   zone_id = local.marcyoung_us_zone_id
-  name    = "octopi.iot.marcyoung.us"
+  name    = "klipper.iot.marcyoung.us"
   content = "192.168.0.69"
+  type    = "A"
+  ttl     = "3600"
+}
+
+resource "cloudflare_record" "barcaderator" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "barcaderator.iot.marcyoung.us"
+  content = "192.168.2.70"
+  type    = "A"
+  ttl     = "3600"
+}
+
+resource "cloudflare_record" "pinball" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "pinball.iot.marcyoung.us"
+  content = "192.168.4.174"
   type    = "A"
   ttl     = "3600"
 }
