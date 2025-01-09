@@ -28,7 +28,8 @@ data:
       new_api: true
     frontend:
       port: 8080
-    homeassistant: true
+    homeassistant: 
+      enabled: true
     serial:
       adapter: deconz
       port: tcp://ser2net.ser2net.svc.cluster.local:3001

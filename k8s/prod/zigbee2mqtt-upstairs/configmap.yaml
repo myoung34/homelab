@@ -29,7 +29,8 @@ data:
       new_api: true
     frontend:
       port: 8081
-    homeassistant: true
+    homeassistant: 
+      enabled: true
     serial:
       port: 'tcp://tubeszb-upstairs.iot.marcyoung.us:6638'
     mqtt:
