@@ -29,9 +29,11 @@ data:
       new_api: true
     frontend:
       port: 8081
-    homeassistant: 
+    homeassistant:
       enabled: true
     serial:
+      # Adapter type, allowed values: `zstack`, `ember`, `deconz`, `zigate` or `zboss`
+      adapter: zstack
       port: 'tcp://tubeszb-upstairs.iot.marcyoung.us:6638'
     mqtt:
       base_topic: zigbee2mqtt-upstairs
