@@ -98,7 +98,7 @@ sensor:
         - above: 4.0
           then:
             - light.turn_on: led
-        - below: 3.0
+        - below: 4.0
           then:
             - light.turn_off: led
 
