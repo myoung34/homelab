@@ -38,15 +38,6 @@ resource "cloudflare_record" "ecobee" {
   ttl     = "3600"
 }
 
-
-resource "cloudflare_record" "plug2" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "plug2.iot.marcyoung.us"
-  content = "192.168.4.107"
-  type    = "A"
-  ttl     = "3600"
-}
-
 resource "cloudflare_record" "tubeszb-upstairs" {
   zone_id = local.marcyoung_us_zone_id
   name    = "tubeszb-upstairs.iot.marcyoung.us"
@@ -91,6 +82,22 @@ resource "cloudflare_record" "plug1" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plug1.iot.marcyoung.us"
   content = "192.168.4.113"
+  type    = "A"
+  ttl     = "3600"
+}
+
+resource "cloudflare_record" "plug2" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "plug2.iot.marcyoung.us"
+  content = "192.168.4.107"
+  type    = "A"
+  ttl     = "3600"
+}
+
+resource "cloudflare_record" "plug3" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "plug3.iot.marcyoung.us"
+  content = "192.168.4.114"
   type    = "A"
   ttl     = "3600"
 }

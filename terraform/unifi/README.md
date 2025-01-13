@@ -20,14 +20,11 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |cluster23|e4:5f:01:58:de:82|cluster|192.168.1.26|
 |front-porch-switch|ec:fa:bc:57:20:7c|IoT|192.168.4.103|
 |bigNASty|00:11:32:97:da:3c|NAS|192.168.3.2|
-|plug3|48:3f:da:2a:d7:01|IoT|192.168.4.114|
 |cluster11|00:e0:4c:88:0b:85|cluster|192.168.1.19|
 |plaato-keg|84:0d:8e:e3:01:78|IoT|192.168.4.110|
 |plaato-airlock|2c:f4:32:0f:78:68|IoT|192.168.4.111|
-|liamplug|48:3f:da:27:7c:c3|IoT|192.168.4.112|
 |cluster12|d8:3a:dd:28:50:51|cluster|192.168.1.21|
 |cluster14|d8:3a:dd:55:cb:5e|cluster|192.168.1.23|
-|plug2|a4:cf:12:b7:ff:5b|IoT|192.168.4.107|
 |cluster24|d8:3a:dd:55:c8:e0|cluster|192.168.1.27|
 |liam-room-starlights|84:0d:8e:5c:12:b7|IoT|192.168.4.104|
 |office brother|3c:2a:f4:14:4f:e9|printer|192.168.6.9|
@@ -40,3 +37,7 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |barcaderator|f8:e4:e3:75:0e:3b|WIFI|192.168.2.70|
 |ble-proxy|64:e8:33:84:06:98|WIFI|192.168.4.109|
 |neon-lights|40:22:d8:e3:f4:d8|WIFI|192.168.4.250|
+|plug1|e8:68:e7:f3:23:a8|IoT|192.168.4.113|
+|plug2|a4:cf:12:b7:ff:5b|IoT|192.168.4.107|
+|plug3|48:3f:da:2a:d7:01|IoT|192.168.4.114|
+|liamplug|48:3f:da:27:7c:c3|IoT|192.168.4.112|
