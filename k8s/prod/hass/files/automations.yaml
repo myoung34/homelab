@@ -250,7 +250,7 @@
   condition:
     - condition: template
       value_template: >
-        {{ (as_timestamp(now().utcnow()) - as_timestamp(states.sensor.dog_food_action.last_changed)) > 10800 }}
+        {{ (as_timestamp(now().utcnow()) - as_timestamp(states.binary_sensor.dog_food_vibration.last_changed)) > 10800 }}
   action:
     - service: rest_command.fire_webhook
       data_template:
