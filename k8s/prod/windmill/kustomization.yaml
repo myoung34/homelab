@@ -1,0 +1,74 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: windmill
+
+resources:
+  - namespace.yaml
+  - tailscale.yaml
+  - vault.yaml
+
+helmCharts:
+- name: windmill
+  includeCRDs: true
+  namespace: windmill
+  releaseName: windmill
+  version: 2.0.346
+  repo: https://windmill-labs.github.io/windmill-helm-charts/
+  valuesInline:
+    ingress:
+      enabled: false #disable default ingress to allow tailscale
+    postgresql:
+      enabled: false
+    windmill:
+      databaseUrlSecretName: "windmill" # pragma: allowlist secret
+      baseProtocol: "https"
+      baseDomain: "windmill.king-gila.ts.net"
+      appReplicas: 1
+      lspReplicas: 1
+      app:
+        containerSecurityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+        podSecurityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+      lsp:
+        containerSecurityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+        podSecurityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+      workerGroups:
+        - name: "default"
+          controller: "Deployment"
+
+          replicas: 1
+          annotations: {}
+          terminationGracePeriodSeconds: 604800
+          labels: {}
+          nodeSelector: {}
+          tolerations: []
+          podSecurityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
+          containerSecurityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
+          affinity: {}
+          resources:
+            limits:
+              memory: "2Gi"
+          extraEnv:
+            - name: SOME_ENV_VAR
+              value: "some bullshit"
+            - name: WHITELIST_ENVS
+              value: "SOME_ENV_VAR"
+          extraContainers: []
+          mode: "worker"
+          initContainers: []
+          volumes: []
+          volumeMounts: []
+          volumeClaimTemplates: []
+          command: []
+          exposeHostDocker: false

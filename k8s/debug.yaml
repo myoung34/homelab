@@ -21,10 +21,25 @@ spec:
   storageClassName: local-path
   volumeMode: Filesystem
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: foo
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128Mi
+  storageClassName: local-path
+  volumeMode: Filesystem
+  volumeName: foo
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: slim
+  namespace: windmill
 spec:
   selector:
     matchLabels:
@@ -47,17 +62,3 @@ spec:
       - name: store
         persistentVolumeClaim:
           claimName: foo
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: foo
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 128Mi
-  storageClassName: local-path
-  volumeMode: Filesystem
-  volumeName: foo

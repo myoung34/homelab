@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: windmill
+spec:
+  vaultAuthRef: windmill
+  mount: secret/
+  type: kv-v2
+  path: windmill
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: windmill
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: windmill
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: windmill
+    serviceAccount: windmill
