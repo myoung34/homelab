@@ -13,6 +13,15 @@ spec:
     targetRevision: HEAD
   project: default
   syncPolicy:
+    syncOptions:
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+      - FailOnSharedResource=true
+      - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true
     automated:
       prune: true
       selfHeal: true
+    syncTimeout: 1200
+    onSyncTimeout: "retry"
