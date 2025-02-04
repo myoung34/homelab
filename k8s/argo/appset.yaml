@@ -33,4 +33,6 @@ spec:
         automated:
           prune: true
           selfHeal: true
+        syncTimeout: 1200
+        onSyncTimeout: "retry"
       revisionHistoryLimit: 5
