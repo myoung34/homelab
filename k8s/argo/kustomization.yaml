@@ -10,6 +10,7 @@ resources:
  - argocd.yaml
  - appset.yaml
  - sa-wf.yaml
+ - argocd-cmd-params-cm.yaml
  - tailscale.yaml
  - tailscale-wf.yaml
 patches:
@@ -23,6 +24,9 @@ helmCharts:
   includeCRDs: true
   repo: https://argoproj.github.io/argo-helm
   valuesInline:
+    configs:
+      params:
+        create: false
     global:
       deploymentAnnotations:
         configmap.reloader.stakater.com/reload: "argocd-cm,argocd-rbac-cm"
