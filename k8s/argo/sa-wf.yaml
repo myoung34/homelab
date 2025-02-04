@@ -18,6 +18,12 @@ metadata:
   name: admin-user
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - '*'
+- apiGroups:
   - argoproj.io
   resources:
   - workflows
