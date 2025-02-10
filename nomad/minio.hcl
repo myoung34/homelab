@@ -4,9 +4,11 @@ job "minio" {
   group "minio" {
     network {
       port "api" {
+        host_network = "tailscale"
         static = "9000"
       }
       port "http" {
+        host_network = "tailscale"
         static = "9001"
       }
     }
