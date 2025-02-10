@@ -40,12 +40,7 @@ job "obsidian" {
       service {
         name = "obsidian"
         port = "http"
-        tags = [
-          "traefik.http.routers.minio_https.entrypoints=https",
-          "traefik.http.routers.minio_https.tls=true",
-          "traefik.http.routers.minio_http.entrypoints=api",
-          "traefik.http.routers.http.rule=Host(`obsidian.consul.marcyoung.us`)",
-        ]
+        tags = []
       }
 
       config {
