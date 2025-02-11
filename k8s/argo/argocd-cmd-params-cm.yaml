@@ -17,7 +17,7 @@ data:
   controller.sync.timeout.seconds: "1200"
   otlp.address: ""
   redis.server: argocd-redis:6379
-  repo.server: argocd-repo-server:8081
+  repo.server: argocd-repo-server.argocd.svc.cluster.local:8081
   reposerver.log.format: text
   reposerver.log.level: info
   reposerver.parallelism.limit: "0"
