@@ -23,6 +23,9 @@ helmCharts:
   includeCRDs: true
   repo: https://argoproj.github.io/argo-helm
   valuesInline:
+    configs:
+      params:
+        controller.sync.timeout.seconds: "600"
     global:
       deploymentAnnotations:
         configmap.reloader.stakater.com/reload: "argocd-cm,argocd-rbac-cm"
