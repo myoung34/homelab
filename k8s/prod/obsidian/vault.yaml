@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: obsidian
+spec:
+  vaultAuthRef: obsidian
+  mount: secret/
+  type: kv-v2
+  path: obsidian
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: obsidian
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: obsidian
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: obsidian
+    serviceAccount: default
