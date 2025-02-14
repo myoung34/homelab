@@ -1,56 +1,32 @@
 job "obsidian" {
+  type = "batch"
   datacenters = ["dc1"]
-
+  periodic {
+    cron = "* 8 * * *"
+    prohibit_overlap = true
+  }
   group "obsidian" {
-    network {
-      port "http" {
-        host_network = "tailscale"
-        static = "8080"
-      }
-    }
-    task "obsidian" {
-
+    task "render" {
       driver = "docker"
+
+      vault {
+        policies = ["obsidian"]
+      }
       template {
         data = <<EOH
-          server {
-              listen       8080;
-              server_name  localhost;
-
-              root   /usr/share/nginx/html;
-              index  index.html index.htm;
-
-              location / {
-                # force it to try to add the .html extension
-                try_files $uri $uri/ @htmlext;
-              }
-
-              location @htmlext {
-                  rewrite ^(.*)$ $1.html last;
-              }
-
-              error_page   500 502 503 504  /50x.html;
-              location = /50x.html {
-              }
-          }
+          AWS_ACCESS_KEY_ID="{{with secret "secret/data/obsidian"}}{{.Data.data.AWS_ACCESS_KEY_ID}}{{end}}"
+          AWS_SECRET_ACCESS_KEY="{{with secret "secret/data/obsidian"}}{{.Data.data.AWS_SECRET_ACCESS_KEY}}{{end}}"
         EOH
-        destination = "custom/default.conf"
-      }
-
-      service {
-        name = "obsidian"
-        port = "http"
-        tags = []
+        destination = "secrets/config.env"
+        env         = true
       }
 
       config {
-        ports = ["http"]
-        image = "nginxinc/nginx-unprivileged"
-
-        force_pull = true
+        image = "alpine:latest"
+        command = "sh"
+        args = ["-c", "( apk add -U aws-cli git nodejs npm; git clone https://github.com/jackyzha0/quartz.git; cd quartz; npm i; git config --global --add safe.directory /opt/obsidian.git/.git; rm -rf content; git clone /opt/obsidian.git .content -b main; mv .content/Marc content/; npx quartz build; find public/ -type f -name '*.html' ! -name 'index.html' | while read -r file; do mv $file $$${file%.html}; done; mkdir /opt/obsidian; cp -r public/* /opt/obsidian; cd /opt/obsidian; aws configure set default.s3.signature_version s3v4; aws s3 rm --endpoint-url http://minio.consul.marcyoung.us:9000 s3://obsidian-rendered/ --recursive; ls -alh; aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 sync . s3://obsidian-rendered/; )"]
         volumes = [
-          "custom/default.conf:/etc/nginx/conf.d/default.conf",
-          "/volume1/minio/obsidian-rendered:/usr/share/nginx/html",
+          "/volume1/minio/obsidian:/opt/obsidian.git",
         ]
       }
     }

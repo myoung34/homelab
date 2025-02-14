@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: paperless-ngx
+  namespace: paperless-ngx
+spec:
+  defaultBackend:
+    service:
+      name: paperless-ngx
+      port:
+        number: 8000
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - paperless-ngx
