@@ -14,7 +14,7 @@ spec:
     required:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: feature.node.kubernetes.io/usb-todo.present
+        - key: feature.node.kubernetes.io/usb-08_152d_0583.present
           operator: Exists
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-path

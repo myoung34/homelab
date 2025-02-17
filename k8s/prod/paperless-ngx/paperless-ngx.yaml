@@ -47,7 +47,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: feature.node.kubernetes.io/usb-todo.present
+              - key: feature.node.kubernetes.io/usb-08_152d_0583.present
                 operator: Exists
       automountServiceAccountToken: true
       containers:
