@@ -15,6 +15,15 @@ helmCharts:
   version: 34.3.0
   repo: https://helm.traefik.io/traefik
   valuesInline:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - cluster12
     service:
       type: ClusterIP
       externalIPs:
