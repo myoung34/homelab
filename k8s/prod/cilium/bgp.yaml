@@ -1,0 +1,49 @@
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: "traefik"
+  labels:
+    pool: "traefik"
+spec:
+  blocks:
+    - cidr: 192.168.250.100/32
+---
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumBGPAdvertisement
+metadata:
+  name: services
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          pool: "traefik"
+      #selector:
+      #  matchExpressions:
+      #    # To enable BGP advertisement for all LoadBalancer services, you can use the following expression
+      #    # See https://docs.cilium.io/en/latest/network/bgp-control-plane/bgp-control-plane-v2/#multipool-ipam to learn why
+      #    - { key: somekey, operator: NotIn, values: [ 'never-used-value' ] }
+---
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumBGPPeeringPolicy
+metadata:
+  name: 01-traefik-bgp-peering-policy
+spec:
+  nodeSelector:
+    matchExpressions:
+      # match all nodes
+      - { key: somekey, operator: NotIn, values: ["never-used-value"] }
+  virtualRouters: # []CiliumBGPVirtualRouter
+    - localASN: 65001
+      serviceSelector:
+        matchExpressions:
+          - { key: somekey, operator: NotIn, values: ["never-used-value"] }
+      exportPodCIDR: false
+      neighbors:
+        - peerAddress: "192.168.0.1/32"
+          peerASN: 65000
