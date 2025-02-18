@@ -36,14 +36,26 @@ metadata:
 spec:
   nodeSelector:
     matchExpressions:
-      # match all nodes
-      - { key: somekey, operator: NotIn, values: ["never-used-value"] }
-  virtualRouters: # []CiliumBGPVirtualRouter
-    - localASN: 65001
-      serviceSelector:
-        matchExpressions:
-          - { key: somekey, operator: NotIn, values: ["never-used-value"] }
-      exportPodCIDR: false
-      neighbors:
-        - peerAddress: "192.168.0.1/32"
-          peerASN: 65000
+    - key: somekey
+      operator: NotIn
+      values:
+      - never-used-value
+  virtualRouters:
+  - exportPodCIDR: false
+    localASN: 65001
+    neighbors:
+    - connectRetryTimeSeconds: 120
+      eBGPMultihopTTL: 1
+      holdTimeSeconds: 90
+      keepAliveTimeSeconds: 30
+      peerASN: 65000
+      peerAddress: 192.168.0.1/32
+      peerPort: 179
+    serviceAdvertisements:
+    - LoadBalancerIP
+    serviceSelector:
+      matchExpressions:
+      - key: somekey
+        operator: NotIn
+        values:
+        - never-used-value
