@@ -1,4 +1,4 @@
-resource "cloudflare_record" "pergola-lights" {
+resource "cloudflare_dns_record" "pergola-lights" {
   zone_id = local.marcyoung_us_zone_id
   name    = "pergola-lights.iot.marcyoung.us"
   content = "192.168.4.100"
@@ -6,7 +6,7 @@ resource "cloudflare_record" "pergola-lights" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "garage-switch" {
+resource "cloudflare_dns_record" "garage-switch" {
   zone_id = local.marcyoung_us_zone_id
   name    = "garage-switch.iot.marcyoung.us"
   content = "192.168.4.101"
@@ -14,7 +14,7 @@ resource "cloudflare_record" "garage-switch" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "front-porch-switch" {
+resource "cloudflare_dns_record" "front-porch-switch" {
   zone_id = local.marcyoung_us_zone_id
   name    = "front-porch-switch.iot.marcyoung.us"
   content = "192.168.4.103"
@@ -22,7 +22,7 @@ resource "cloudflare_record" "front-porch-switch" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "liam-room-starlights" {
+resource "cloudflare_dns_record" "liam-room-starlights" {
   zone_id = local.marcyoung_us_zone_id
   name    = "liam-room-starlights.iot.marcyoung.us"
   content = "192.168.4.104"
@@ -30,7 +30,7 @@ resource "cloudflare_record" "liam-room-starlights" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "ecobee" {
+resource "cloudflare_dns_record" "ecobee" {
   zone_id = local.marcyoung_us_zone_id
   name    = "ecobee.iot.marcyoung.us"
   content = "192.168.4.105"
@@ -38,7 +38,7 @@ resource "cloudflare_record" "ecobee" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "tubeszb-upstairs" {
+resource "cloudflare_dns_record" "tubeszb-upstairs" {
   zone_id = local.marcyoung_us_zone_id
   name    = "tubeszb-upstairs.iot.marcyoung.us"
   content = "192.168.4.108"
@@ -46,7 +46,7 @@ resource "cloudflare_record" "tubeszb-upstairs" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "ble-proxy" {
+resource "cloudflare_dns_record" "ble-proxy" {
   zone_id = local.marcyoung_us_zone_id
   name    = "ble-proxy.iot.marcyoung.us"
   content = "192.168.4.109"
@@ -54,7 +54,7 @@ resource "cloudflare_record" "ble-proxy" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "plaato-keg" {
+resource "cloudflare_dns_record" "plaato-keg" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plaato-keg.iot.marcyoung.us"
   content = "192.168.4.110"
@@ -62,7 +62,7 @@ resource "cloudflare_record" "plaato-keg" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "plaato-airlock" {
+resource "cloudflare_dns_record" "plaato-airlock" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plaato-airlock.iot.marcyoung.us"
   content = "192.168.4.111"
@@ -70,7 +70,7 @@ resource "cloudflare_record" "plaato-airlock" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "liamplug" {
+resource "cloudflare_dns_record" "liamplug" {
   zone_id = local.marcyoung_us_zone_id
   name    = "liamplug.iot.marcyoung.us"
   content = "192.168.4.112"
@@ -78,7 +78,7 @@ resource "cloudflare_record" "liamplug" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "plug1" {
+resource "cloudflare_dns_record" "plug1" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plug1.iot.marcyoung.us"
   content = "192.168.4.113"
@@ -86,7 +86,7 @@ resource "cloudflare_record" "plug1" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "plug2" {
+resource "cloudflare_dns_record" "plug2" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plug2.iot.marcyoung.us"
   content = "192.168.4.107"
@@ -94,7 +94,7 @@ resource "cloudflare_record" "plug2" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "plug3" {
+resource "cloudflare_dns_record" "plug3" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plug3.iot.marcyoung.us"
   content = "192.168.4.114"
@@ -102,7 +102,7 @@ resource "cloudflare_record" "plug3" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "driveway-switch" {
+resource "cloudflare_dns_record" "driveway-switch" {
   zone_id = local.marcyoung_us_zone_id
   name    = "driveway-switch.iot.marcyoung.us"
   content = "192.168.4.120"
@@ -110,7 +110,7 @@ resource "cloudflare_record" "driveway-switch" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "unicorn" {
+resource "cloudflare_dns_record" "unicorn" {
   zone_id = local.marcyoung_us_zone_id
   name    = "unicorn.iot.marcyoung.us"
   content = "192.168.4.166"
@@ -118,7 +118,7 @@ resource "cloudflare_record" "unicorn" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "neon-lights" {
+resource "cloudflare_dns_record" "neon-lights" {
   zone_id = local.marcyoung_us_zone_id
   name    = "neon-lights.iot.marcyoung.us"
   content = "192.168.4.250"
@@ -126,7 +126,7 @@ resource "cloudflare_record" "neon-lights" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "klipper" {
+resource "cloudflare_dns_record" "klipper" {
   zone_id = local.marcyoung_us_zone_id
   name    = "klipper.iot.marcyoung.us"
   content = "192.168.0.69"
@@ -134,7 +134,7 @@ resource "cloudflare_record" "klipper" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "barcaderator" {
+resource "cloudflare_dns_record" "barcaderator" {
   zone_id = local.marcyoung_us_zone_id
   name    = "barcaderator.iot.marcyoung.us"
   content = "192.168.2.70"
@@ -142,7 +142,7 @@ resource "cloudflare_record" "barcaderator" {
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "pinball" {
+resource "cloudflare_dns_record" "pinball" {
   zone_id = local.marcyoung_us_zone_id
   name    = "pinball.iot.marcyoung.us"
   content = "192.168.4.174"

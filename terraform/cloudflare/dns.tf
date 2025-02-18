@@ -1,4 +1,4 @@
-resource "cloudflare_record" "github_blog" {
+resource "cloudflare_dns_record" "github_blog" {
   for_each = toset(local.github_a_records)
   zone_id  = local.markyoung_us_zone_id
   name     = "markyoung.us"
@@ -7,18 +7,18 @@ resource "cloudflare_record" "github_blog" {
   ttl      = "3600"
 }
 
-resource "cloudflare_record" "fallback_homelab" {
+resource "cloudflare_dns_record" "fallback_homelab" {
   zone_id = local.marcyoung_us_zone_id
-  name    = "*"
+  name    = "*.marcyoung.us"
   content = local.home_ip
   type    = "A"
   ttl     = "3600"
 }
 
-resource "cloudflare_record" "consul_fallback" {
+resource "cloudflare_dns_record" "consul_fallback" {
   for_each = toset(local.consul_nodes)
   zone_id  = local.marcyoung_us_zone_id
-  name     = "*.consul"
+  name     = "*.consul.marcyoung.us"
   content  = each.value
   type     = "A"
   ttl      = "3600"
