@@ -1,11 +1,20 @@
 resource "tailscale_acl" "acl" {
   acl = <<EOF
   {
-  	"tagOwners": {
-  		"tag:k8s-operator": [],
-  		"tag:k8s":          ["tag:k8s-operator"],
-  	},
+    // Declare static groups of users. Use autogroups for all users or users with a specific role.
+    // "groups": {
+    //      "group:example": ["alice@example.com", "bob@example.com"],
+    // },
 
+    // Define the tags which can be applied to devices and by which users.
+    "tagOwners": {
+            "tag:k8s-operator": [],
+            "tag:k8s":          ["tag:k8s-operator"],
+            "tag:foo":          [],
+    },
+
+    // Define access control lists for users, groups, autogroups, tags,
+    // Tailscale IP addresses, and subnet ranges.
   	"acls": [
   		//Allow all connections.
   		//Comment this section out if you want to define specific restrictions.
