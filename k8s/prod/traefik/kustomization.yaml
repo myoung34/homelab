@@ -6,6 +6,7 @@ resources:
   - namespace.yaml
   - vault.yaml
   - middleware.yaml
+  - lb.yaml
 
 helmCharts:
 - name: traefik
