@@ -61,10 +61,8 @@ locals {
         image              = local.rpi_overlay_image
         talos_version      = ""
         kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
-        #extra_device       = "/dev/disk/by-id/usb-USB_SanDisk_3.2Gen1_010139b2811ca48766b8b053f594c8e8cd0ee21272820e83eed13bc18152c7a013d4000000000000000000004f2b2106008c150083558107beac3384-0:0"
-        #mount_point        = "/var/mnt/storage"
+        extra_device       = "/dev/disk/by-id/usb-Generic_Flash_Disk_C43DEE72-0:0"
+        mount_point        = "/var/mnt/storage"
       },
       "192.168.1.23" = {
         hostname           = "cluster14"
