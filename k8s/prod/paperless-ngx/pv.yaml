@@ -15,7 +15,7 @@ spec:
     required:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: feature.node.kubernetes.io/usb-08_152d_0583.present
+        - key: feature.node.kubernetes.io/usb-08_058f_6387.present
           operator: Exists
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-path
@@ -37,7 +37,7 @@ spec:
     required:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: feature.node.kubernetes.io/usb-08_152d_0583.present
+        - key: feature.node.kubernetes.io/usb-08_058f_6387.present
           operator: Exists
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-path

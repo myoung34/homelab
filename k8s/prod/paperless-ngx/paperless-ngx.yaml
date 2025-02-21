@@ -47,7 +47,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: feature.node.kubernetes.io/usb-08_152d_0583.present
+              - key: feature.node.kubernetes.io/usb-08_058f_6387.present
                 operator: Exists
       automountServiceAccountToken: true
       containers:
@@ -59,7 +59,7 @@ spec:
         - name: TZ
           value: America/Chicago
         - name: PAPERLESS_URL
-          value: https://paperless-ngx.king-gila.ts.net
+          value: https://docs.king-gila.ts.net
         image: "linuxserver/paperless-ngx:1.8.0"
         imagePullPolicy: IfNotPresent
         livenessProbe:
