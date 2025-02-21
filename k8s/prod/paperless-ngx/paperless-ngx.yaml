@@ -64,7 +64,7 @@ spec:
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
-          initialDelaySeconds: 0
+          initialDelaySeconds: 120
           periodSeconds: 10
           tcpSocket:
             port: 8000
@@ -76,14 +76,14 @@ spec:
           protocol: TCP
         readinessProbe:
           failureThreshold: 3
-          initialDelaySeconds: 0
+          initialDelaySeconds: 120
           periodSeconds: 10
           tcpSocket:
             port: 8000
           timeoutSeconds: 1
         startupProbe:
           failureThreshold: 30
-          initialDelaySeconds: 0
+          initialDelaySeconds: 120
           periodSeconds: 5
           tcpSocket:
             port: 8000
