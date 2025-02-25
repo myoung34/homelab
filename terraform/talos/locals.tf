@@ -15,6 +15,22 @@ locals {
       env = {
         TS_AUTHKEY = data.vault_generic_secret.talos.data["tailscale_authkey"]
       }
+      version = "1.78.1"
+    }
+    fuse3 = {
+      version = "3.16.2"
+    }
+    iscsi-tools = {
+      version = "v0.1.6"
+    }
+    spin = {
+      version = "v0.18.0"
+    }
+    util-linux-tools = {
+      version = "2.40.4"
+    }
+    wasmedge = {
+      version = "v0.5.0"
     }
   }
 
