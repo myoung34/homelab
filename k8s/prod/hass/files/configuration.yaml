@@ -21,7 +21,7 @@ logger:
 default_config:
 
 http:
-  base_url: http://hass.marcyoung.us
+  base_url: http://hass.king-gila.ts.net
   ip_ban_enabled: false
   use_x_forwarded_for: true
   trusted_proxies:

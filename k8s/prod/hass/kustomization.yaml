@@ -4,12 +4,11 @@ namespace: hass
 
 resources:
   - namespace.yaml
-  - traefik.yaml
-  - le.yaml
   - pv.yaml
   - pvc.yaml
   - vault.yaml
   - hass.yaml
+  - tailscale.yaml
 
 configMapGenerator:
 - name: hass

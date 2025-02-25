@@ -7,14 +7,6 @@ resource "cloudflare_dns_record" "github_blog" {
   ttl      = "3600"
 }
 
-resource "cloudflare_dns_record" "fallback_homelab" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "*.marcyoung.us"
-  content = local.home_ip
-  type    = "A"
-  ttl     = "3600"
-}
-
 resource "cloudflare_dns_record" "consul_fallback" {
   for_each = toset(local.consul_nodes)
   zone_id  = local.marcyoung_us_zone_id

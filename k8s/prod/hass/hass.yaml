@@ -3,10 +3,8 @@ kind: Service
 metadata:
   labels:
     app.kubernetes.io/instance: hass
-    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: home-assistant
-    app.kubernetes.io/version: 2022.5.4
-    helm.sh/chart: home-assistant-13.4.2
+    #pool: http # to enable bgp if needed
   name: hass-home-assistant
   namespace: hass
 spec:
@@ -27,10 +25,7 @@ metadata:
     configmap.reloader.stakater.com/reload: hass
   labels:
     app.kubernetes.io/instance: hass
-    app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: home-assistant
-    app.kubernetes.io/version: 2022.5.4
-    helm.sh/chart: home-assistant-13.4.2
   name: hass-home-assistant
   namespace: hass
 spec:
