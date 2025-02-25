@@ -1,7 +1,7 @@
 locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.9.4"
+  talos_version      = "v1.9.3" # always do one rev less so we can push in machine.install.extensions with the upgrade cmd
   kubernetes_version = "v1.32.2"
 
   # Installer on rpi_4 board is unsupported without using the factory built one with overlays

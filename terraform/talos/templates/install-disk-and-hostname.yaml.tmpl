@@ -30,7 +30,7 @@ machine:
       - reboot=k
     extensions:
     %{ for name, config in extensions }
-      - image: ${name}:${config.version}
+      - image: ghcr.io/siderolabs/${name}:${config.version}
     %{ endfor }
   features:
     rbac: true

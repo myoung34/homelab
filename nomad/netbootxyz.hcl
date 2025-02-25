@@ -101,19 +101,14 @@ isset ${talos_platform} || set talos_platform metal
 set boot_params page_poison=1 printk.devkmsg=on slab_nomerge slub_debug=P pti=on talos.platform=${talos_platform} ${talos_board} ${talos_hostname} ${talos_config} ${talos_hostname} initrd=initrd.magic ${cmdline}
 imgfree
 
-# set the following extensions:
-#   siderolabs/fuse3 (3.16.2)
-#   siderolabs/iscsi-tools (v0.1.6)
-#   siderolabs/spin (v0.18.0)
-#   siderolabs/tailscale (1.78.1)
-#   siderolabs/util-linux-tools (2.40.4)
-#   siderolabs/wasmedge (v0.5.0)
 iseq ${os_arch} amd64 && goto amd64 ||
 iseq ${os_arch} arm64 && goto arm64 ||
 
 :amd64
-set talos_kernel https://factory.talos.dev/image/ae19d01982b7f61853120065ebb2c90260bef6aa76e12541e9a2acf6cfc168aa/v1.9.4/kernel-amd64
-set talos_initrd https://factory.talos.dev/image/ae19d01982b7f61853120065ebb2c90260bef6aa76e12541e9a2acf6cfc168aa/v1.9.4/initramfs-amd64.xz
+# always do one revision less so that we can set up machine.install.extensions and use the upgrade cmd
+# because extensions cant be injected into raw kernel/initram
+set talos_kernel https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.9.3/kernel-amd64
+set talos_initrd https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.9.3/initramfs-amd64.xz
 goto boot
 
 :arm64
