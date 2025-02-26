@@ -1,7 +1,0 @@
----
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: paperless-ngx
-  labels:
-    name: paperless-ngx
