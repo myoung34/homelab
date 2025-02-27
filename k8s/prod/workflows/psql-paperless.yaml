@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
-  name: psql-backup
+  name: psql-backup-paperless
 spec:
   schedule: "0 0 1 * *"
   startingDeadlineSeconds: 0
