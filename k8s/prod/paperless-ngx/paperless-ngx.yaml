@@ -57,8 +57,8 @@ spec:
           value: "America/Chicago"
         - name: PAPERLESS_URL
           value: "https://docs.king-gila.ts.net"
-        #- name: PAPERLESS_FILENAME_FORMAT
-        #  value: "tags/{ tag_list }/{ title }"
+        - name: PAPERLESS_FILENAME_FORMAT
+          value: "tags/{{ tag_list }}/{{ title }}"
         - name: PAPERLESS_REDIS
           value: "redis://redis.paperless-ngx.svc.cluster.local:6379"
         - name: PAPERLESS_DBENGINE
