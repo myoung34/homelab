@@ -24,8 +24,9 @@ spec:
 
               cat <<EOF >run.sh
 
-              _filename=/tmp/\$(date '+%Y%m%d%H%M%S').gz
-              pg_dump \${PSQL_CONNECTION_STRING} | pigz --best > \${_filename}
+              _name="paperless"
+              _filename=/tmp/\${_name}-\$(date '+%Y%m%d%H%M%S').gz
+              pg_dump \${HASS_PSQL_CONNECTION_STRING} | pigz --best > \${_filename}
               aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp \${_filename} s3://backups/psql/
               curl -XPOST -H 'Content-Type: application/json' \${ZAPIER_WEBHOOK_URL} -d '{"message": "psql backup complete"}'
               EOF
@@ -49,10 +50,10 @@ spec:
               secretKeyRef:
                 key: MINIO_SECRET_ACCESS_KEY
                 name: argowf
-          - name: PSQL_CONNECTION_STRING
+          - name: HASS_PSQL_CONNECTION_STRING
             valueFrom:
               secretKeyRef:
-                key: PSQL_CONNECTION_STRING
+                key: HASS_PSQL_CONNECTION_STRING
                 name: argowf
 
       - name: "psql-backup"

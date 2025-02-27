@@ -9,4 +9,5 @@ resources:
   - etcdsnapshot.yaml
   - zwavejsui.yaml
   - zigbee2mqtt.yaml
-  - psql.yaml
+  - psql-hass.yaml
+  - psql-paperless.yaml
