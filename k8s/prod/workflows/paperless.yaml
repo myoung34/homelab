@@ -1,0 +1,30 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: paperless-backup
+spec:
+  schedule: "0 0 1 * *"
+  startingDeadlineSeconds: 0
+  suspend: false
+  workflowSpec:
+    volumes:
+    - name: talos-secrets
+      secret:
+        secretName: talos-secrets # pragma: allowlist secret
+    entrypoint: main
+    templates:
+    - name: main
+      steps:
+        - - name: call-talos-template
+            templateRef:
+              name: talos-backup-template
+              template: main
+            arguments:
+              parameters:
+              - name: slack_message
+                value: "paperless snapshot complete"
+              - name: talos_directory
+                value: "/var/mnt/storage/paperless-ngx"
+              - name: minio_path
+                value: "paperless"
