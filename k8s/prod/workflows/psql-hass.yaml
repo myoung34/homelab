@@ -24,7 +24,7 @@ spec:
 
               cat <<EOF >run.sh
 
-              _name="paperless"
+              _name="hass"
               _filename=/tmp/\${_name}-\$(date '+%Y%m%d%H%M%S').gz
               pg_dump \${HASS_PSQL_CONNECTION_STRING} | pigz --best > \${_filename}
               aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp \${_filename} s3://backups/psql/
