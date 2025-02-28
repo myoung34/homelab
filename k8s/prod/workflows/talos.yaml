@@ -18,12 +18,17 @@ spec:
         - -c
         - |
           apk add -U bash curl aws-cli >/dev/null 2>&1
-          curl -sL https://github.com/siderolabs/talos/releases/download/v1.4.7/talosctl-linux-`uname -m | sed 's/aarch64/arm64/g' | sed 's/x86_64/amd64/g'` -o /usr/local/bin/talosctl
+          _arch=$(uname -m | sed 's/aarch64/arm64/g' | sed 's/x86_64/amd64/g')
+          _url="https://github.com/siderolabs/talos/releases/download/v1.9.4/talosctl-linux-\${_arch}"
+
+          echo "downloading from \${_url}"
+
+          curl -sL \${url} -o /usr/local/bin/talosctl
           chmod +x /usr/local/bin/talosctl
           aws configure set default.s3.signature_version s3v4
           mkdir /tmp/backup
           cat <<EOF >run.sh
-          host=\$(talosctl -n \${NODES} disks  | grep -v sda | grep -v '\*\$' | grep -v NODE | awk '{print \$1}')
+          host=\$(talosctl -n \${NODES} get disks  | grep -v sda | grep -v '\*\$' | grep -v NODE | awk '{print \$1}')
           echo "got host \${host}"
           for i in \$(talosctl -n \${host} list {{inputs.parameters.talos_directory}} 2>/dev/null | grep -v '^NODE' | awk '{print \$2}'); do
             echo "copying \${i} from \${host}"
