@@ -17,26 +17,49 @@ spec:
         - sh
         - -c
         - |
-          apk add -U bash curl aws-cli >/dev/null 2>&1
+          cat /etc/resolv.conf
+          sleep 60 # TODO removeme
+          cat /etc/resolv.conf
+          apk add -U bash curl aws-cli
+          curl -vv github.com
+
           _arch=$(uname -m | sed 's/aarch64/arm64/g' | sed 's/x86_64/amd64/g')
-          _url="https://github.com/siderolabs/talos/releases/download/v1.9.4/talosctl-linux-\${_arch}"
+          _url="https://github.com/siderolabs/talos/releases/download/v1.9.4/talosctl-linux-${_arch}"
 
-          echo "downloading from \${_url}"
-
-          curl -sL \${url} -o /usr/local/bin/talosctl
+          echo "downloading from ${_url}"
+          mkdir -p /usr/local/bin/
+          echo curl -L ${_url} -o /usr/local/bin/talosctl
+          curl -L ${_url} -o /usr/local/bin/talosctl
           chmod +x /usr/local/bin/talosctl
+
           aws configure set default.s3.signature_version s3v4
           mkdir /tmp/backup
           cat <<EOF >run.sh
-          host=\$(talosctl -n \${NODES} get disks  | grep -v sda | grep -v '\*\$' | grep -v NODE | awk '{print \$1}')
-          echo "got host \${host}"
-          for i in \$(talosctl -n \${host} list {{inputs.parameters.talos_directory}} 2>/dev/null | grep -v '^NODE' | awk '{print \$2}'); do
-            echo "copying \${i} from \${host}"
-            talosctl -n \${host} read {{inputs.parameters.talos_directory}}/\${i} >/tmp/backup/\${i}
+          hosts=\$(talosctl -n \${NODES} get disks  | grep -v sda | grep -v loop | grep -v '\*\$' | grep -v NODE | awk '{print \$1}')
+          for host in \${hosts}; do
+            echo "got host \${host}"
+            talosctl -n \${host} list {{inputs.parameters.talos_directory}} >/dev/null 2>&1
+            if [[ \$? -eq 0 ]]; then
+
+              talosctl -n \${host} ls -Hr {{inputs.parameters.talos_directory}} 2>/dev/null | \
+                  grep -v '^NODE' | cut -d' ' -f2- | sed 's/^ *//' | grep -v '^\.' | \
+                  while IFS= read -r i; do
+                echo "copying \${i} from \${host}"
+                talosctl -n \${host} read "{{inputs.parameters.talos_directory}}/\${i}" >/dev/null 2>&1
+                if [[ \$? -eq 0 ]]; then
+                  mkdir -p "/tmp/backup/\$(dirname "\${i}")" >/dev/null 2>&1
+                  talosctl -n \${host} read "{{inputs.parameters.talos_directory}}/\${i}" >"/tmp/backup/\${i}"
+                else
+                  echo "${i} is a directory. skip it."
+                fi
+              done
+              tar czf /tmp/\$(date '+%Y%m%d%H%M%S').tgz /tmp/backup
+              aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp /tmp/*.tgz s3://backups/{{inputs.parameters.minio_path}}/
+              curl -XPOST -H 'Content-Type: application/json' \${ZAPIER_WEBHOOK_URL} -d '{"message": "{{inputs.parameters.slack_message}}"}'
+            else
+              echo "directory {{inputs.parameters.talos_directory}} not on \${host}"
+            fi
           done
-          tar czf /tmp/\$(date '+%Y%m%d%H%M%S').tgz /tmp/backup
-          aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp /tmp/*.tgz s3://backups/{{inputs.parameters.minio_path}}/
-          curl -XPOST -H 'Content-Type: application/json' \${ZAPIER_WEBHOOK_URL} -d '{"message": "{{inputs.parameters.slack_message}}"}'
           EOF
           cat run.sh
           bash run.sh

@@ -10,6 +10,18 @@ rules:
   resources:
   - pods
   verbs:
+  - create
+  - get
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - "argoproj.io"
+  resources:
+  - workflowtaskresults
+  verbs:
+  - create
   - get
   - watch
   - update
