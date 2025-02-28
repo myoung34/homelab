@@ -25,9 +25,9 @@ spec:
         image: myoung34/github-runner:latest
         env:
         - name: RUNNER_SCOPE
-          value: "repo"
-        - name: REPO_URL
-          value: "https://github.com/myoung34/homelab"
+          value: "org"
+        - name: ORG_NAME
+          value: "OctoKode"
         - name: ACCESS_TOKEN
           valueFrom:
             secretKeyRef:
