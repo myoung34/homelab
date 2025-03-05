@@ -52,7 +52,7 @@ spec:
         - secretRef:
             name: http-to-mqtt
         image: "ghcr.io/myoung34/http-to-mqtt:latest"
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: 100m
