@@ -51,7 +51,7 @@ spec:
         envFrom:
         - secretRef:
             name: http-to-mqtt
-        image: "ghcr.io/myoung34/http-to-mqtt:latest"
+        image: "ghcr.io/myoung34/http-to-mqtt:testing"
         imagePullPolicy: Always
         resources:
           requests:
