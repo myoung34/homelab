@@ -2,10 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app.kubernetes.io/instance: http-to-mqtt
-    app.kubernetes.io/name: http-to-mqtt
-  name: http-to-mqtt
-  namespace: http-to-mqtt
+    app.kubernetes.io/instance: mailgun-to-paperless-ngx
+    app.kubernetes.io/name: mailgun-to-paperless-ngx
+  name: mailgun-to-paperless-ngx
+  namespace: mailgun-to-paperless-ngx
 spec:
   ports:
   - name: http
@@ -13,43 +13,41 @@ spec:
     protocol: TCP
     targetPort: http
   selector:
-    app.kubernetes.io/instance: http-to-mqtt
-    app.kubernetes.io/name: http-to-mqtt
+    app.kubernetes.io/instance: mailgun-to-paperless-ngx
+    app.kubernetes.io/name: mailgun-to-paperless-ngx
   type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/instance: http-to-mqtt
-    app.kubernetes.io/name: http-to-mqtt
-  name: http-to-mqtt
-  namespace: http-to-mqtt
+    app.kubernetes.io/instance: mailgun-to-paperless-ngx
+    app.kubernetes.io/name: mailgun-to-paperless-ngx
+  name: mailgun-to-paperless-ngx
+  namespace: mailgun-to-paperless-ngx
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/instance: http-to-mqtt
-      app.kubernetes.io/name: http-to-mqtt
+      app.kubernetes.io/instance: mailgun-to-paperless-ngx
+      app.kubernetes.io/name: mailgun-to-paperless-ngx
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app.kubernetes.io/instance: http-to-mqtt
-        app.kubernetes.io/name: http-to-mqtt
+        app.kubernetes.io/instance: mailgun-to-paperless-ngx
+        app.kubernetes.io/name: mailgun-to-paperless-ngx
     spec:
       automountServiceAccountToken: true
       containers:
       - env:
         - name: BIND_PORT
           value: "3000"
-        - name: MQTT_HOST
-          value: "mosquitto.consul.marcyoung.us"
         envFrom:
         - secretRef:
             name: http-to-mqtt
-        image: "ghcr.io/myoung34/http-to-mqtt:latest"
+        image: "ghcr.io/myoung34/mailgun-to-paperless-ngx:latest"
         imagePullPolicy: Always
         resources:
           requests:
@@ -62,7 +60,7 @@ spec:
           tcpSocket:
             port: 3000
           timeoutSeconds: 1
-        name: http-to-mqtt
+        name: mailgun-to-paperless-ngx
         ports:
         - containerPort: 3000
           name: http

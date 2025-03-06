@@ -6,4 +6,6 @@ resources:
   - namespace.yaml
   - vault.yaml
   - http-to-mqtt.yaml
-  - tailscale.yaml
+  - mailgun-to-paperless-ngx.yaml
+  - tailscale-http-to-mqtt.yaml
+  - tailscale-mailgun-to-paperless-ngx.yaml
