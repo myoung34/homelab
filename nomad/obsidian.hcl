@@ -21,13 +21,18 @@ job "obsidian" {
         env         = true
       }
 
+      resources {
+        memory = 1024
+      }
+
       config {
-        image = "alpine:latest"
-        command = "sh"
-        args = ["-c", "( apk add -U aws-cli git nodejs npm; git clone https://github.com/jackyzha0/quartz.git; cd quartz; npm i; git config --global --add safe.directory /opt/obsidian.git/.git; rm -rf content; git clone /opt/obsidian.git .content -b main; mv .content/Marc content/; sed -i.bak 's/Plugin.ObsidianFlavoredMarkdown.*/Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false, parseTags: true}),/g' quartz.config.ts; npx quartz build; find public/ -type f -name '*.html' ! -name 'index.html' | while read -r file; do mv $file $$${file%.html}; done; mkdir /opt/obsidian; cp -r public/* /opt/obsidian; cd /opt/obsidian; aws configure set default.s3.signature_version s3v4; aws s3 rm --endpoint-url http://minio.consul.marcyoung.us:9000 s3://obsidian-rendered/ --recursive; ls -alh; aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 sync . s3://obsidian-rendered/; )"]
+        image = "ghcr.io/jackyzha0/quartz:latest"
+        command = "bash"
+        args = ["-c", "( apt-get update; apt-get install -y awscli git ; git config --global --add safe.directory /opt/obsidian.git/.git; rm -rf content; git clone /opt/obsidian.git .content -b main; mv .content/Marc content/; sed -i.bak 's/Plugin.ObsidianFlavoredMarkdown.*/Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false, parseTags: true}),/g' quartz.config.ts; cat quartz.config.ts | grep ObsidianFlavoredMarkdown; npx quartz build; find public/ -type f -name '*.html' ! -name 'index.html' | while read -r file; do mv $file $$${file%.html}; done; mkdir /opt/obsidian; cp -r public/* /opt/obsidian; cd /opt/obsidian; aws configure set default.s3.signature_version s3v4; aws s3 rm --endpoint-url http://minio.consul.marcyoung.us:9000 s3://obsidian-rendered/ --recursive; ls -alh; aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 sync . s3://obsidian-rendered/; echo upload complete) 2>&1"]
         volumes = [
           "/volume1/minio/obsidian:/opt/obsidian.git",
         ]
+        privileged = true
       }
     }
   }
