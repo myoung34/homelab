@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket = "terraform"
-    key    = "cloudflare/terraform.tfstate"
+    key    = "fastly/terraform.tfstate"
     region = "us-east"
     endpoints = {
       s3 = "https://us-east.object.fastlystorage.app"
@@ -13,10 +13,16 @@ terraform {
     use_path_style              = true
   }
   required_providers {
+    fastly = {
+      source  = "fastly/fastly"
+      version = "~> 5.0"
+    }
+
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
   }
-  required_version = "1.11.2"
+
+  required_version = "1.10.5"
 }
