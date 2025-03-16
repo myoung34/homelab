@@ -1,0 +1,66 @@
+name: Verify GitHub Action
+
+on:
+  workflow_dispatch:
+    inputs:
+      action_repo:
+        description: "The GitHub Action repository (owner/repo)"
+        required: true
+        type: string
+      action_version:
+        description: "The GitHub Action version (tag/branch/SHA)"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      action_repo:
+        description: "The GitHub Action repository (owner/repo)"
+        required: true
+        type: string
+      action_version:
+        description: "The GitHub Action version (tag/branch/SHA)"
+        required: true
+        type: string
+
+jobs:
+  verify-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout verification script
+        run: |
+          cat << 'EOF' > verify_github_action.sh
+          #!/bin/bash
+          set -e
+
+          ACTION_REPO="${{ inputs.action_repo }}"
+          ACTION_VERSION="${{ inputs.action_version }}"
+
+          echo "🔍 Fetching latest SHA for $ACTION_REPO@$ACTION_VERSION..."
+          LATEST_SHA=$(git ls-remote https://github.com/$ACTION_REPO refs/tags/$ACTION_VERSION | awk '{print $1}')
+
+          if [ -z "$LATEST_SHA" ]; then
+            echo "❌ Failed to fetch SHA for $ACTION_REPO@$ACTION_VERSION"
+            exit 1
+          fi
+
+          echo "✅ Latest commit SHA: $LATEST_SHA"
+
+          git clone --depth=1 https://github.com/$ACTION_REPO.git
+          cd $(basename "$ACTION_REPO") || exit 1
+          git checkout $LATEST_SHA
+
+          echo "🔍 Verifying commit signature..."
+          if git verify-commit $LATEST_SHA; then
+            echo "✅ Commit is GPG signed and verified."
+          else
+            echo "⚠️ Commit is NOT signed or verification failed."
+            exit 1
+          fi
+
+          cd ..
+          rm -rf $(basename "$ACTION_REPO")
+          EOF
+          chmod +x verify_github_action.sh
+
+      - name: Run Verification Script
+        run: ./verify_github_action.sh
