@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: auth_check
-        uses: morfien101/actions-authorized-user@v3
+        uses: morfien101/actions-authorized-user@4a3cfbf0bcb3cafe4a71710a278920c5d94bb38b # v3
         with:
           username: ${{ github.actor }}
           team: "admin"
