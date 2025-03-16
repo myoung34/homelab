@@ -1,16 +1,6 @@
 name: Verify GitHub Action
 
 on:
-  workflow_dispatch:
-    inputs:
-      action_repo:
-        description: "The GitHub Action repository (owner/repo)"
-        required: true
-        type: string
-      action_version:
-        description: "The GitHub Action version (tag/branch/SHA)"
-        required: true
-        type: string
   workflow_call:
     inputs:
       action_repo:
@@ -32,8 +22,8 @@ jobs:
           #!/bin/bash
           set -e
 
-          ACTION_REPO="${{ inputs.action_repo }}"
-          ACTION_VERSION="${{ inputs.action_version }}"
+          ACTION_REPO="${{ github.event.inputs.action_repo }}"
+          ACTION_VERSION="${{ github.event.inputs.action_version }}"
 
           echo "🔍 Fetching latest SHA for $ACTION_REPO@$ACTION_VERSION..."
           LATEST_SHA=$(git ls-remote https://github.com/$ACTION_REPO refs/tags/$ACTION_VERSION | awk '{print $1}')
