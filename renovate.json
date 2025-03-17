@@ -1,22 +1,33 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     "helpers:pinGitHubActionDigests"
   ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
       "automerge": true
     },
     {
-      "matchDepTypes": ["devDependencies"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
       "automerge": true
     },
     {
-      "matchManagers": ["github-actions"],
-      "matchPackagePatterns": [".*"],
-      "versioning": "digest"
+      "matchManagers": [
+        "github-actions"
+      ],
+      "versioning": "digest",
+      "matchPackageNames": [
+        "/.*/"
+      ]
     }
   ],
   "kubernetes": {
