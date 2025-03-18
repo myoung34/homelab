@@ -26,7 +26,7 @@ job "obsidian" {
       }
 
       config {
-        image = "ghcr.io/jackyzha0/quartz:latest"
+        image = "ghcr.io/jackyzha0/quartz:sha-a201105"
         command = "bash"
         args = ["-c", "( apt-get update; apt-get install -y awscli git ; git config --global --add safe.directory /opt/obsidian.git/.git; rm -rf content; git clone /opt/obsidian.git .content -b main; mv .content/Marc content/; sed -i.bak 's/Plugin.ObsidianFlavoredMarkdown.*/Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false, parseTags: true}),/g' quartz.config.ts; cat quartz.config.ts | grep ObsidianFlavoredMarkdown; npx quartz build; find public/ -type f -name '*.html' ! -name 'index.html' | while read -r file; do mv $file $$${file%.html}; done; mkdir /opt/obsidian; cp -r public/* /opt/obsidian; cd /opt/obsidian; aws configure set default.s3.signature_version s3v4; aws s3 rm --endpoint-url http://minio.consul.marcyoung.us:9000 s3://obsidian-rendered/ --recursive; ls -alh; aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 sync . s3://obsidian-rendered/; echo upload complete) 2>&1"]
         volumes = [
