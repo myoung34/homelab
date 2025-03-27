@@ -16,6 +16,7 @@ logger:
 uart:
   rx_pin: RX
   baud_rate: 4800
+  parity: EVEN
 
 api:
   encryption:
@@ -96,6 +97,6 @@ sensor:
         - above: 4.0
           then:
             - light.turn_on: led
-        - below: 3.0
+        - below: 4.0
           then:
             - light.turn_off: led
