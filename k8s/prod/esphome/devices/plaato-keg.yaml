@@ -1,12 +1,13 @@
 esphome:
   name: plaato-keg
-  platform: ESP32
-  board: nodemcu-32s
   libraries:
     - SPI
     - Wire
     - adafruit/Adafruit BusIO
     - adafruit/Adafruit PCT2075
+
+esp32:
+  board: nodemcu-32s
 
 external_components:
   - source:  github://myoung34/esphome-components@main
