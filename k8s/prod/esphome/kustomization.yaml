@@ -20,5 +20,6 @@ configMapGenerator:
   - devices/plaato-keg.yaml
   - devices/plug1.yaml
   - devices/plug2.yaml
+  - devices/plug3.yaml
   - devices/tubeszb-upstairs.yaml
   - devices/ble_proxy.yaml
