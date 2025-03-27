@@ -255,3 +255,15 @@
     - service: rest_command.fire_webhook
       data_template:
         message: "Dog has not been fed"
+- id: puck_js_garage_door
+  alias: "Trigger Garage Door on Puck Button Press"
+  trigger:
+    - entity_id:
+        - event.sensor_7c55_button
+      to: null
+      trigger: state
+  condition: []
+  action:
+    - action: script.garage_door
+      data: {}
+  mode: single
