@@ -102,8 +102,8 @@ spec:
       - command:
         - /bin/sh
         - -c
-        - apk add -U --no-cache tree curl; tree /configs; cp /configs/*.h /config/; cp /configs/*.yaml
-          /config/; echo $SECRETS_YAML | base64 -d >/config/secrets.yaml;
+        - apk add -U --no-cache curl; cp /configs/* /config/;
+          echo $SECRETS_YAML | base64 -d >/config/secrets.yaml;
         env:
         - name: SECRETS_YAML
           valueFrom:
