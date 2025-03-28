@@ -34,8 +34,8 @@ function updateAdvertising(buttonState) {
 setWatch(function(e) {
   var buttonState = ((e.time - e.lastTime) > 0.5) ? "long_press" : "press";
   updateAdvertising(buttonState);
-  console.log("pressed");
-}, BTN, {edge:"falling", repeat:true})
+  digitalPulse(true?LED1:LED2,1,100);
+}, BTN, {edge:"falling", repeat:true});
 
 // Update advertising now
 updateAdvertising("none");
