@@ -34,7 +34,7 @@ kind: CronWorkflow
 metadata:
   name: zigbee2mqtt-upstairs-backup
 spec:
-  schedule: "0 0 2 * *"
+  schedule: "0 1 1 * *"
   startingDeadlineSeconds: 0
   suspend: false
   workflowSpec:
