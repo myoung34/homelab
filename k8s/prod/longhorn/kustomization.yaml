@@ -15,3 +15,8 @@ helmCharts:
   valuesInline:
     longhornUI:
       replicas: 1
+    csi:
+      resizerReplicaCount: 1
+      snapshotterReplicaCount: 1
+      provisionerReplicaCount: 1
+      attacherReplicaCount: 1
