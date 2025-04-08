@@ -26,6 +26,8 @@ helmCharts:
     configs:
       params:
         controller.sync.timeout.seconds: "600"
+      secret:
+        createSecret: false
     global:
       deploymentAnnotations:
         configmap.reloader.stakater.com/reload: "argocd-cm,argocd-rbac-cm"
