@@ -11,9 +11,6 @@ patches:
         path: "/spec/selector/app.kubernetes.io~1instance"
       - op: remove
         path: "/spec/selector/app.kubernetes.io~1name"
-      - op: replace
-        path: "/spec/selector/k8s-app"
-        value: "coredns"
 
 helmCharts:
 - name: coredns
@@ -22,7 +19,7 @@ helmCharts:
   includeCRDs: true
   repo: https://coredns.github.io/helm
   valuesInline:
-    k8sAppLabelOverride: "coredns"
+    k8sAppLabelOverride: "kube-dns"
     fullnameOverride: coredns
     service:
       name: "kube-dns"
