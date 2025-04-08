@@ -75,7 +75,7 @@ locals {
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
-        mount_point        = "/var/mnt/storage"
+        mount_point        = ""
       },
       "192.168.1.23" = {
         hostname           = "cluster14"

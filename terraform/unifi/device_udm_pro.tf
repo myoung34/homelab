@@ -14,12 +14,13 @@ resource "unifi_device" "udm_pro" {
   }
 
   port_override {
-    name   = "bignasty"
-    number = 4
+    name    = "bignasty"
+    number  = 4
+    op_mode = "switch"
   }
 
   port_override {
-    name   = "creality"
+    name   = "Port 5"
     number = 5
   }
 
