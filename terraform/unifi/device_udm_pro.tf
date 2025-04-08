@@ -33,4 +33,9 @@ resource "unifi_device" "udm_pro" {
     number = 8
   }
 
+  lifecycle {
+    ignore_changes = [
+      "port_override"
+    ]
+  }
 }
