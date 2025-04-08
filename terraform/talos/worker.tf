@@ -24,6 +24,8 @@ resource "talos_machine_configuration_apply" "worker" {
       name = "tailscale"
       env  = local.extensions.tailscale.env
     }),
+    templatefile("${path.module}/templates/longhorn.yaml.tmpl", {
+    }),
     length(each.value.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
       mount_point  = each.value.mount_point
       extra_device = each.value.extra_device
