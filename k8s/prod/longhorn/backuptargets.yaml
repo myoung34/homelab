@@ -1,0 +1,8 @@
+apiVersion: longhorn.io/v1beta2
+kind: BackupTarget
+metadata:
+  name: default
+spec:
+  backupTargetURL: s3://longhorn@minio.consul.marcyoung.us/backups/
+  credentialSecret: longhorn # pragma: allowlist secret
+  pollInterval: 5m0s

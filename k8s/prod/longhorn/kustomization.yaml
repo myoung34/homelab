@@ -5,6 +5,9 @@ namespace: longhorn-system
 resources:
   - namespace.yaml
   - tailscale.yaml
+  - vault.yaml
+  - backuptargets.yaml
+  - volumes.yaml
 
 helmCharts:
 - name: longhorn

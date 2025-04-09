@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: longhorn
+spec:
+  vaultAuthRef: longhorn
+  mount: secret/
+  type: kv-v2
+  path: longhorn
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: longhorn
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: longhorn
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: longhorn
+    serviceAccount: default

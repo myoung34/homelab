@@ -6,51 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
+  storageClassName: longhorn
   resources:
     requests:
-      storage: 128Mi
-  volumeMode: Filesystem
-  volumeName: paperless-ngx-data
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: paperless-ngx-media
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 128Mi
-  volumeMode: Filesystem
-  volumeName: paperless-ngx-media
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: paperless-ngx-export
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 128Mi
-  volumeMode: Filesystem
-  volumeName: paperless-ngx-export
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: paperless-ngx-consume
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 128Mi
-  volumeMode: Filesystem
-  volumeName: paperless-ngx-consume
+      storage: 4Gi

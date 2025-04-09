@@ -44,8 +44,10 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: feature.node.kubernetes.io/usb-08_058f_6387.present
-                operator: Exists
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - arm64
       automountServiceAccountToken: true
       containers:
       - env:
@@ -69,6 +71,10 @@ spec:
           value: "5432"
         - name: PAPERLESS_DBNAME
           value: "paperless"
+        - name: PAPERLESS_MEDIA_ROOT
+          value: "/opt/paperless/media"
+        - name: PAPERLESS_DATA_DIR
+          value: "/opt/paperless/data"
         envFrom:
         - secretRef:
             name: paperless-ngx
@@ -101,25 +107,10 @@ spec:
             port: 8000
           timeoutSeconds: 1
         volumeMounts:
-        - mountPath: /usr/src/paperless/media
-          name: media
-        - mountPath: /usr/src/paperless/data
+        - mountPath: /opt/paperless
           name: data
-        - mountPath: /usr/src/paperless/export
-          name: export
-        - mountPath: /usr/src/paperless/consume
-          name: consume
       serviceAccountName: default
       volumes:
-      - name: media
-        persistentVolumeClaim:
-          claimName: paperless-ngx-media
       - name: data
         persistentVolumeClaim:
           claimName: paperless-ngx-data
-      - name: export
-        persistentVolumeClaim:
-          claimName: paperless-ngx-export
-      - name: consume
-        persistentVolumeClaim:
-          claimName: paperless-ngx-consume

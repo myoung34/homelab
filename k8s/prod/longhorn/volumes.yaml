@@ -1,0 +1,48 @@
+---
+apiVersion: longhorn.io/v1beta2
+kind: Volume
+metadata:
+  labels:
+    backup-target: default
+    longhornvolume: test
+    recurring-job-group.longhorn.io/default: enabled
+    setting.longhorn.io/remove-snapshots-during-filesystem-trim: ignored
+    setting.longhorn.io/replica-auto-balance: ignored
+    setting.longhorn.io/snapshot-data-integrity: ignored
+  name: test
+spec:
+  Standby: false
+  accessMode: rwo
+  backendStoreDriver: ""
+  backingImage: ""
+  backupCompressionMethod: lz4
+  backupTargetName: default
+  dataEngine: v1
+  dataLocality: disabled
+  dataSource: ""
+  disableFrontend: false
+  diskSelector: []
+  encrypted: false
+  engineImage: ""
+  freezeFilesystemForSnapshot: ignored
+  fromBackup: ""
+  frontend: blockdev
+  #image: longhornio/longhorn-engine:v1.8.1
+  lastAttachedBy: ""
+  migratable: false
+  migrationNodeID: ""
+  nodeID: ""
+  nodeSelector: []
+  numberOfReplicas: 2
+  replicaAutoBalance: ignored
+  replicaDiskSoftAntiAffinity: ignored
+  replicaSoftAntiAffinity: ignored
+  replicaZoneSoftAntiAffinity: ignored
+  restoreVolumeRecurringJob: ignored
+  revisionCounterDisabled: true
+  size: "4294967296" #4gb
+  snapshotDataIntegrity: ignored
+  snapshotMaxCount: 3
+  snapshotMaxSize: "0"
+  staleReplicaTimeout: 20
+  unmapMarkSnapChainRemoved: ignored

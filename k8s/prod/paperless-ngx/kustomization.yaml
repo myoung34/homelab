@@ -7,6 +7,5 @@ resources:
   - paperless-ngx.yaml
   - redis.yaml
   - tailscale.yaml
-  - pv.yaml
-  - pvc.yaml
   - vault.yaml
+  - pvc.yaml
