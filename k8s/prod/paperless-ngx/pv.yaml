@@ -10,7 +10,7 @@ spec:
     storage: 4Gi
   csi:
     driver: driver.longhorn.io
-    fsType: xfs
+    fsType: ext4
     volumeAttributes:
       diskSelector: ""
       nodeSelector: ""

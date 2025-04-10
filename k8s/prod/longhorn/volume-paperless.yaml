@@ -3,12 +3,14 @@ kind: Volume
 metadata:
   labels:
     backup-target: default
+    backup-volume: pvc-14181bda-297e-4bce-b1af-c47514e6c09d
     longhornvolume: paperless
     recurring-job-group.longhorn.io/default: enabled
     setting.longhorn.io/remove-snapshots-during-filesystem-trim: ignored
     setting.longhorn.io/replica-auto-balance: ignored
     setting.longhorn.io/snapshot-data-integrity: ignored
   name: paperless
+  namespace: longhorn-system
 spec:
   Standby: false
   accessMode: rwo
@@ -16,7 +18,7 @@ spec:
   backupTargetName: default
   dataEngine: v1
   dataLocality: disabled
-  dataSource: snap://pvc-14181bda-297e-4bce-b1af-c47514e6c09d/5d38abd8-ff9c-4b07-9027-39999cc42120
+  fromBackup: s3://longhorn@minio.consul.marcyoung.us/backups/?backup=backup-d4bf51473e324aad&volume=pvc-14181bda-297e-4bce-b1af-c47514e6c09d
   disableFrontend: true
   diskSelector: []
   encrypted: false
@@ -29,7 +31,7 @@ spec:
   replicaSoftAntiAffinity: ignored
   replicaZoneSoftAntiAffinity: ignored
   restoreVolumeRecurringJob: ignored
-  revisionCounterDisabled: true
+  revisionCounterDisabled: false
   size: "4294967296"
   snapshotDataIntegrity: ignored
   snapshotMaxCount: 5
