@@ -11,4 +11,3 @@ resources:
   - zigbee2mqtt.yaml
   - psql-hass.yaml
   - psql-paperless.yaml
-  - paperless.yaml
