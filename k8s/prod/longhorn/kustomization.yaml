@@ -8,6 +8,7 @@ resources:
   - vault.yaml
   - backuptargets.yaml
   - volume-paperless.yaml
+  - recurringjobs.yaml
 
 helmCharts:
 - name: longhorn

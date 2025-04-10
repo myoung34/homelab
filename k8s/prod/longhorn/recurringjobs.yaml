@@ -1,0 +1,64 @@
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: snapshot-cleanup
+  namespace: longhorn-system
+spec:
+  concurrency: 1
+  cron: 20 0 1 * ?
+  groups:
+  - default
+  labels: {}
+  name: snapshot-cleanup
+  parameters: {}
+  retain: 0
+  task: snapshot-cleanup
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: snapshot-delete
+  namespace: longhorn-system
+spec:
+  concurrency: 1
+  cron: 30 0 1 * ?
+  groups:
+  - default
+  labels: {}
+  name: snapshot-delete
+  parameters: {}
+  retain: 2
+  task: snapshot-delete
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: snapshot
+  namespace: longhorn-system
+spec:
+  concurrency: 1
+  cron: 0 0 1 * ?
+  groups:
+  - default
+  labels: {}
+  name: snapshot
+  parameters: {}
+  retain: 3
+  task: snapshot
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: backup
+  namespace: longhorn-system
+spec:
+  concurrency: 1
+  cron: 15 0 1 * ?
+  groups:
+  - default
+  labels: {}
+  name: backup
+  parameters: {}
+  retain: 3
+  task: backup
