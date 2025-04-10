@@ -6,7 +6,7 @@ metadata:
   namespace: longhorn-system
 spec:
   concurrency: 1
-  cron: 20 0 1 * ?
+  cron: 20 0 * * ?
   groups:
   - default
   labels: {}
@@ -22,7 +22,7 @@ metadata:
   namespace: longhorn-system
 spec:
   concurrency: 1
-  cron: 30 0 1 * ?
+  cron: 30 0 * * ?
   groups:
   - default
   labels: {}
@@ -38,7 +38,7 @@ metadata:
   namespace: longhorn-system
 spec:
   concurrency: 1
-  cron: 0 0 1 * ?
+  cron: 0 0 * * ?
   groups:
   - default
   labels: {}
@@ -54,7 +54,7 @@ metadata:
   namespace: longhorn-system
 spec:
   concurrency: 1
-  cron: 15 0 1 * ?
+  cron: 15 0 * * ?
   groups:
   - default
   labels: {}
