@@ -7,7 +7,6 @@ resources:
   - tailscale.yaml
   - vault.yaml
   - backuptargets.yaml
-  - volumes.yaml
 
 helmCharts:
 - name: longhorn
