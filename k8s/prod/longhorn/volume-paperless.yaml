@@ -3,7 +3,7 @@ kind: Volume
 metadata:
   labels:
     backup-target: default
-    backup-volume: pvc-14181bda-297e-4bce-b1af-c47514e6c09d
+    backup-volume: paperless
     longhornvolume: paperless
     recurring-job-group.longhorn.io/default: enabled
     setting.longhorn.io/remove-snapshots-during-filesystem-trim: ignored
@@ -18,7 +18,7 @@ spec:
   backupTargetName: default
   dataEngine: v1
   dataLocality: disabled
-  fromBackup: s3://longhorn@minio.consul.marcyoung.us/backups/?backup=backup-d4bf51473e324aad&volume=pvc-14181bda-297e-4bce-b1af-c47514e6c09d
+  fromBackup: s3://longhorn@minio.consul.marcyoung.us/backups/?backup=backup-d7bc927705ab4837&volume=paperless
   disableFrontend: true
   diskSelector: []
   encrypted: false

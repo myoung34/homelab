@@ -7,7 +7,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   capacity:
-    storage: 4Gi
+    storage: 2Gi
   csi:
     driver: driver.longhorn.io
     fsType: ext4
