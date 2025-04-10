@@ -48,6 +48,7 @@ The current lazy way:
 * exec into the pod
 * `export _date=$(date '+%Y%m%d%H%M%S')`
 * `mkdir /opt/paperless/backup/${_date}`
+* `chown 1000:1000 /opt/paperless/backup/${_date}`
 * `document_exporter /opt/paperless/backup/${_date}`
 * `kubectl cp paperless-ngx/{podname}:/opt/paperless/backup .`
 * `tar czf $(date '+%Y%m%d%H%M%S').tgz {backup}`
