@@ -8,4 +8,5 @@ resources:
   - redis.yaml
   - tailscale.yaml
   - vault.yaml
+  - pv.yaml
   - pvc.yaml
