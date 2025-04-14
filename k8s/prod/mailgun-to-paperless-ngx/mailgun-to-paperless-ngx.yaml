@@ -46,7 +46,7 @@ spec:
           value: "3000"
         envFrom:
         - secretRef:
-            name: http-to-mqtt
+            name: mailgun-to-paperless-ngx
         image: "ghcr.io/myoung34/mailgun-to-paperless-ngx:latest"
         imagePullPolicy: Always
         resources:

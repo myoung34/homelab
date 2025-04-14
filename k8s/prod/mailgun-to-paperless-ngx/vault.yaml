@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: mailgun-to-paperless-ngx
+spec:
+  vaultAuthRef: mailgun-to-paperless-ngx
+  mount: secret/
+  type: kv-v2
+  path: mailgun-to-paperless-ngx
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: mailgun-to-paperless-ngx
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: mailgun-to-paperless-ngx
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: mailgun-to-paperless-ngx
+    serviceAccount: default

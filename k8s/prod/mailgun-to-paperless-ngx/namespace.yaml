@@ -1,0 +1,7 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: mailgun-to-paperless-ngx
+  labels:
+    name: mailgun-to-paperless-ngx

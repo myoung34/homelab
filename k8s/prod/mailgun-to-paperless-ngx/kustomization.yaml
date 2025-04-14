@@ -1,9 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: http-to-mqtt
+namespace: mailgun-to-paperless-ngx
 
 resources:
   - namespace.yaml
   - vault.yaml
-  - http-to-mqtt.yaml
+  - mailgun-to-paperless-ngx.yaml
   - tailscale.yaml
