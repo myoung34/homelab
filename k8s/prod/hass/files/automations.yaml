@@ -191,8 +191,8 @@
       file_path: '{{ trigger.event.data.path }}'
       key: hass/{{ now().strftime('%Y%m%dT%H%M%S.tar') }}
   - service: shell_command.remove_backup
-    data_template:
-      path: '{{ trigger.event.data.path }}'
+    data:
+      path: "{{ trigger.event.data.path }}"
   mode: queued
 - alias: Low Battery Webhook
   id: low_battery_webhook_binary_sensor

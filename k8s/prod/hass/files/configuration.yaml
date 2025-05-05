@@ -21,7 +21,6 @@ logger:
 default_config:
 
 http:
-  base_url: http://hass.king-gila.ts.net
   ip_ban_enabled: false
   use_x_forwarded_for: true
   trusted_proxies:
@@ -416,7 +415,8 @@ recorder:
       - call_service # Don't record service calls
 
 shell_command:
-  remove_backup: /config/scripts/remove_backup.sh "{{ path }}"
+  remove_backup: "/config/scripts/remove_backup.sh {{ path }}"
+
 
 rest_command:
   fire_webhook:
