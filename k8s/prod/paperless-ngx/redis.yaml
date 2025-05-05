@@ -42,7 +42,7 @@ spec:
       - env:
         - name: PUID
           value: "1000"
-        image: "redis:7"
+        image: "redis:8"
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
