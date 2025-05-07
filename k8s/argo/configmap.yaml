@@ -39,6 +39,31 @@ data:
              jsonPointers:
              - /spec/size
              - /spec/disableFrontend
+             - /spec/preserveUnknownFields
+      nodes.longhorn.io/Node:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/preserveUnknownFields
+      engineimages.longhorn.io/List:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/preserveUnknownFields
+      engines.longhorn.io/List:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/preserveUnknownFields
+      replicas.longhorn.io/List:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/preserveUnknownFields
+      settings.longhorn.io/List:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/preserveUnknownFields
+      instancemanagers.longhorn.io/List:
+          ignoreDifferences: |
+             jsonPointers:
+             - /spec/preserveUnknownFields
       apiextensions.k8s.io/CustomResourceDefinition:
           ignoreDifferences: |
              jsonPointers:
