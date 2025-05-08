@@ -11,7 +11,7 @@ helmCharts:
   includeCRDs: true
   namespace: goldilocks
   releaseName: goldilocks
-  version: 9.0.1
+  version: 9.0.2
   repo: https://charts.fairwinds.com/stable
   valuesInline:
     dashboard:
