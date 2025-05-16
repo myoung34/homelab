@@ -10,7 +10,7 @@ helmCharts:
 - name: datadog
   releaseName: datadog
   namespace: datadog
-  version: 3.114.5
+  version: 3.114.6
   includeCRDs: true
   repo: https://helm.datadoghq.com
   valuesInline:
