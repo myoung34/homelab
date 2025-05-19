@@ -7,7 +7,6 @@ resources:
   - tailscale.yaml
   - vault.yaml
   - backuptargets.yaml
-  - volume-paperless.yaml
   - recurringjobs.yaml
 
 helmCharts:
