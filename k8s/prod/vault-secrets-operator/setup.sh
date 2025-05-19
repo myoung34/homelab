@@ -1,4 +1,5 @@
-# Notes
+#!/bin/bash
+kustomize build --enable-helm | kubectl apply -f -
 
 export K8S_VAULT_SA_SECRET="vault-auth-token"
 kubectl -n vault-secrets-operator get secret/${K8S_VAULT_SA_SECRET} -o json | jq -r '.data["ca.crt"]' | base64 -d > ca.crt
