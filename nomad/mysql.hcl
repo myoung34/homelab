@@ -32,10 +32,6 @@ job "mysql" {
           "/volume1/mysql/data:/var/lib/mysql"
         ]
       }
-      resources {
-        cpu    = 3000
-        memory = 2048
-      }
     }
   }
 }
