@@ -19,6 +19,7 @@ helmCharts:
   includeCRDs: true
   repo: https://coredns.github.io/helm
   valuesInline:
+    replicaCount: 2
     k8sAppLabelOverride: "kube-dns"
     fullnameOverride: coredns
     service:
