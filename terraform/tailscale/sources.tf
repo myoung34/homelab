@@ -18,7 +18,7 @@ terraform {
       version = "~> 0.20"
     }
   }
-  required_version = "1.12.1"
+  required_version = "1.12.2"
 }
 
 provider "tailscale" {}
