@@ -24,6 +24,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
       talos_version         = length(each.value.talos_version) == 0 ? local.talos_version : each.value.talos_version
       kubernetes_version    = length(each.value.kubernetes_version) == 0 ? local.kubernetes_version : each.value.kubernetes_version
       network_hardware_addr = each.value.network_hardware_addr
+      cert_sans             = local.cert_sans
     }),
     templatefile("${path.module}/templates/extensionserviceconfig.yaml.tmpl", {
       name = "tailscale"

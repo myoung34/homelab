@@ -31,13 +31,16 @@ locals {
     }
   }
 
+  temp_cert_sans = [] # useful when migrating controlplane nodes and having to add then remove
+  cert_sans      = setunion(keys(local.node_data.controlplanes), local.temp_cert_sans)
+
   node_data = {
     controlplanes = {
-      "192.168.1.19" = {
-        hostname              = "cluster11"
+      "192.168.1.22" = {
+        hostname              = "cluster13"
         install_disk          = "/dev/sda"
-        image                 = local.normal_image
-        network_hardware_addr = "00:e0*"
+        image                 = local.rpi_overlay_image
+        network_hardware_addr = "dc*"
         talos_version         = ""
         kubernetes_version    = ""
       },
@@ -59,17 +62,18 @@ locals {
       },
     }
     workers = {
-      "192.168.1.21" = {
-        hostname           = "cluster12"
+      "192.168.1.19" = {
+        hostname           = "cluster11"
         install_disk       = "/dev/sda"
-        image              = local.rpi_overlay_image
+        image              = local.normal_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
+        #network_hardware_addr = "00:e0*"
       },
-      "192.168.1.22" = {
-        hostname           = "cluster13"
+      "192.168.1.21" = {
+        hostname           = "cluster12"
         install_disk       = "/dev/sda"
         image              = local.rpi_overlay_image
         talos_version      = ""
@@ -85,6 +89,7 @@ locals {
         kubernetes_version = ""
         extra_device       = "/dev/disk/by-id/usb-SSK_SSK_Storage_012345678923-0:0"
         mount_point        = "/var/mnt/storage"
+
       },
       "192.168.1.24" = {
         hostname           = "cluster21"

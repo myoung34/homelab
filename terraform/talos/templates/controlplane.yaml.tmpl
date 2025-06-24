@@ -29,9 +29,9 @@ cluster:
   apiServer:
     image: registry.k8s.io/kube-apiserver:${kubernetes_version}
     certSANs:
-      - 192.168.1.19
-      - 192.168.1.25
-      - 192.168.1.26
+%{ for san in cert_sans ~}
+      - ${san}
+%{ endfor ~}
     disablePodSecurityPolicy: true
     admissionControl:
       - configuration:
