@@ -3,5 +3,4 @@ kind: Namespace
 metadata:
   labels:
     name: zigbee2mqtt
-    goldilocks.fairwinds.com/enabled: "true"
   name: zigbee2mqtt

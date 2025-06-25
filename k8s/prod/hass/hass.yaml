@@ -64,10 +64,6 @@ spec:
             port: 8123
           timeoutSeconds: 1
         name: hass-home-assistant
-        resources:
-          requests:
-            cpu: 35m
-            memory: 512M
         ports:
         - containerPort: 8123
           name: http

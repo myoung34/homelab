@@ -5,5 +5,4 @@ metadata:
   name: datadog
   labels:
     name: datadog
-    goldilocks.fairwinds.com/enabled: "true"
     pod-security.kubernetes.io/enforce: privileged

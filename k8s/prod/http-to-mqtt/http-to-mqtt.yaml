@@ -51,10 +51,6 @@ spec:
             name: http-to-mqtt
         image: "ghcr.io/myoung34/http-to-mqtt:latest"
         imagePullPolicy: Always
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256M
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0

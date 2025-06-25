@@ -67,10 +67,6 @@ spec:
       - env:
         - name: ZIGBEE2MQTT_DATA
           value: /data
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256M
         image: koenkk/zigbee2mqtt:2.4.0
         imagePullPolicy: IfNotPresent
         name: zigbee2mqtt
