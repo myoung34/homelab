@@ -11,6 +11,8 @@ spec:
         revision: HEAD
         directories:
           - path: "k8s/prod/*"
+          - path: "k8s/prod/actions-runner"
+            exclude: true
   template:
     metadata:
       name: "{{ path.basename }}"

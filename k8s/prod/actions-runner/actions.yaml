@@ -3,13 +3,11 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: actions-runner
-  namespace: actions-runner
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: actions-runner
-  namespace: runners
 spec:
   replicas: 0
   selector:

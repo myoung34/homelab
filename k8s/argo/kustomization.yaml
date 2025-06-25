@@ -9,6 +9,7 @@ resources:
  - vault.yaml
  - argocd.yaml
  - appset.yaml
+ - app-actions-runner.yaml
  - sa-wf.yaml
  - tailscale.yaml
  - tailscale-wf.yaml

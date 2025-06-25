@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: actions-runner
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+  project: default
+  revisionHistoryLimit: 5
+  source:
+    path: k8s/prod/actions-runner
+    repoURL: https://github.com/myoung34/homelab.git
+    targetRevision: HEAD
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    - ServerSideApply=true
+    - FailOnSharedResource=true
+    - RespectIgnoreDifferences=true
+    - SkipDryRunOnMissingResource=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
