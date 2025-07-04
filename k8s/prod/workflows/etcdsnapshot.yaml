@@ -23,8 +23,18 @@ spec:
           - -c
           - |
             apk add -U curl aws-cli
-            curl -sL https://github.com/siderolabs/talos/releases/download/v1.4.7/talosctl-linux-`uname -m | sed 's/aarch64/arm64/g' | sed 's/x86_64/amd64/g'` -o /usr/local/bin/talosctl
+
+            dig @8.8.8.8 github.com
+            dig @8.8.8.8 hooks.zapier.com
+
+            _arch=$(uname -m | sed 's/aarch64/arm64/g' | sed 's/x86_64/amd64/g')
+            _url="https://github.com/siderolabs/talos/releases/download/v1.9.4/talosctl-linux-${_arch}"
+
+            echo "downloading from ${_url}"
+            mkdir -p /usr/local/bin/
+            curl -L ${_url} -o /usr/local/bin/talosctl
             chmod +x /usr/local/bin/talosctl
+
             aws configure set default.s3.signature_version s3v4
             talosctl -n 192.168.1.22 etcd snapshot $(date '+%Y%m%d%H%M%S').snapshot
             aws --endpoint-url http://minio.consul.marcyoung.us:9000 s3 cp *.snapshot s3://backups/talos-etcd/
