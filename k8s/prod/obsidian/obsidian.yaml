@@ -59,7 +59,7 @@ spec:
             secretKeyRef:
               key: AWS_SECRET_ACCESS_KEY
               name: obsidian
-        image: "y4m4/s3www:v0.9.0"
+        image: "y4m4/s3www:v1.0.0"
         imagePullPolicy: IfNotPresent
         command:
         - "/s3www"
