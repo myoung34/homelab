@@ -49,7 +49,7 @@ helmCharts:
       - name: prometheus
         parameters: 0.0.0.0:9153
       - name: forward
-        parameters: . /etc/resolv.conf
+        parameters: . 8.8.8.8
       - name: cache
         parameters: 30
       - name: loop
