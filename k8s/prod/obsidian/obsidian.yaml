@@ -96,12 +96,3 @@ spec:
             port: 8080
           timeoutSeconds: 1
       serviceAccountName: default
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values:
-                - amd64
