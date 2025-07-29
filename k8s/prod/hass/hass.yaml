@@ -108,8 +108,8 @@ spec:
           cd /config;
           [[ -d "custom_components" ]] && (rm -rf custom_components;) || :;
           mkdir "custom_components";
-          git clone https://github.com/njobrien1006/hass_traeger custom_components/hass; mv custom_components/hass/custo    m_components/traeger custom_components; rm -rf custom_components/hass;
-          git clone https://github.com/watkins-matt/home-assistant-google-keep-sync custom_components/hass; mv     custom_components/hass/custom_components/google_keep_sync custom_components; rm -rf custom_components/hass;'
+          git clone https://github.com/njobrien1006/hass_traeger custom_components/hass; mv custom_components/hass/custom_components/traeger custom_components; rm -rf custom_components/hass;
+          git clone https://github.com/watkins-matt/home-assistant-google-keep-sync custom_components/hass; mv custom_components/hass/custom_components/google_keep_sync custom_components; rm -rf custom_components/hass;'
         env:
         - name: SECRETS_YAML
           valueFrom:
