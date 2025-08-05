@@ -1,8 +1,8 @@
 locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.9.5" # always do one rev less so we can push in machine.install.extensions with the upgrade cmd
-  kubernetes_version = "v1.32.3"
+  talos_version      = "v1.10.6" # always do one rev less so we can push in machine.install.extensions with the upgrade cmd
+  kubernetes_version = "v1.33.3"
 
   # Installer on rpi_4 board is unsupported without using the factory built one with overlays
   rpi_overlay_sha   = "893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b"
@@ -15,19 +15,6 @@ locals {
       env = {
         TS_AUTHKEY = data.vault_generic_secret.talos.data["tailscale_authkey"]
       }
-      version = "1.78.1"
-    }
-    fuse3 = {
-      version = "3.16.2"
-    }
-    iscsi-tools = {
-      version = "v0.1.6"
-    }
-    spin = {
-      version = "v0.18.0"
-    }
-    util-linux-tools = {
-      version = "2.40.4"
     }
   }
 
