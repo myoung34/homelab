@@ -1,0 +1,105 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: falco
+
+
+resources:
+  - namespace.yaml
+
+helmCharts:
+- name: falco
+  releaseName: falco
+  namespace: falco
+  version: 6.2.2
+  includeCRDs: true
+  repo: https://falcosecurity.github.io/charts
+  valuesInline:
+    driver:
+      kind: modern_ebpf
+      modernEbpf:
+        leastPrivileged: true
+    falcoctl:
+      config:
+        artifact:
+          install:
+            refs:
+            - falco-rules:4
+            - ghcr.io/myoung34/falco-test/custom-rules:1.0.1
+          follow:
+            refs:
+            - falco-rules:4
+            - ghcr.io/myoung34/falco-test/custom-rules:1.0.1
+            every: 2m
+    falco:
+      rules_files:
+        - /etc/falco/falco_rules.yaml
+        - /etc/falco/falco_rules.local.yaml
+        - /etc/falco/rules.d
+        - /etc/falco/custom-falco-rules.yaml
+    customRules:
+      falco_rules.overrides.yaml: |-
+        - list: file_paths
+          items:
+            - "/var/mnt/storage/*"
+            - "/config/*"
+
+        # seems this is no longer a default macro in /etc/falco/falco_rules.yaml,
+        # contrary to what the docs say so we define our own.
+        - macro: mkdir
+          condition: evt.type = mkdir
+
+
+        # this macro is a wrapper around file_paths
+        - macro: check_file_path
+          condition: >
+            fs.path.name pmatch (file_paths)
+
+        - rule: Detect New File
+          desc: detect new file created
+          condition: >
+            (evt.type = chmod or evt.type = fchmod) and check_file_path
+          output: >
+            File below a known directory opened for writing (user=%user.name
+            command=%proc.cmdline chmod=%fs.path.name parent=%proc.pname
+            pcmdline=%proc.pcmdline gparent=%proc.aname[2])
+          priority: WARNING
+          tags: [filesystem]
+        - rule: Detect New Directory
+          desc: detect new directory created
+          condition: >
+            mkdir and check_file_path
+          output: >
+            File below a known directory opened for writing (user=%user.name
+            command=%proc.cmdline mkdir=%fd.name parent=%proc.pname
+            pcmdline=%proc.pcmdline gparent=%proc.aname[2])
+          priority: WARNING
+          tags: [filesystem]
+        - rule: Detect File Permission or Ownership Change
+          desc: detect file permission/ownership change
+          condition: >
+            spawned_process and proc.name in (chmod, chown) and proc.args contains "/tmp/"
+          output: >
+            File below a known directory has permission or ownership change (user=%user.name
+            command=%proc.cmdline file=%fd.name chmod=%evt.rawarg.filename chown=%evt.rawarg.path
+            parent=%proc.pname pcmdline=%proc.pcmdline gparent=%proc.aname[2])
+          priority: WARNING
+          tags: [filesystem]
+        - rule: Detect Directory Change
+          desc: detect directories change
+          condition: >
+            spawned_process and proc.name in (mkdir, rmdir, mvdir, mv)
+          output: >
+            Directory Change in Filesystem (user=%user.name
+            command=%proc.cmdline file=%fd.name parent=%proc.pname pcmdline=%proc.pcmdline gparent=%proc.aname[2])
+          priority: WARNING
+          tags: [filesystem]
+    tolerations: []
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+              - cluster14
