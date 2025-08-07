@@ -15,7 +15,7 @@ terraform {
   required_providers {
     fastly = {
       source  = "fastly/fastly"
-      version = "~> 7.0"
+      version = "~> 8.0"
     }
 
     cloudflare = {
