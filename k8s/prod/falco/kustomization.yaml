@@ -19,23 +19,36 @@ helmCharts:
       modernEbpf:
         leastPrivileged: true
     falcoctl:
+      artifact:
+        install:
+          env:
+          - name: FALCOCTL_REGISTRY_AUTH_BASIC
+            value: ghcr.io,username,ghp_tokenhere
+        follow:
+          env:
+          - name: FALCOCTL_REGISTRY_AUTH_BASIC
+            value: ghcr.io,username,ghp_tokenhere
       config:
         artifact:
           install:
             refs:
             - falco-rules:4
-            - ghcr.io/myoung34/falco-test/custom-rules:1.0.1
+            - ghcr.io/myoung34/falco-test/custom-rules:1.0.3
+            - ghcr.io/myoung34/falco-rules/my-falco-rules:0.0.4
+            - ghcr.io/falcosecurity/plugins/plugin/container:0.3.5
           follow:
+            every: 2m
             refs:
             - falco-rules:4
-            - ghcr.io/myoung34/falco-test/custom-rules:1.0.1
-            every: 2m
+            - ghcr.io/myoung34/falco-test/custom-rules:1
+            - ghcr.io/myoung34/falco-rules/my-falco-rules:0
     falco:
       rules_files:
         - /etc/falco/falco_rules.yaml
         - /etc/falco/falco_rules.local.yaml
         - /etc/falco/rules.d
         - /etc/falco/custom-falco-rules.yaml
+        - /etc/falco/some-falco-rules.yaml
     customRules:
       falco_rules.overrides.yaml: |-
         - list: file_paths
