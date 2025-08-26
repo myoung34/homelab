@@ -6,7 +6,7 @@ helmCharts:
 - name: kube-state-metrics
   releaseName: kube-state-metrics
   namespace: kube-system
-  version: 6.1.4
+  version: 6.1.5
   includeCRDs: true
   repo: https://prometheus-community.github.io/helm-charts
   valuesInline:
