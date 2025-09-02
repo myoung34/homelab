@@ -3,7 +3,7 @@ terraform {
   required_providers {
     talos = {
       source  = "siderolabs/talos"
-      version = "~> 0.8"
+      version = "~> 0.9"
     }
     vault = {
       source  = "hashicorp/vault"
