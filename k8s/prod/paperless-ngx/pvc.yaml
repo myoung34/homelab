@@ -9,7 +9,7 @@ spec:
   resources:
     requests:
       storage: 2Gi
-  storageClassName: longhorn-static
+  storageClassName: longhorn
   volumeMode: Filesystem
   volumeName: paperless
 status:

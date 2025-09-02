@@ -18,5 +18,5 @@ spec:
       staleReplicaTimeout: "20"
     volumeHandle: paperless
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: longhorn-static
+  storageClassName: longhorn
   volumeMode: Filesystem
