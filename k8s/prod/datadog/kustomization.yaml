@@ -42,6 +42,15 @@ helmCharts:
         - secretRef:
             name: datadog
     agents:
+      volumes:
+        - hostPath:
+            path: /sys/kernel/tracing
+          name: tracefs
+      volumeMounts:
+        - mountPath: /sys/kernel/tracing
+          mountPropagation: None
+          name: tracefs
+          readOnly: false # Need RW for kprobe_events
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
           effect: "NoSchedule"
