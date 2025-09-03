@@ -12,6 +12,17 @@ helmCharts:
   releaseName: node-feature-discovery
   version: 0.17.3
   repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+  valuesInline:
+    worker:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
 
 patches:
   - target:
