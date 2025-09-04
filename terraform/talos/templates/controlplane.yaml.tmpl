@@ -20,8 +20,16 @@ cluster:
       - 10.244.0.0/16
     serviceSubnets:
       - 10.96.0.0/12
+    cni:
+      name: custom
+      urls:
+        - https://raw.githubusercontent.com/myoung34/homelab/37c372409183901d7586ec8ac634f6221719492b/terraform/talos/cilium.yaml
   proxy:
     image: registry.k8s.io/kube-proxy:${kubernetes_version}
+  controllerManager:
+    image: registry.k8s.io/kube-controller-manager:${kubernetes_version}
+  scheduler:
+    image: registry.k8s.io/kube-scheduler:${kubernetes_version}
   etcd:
     extraArgs:
       election-timeout: "50000"

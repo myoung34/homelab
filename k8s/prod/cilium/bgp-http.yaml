@@ -1,0 +1,61 @@
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: "http"
+  labels:
+    pool: "http"
+spec:
+  blocks:
+    - cidr: 192.168.250.100/32
+---
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumBGPAdvertisement
+metadata:
+  name: services
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          pool: "http"
+      #selector:
+      #  matchExpressions:
+      #    # To enable BGP advertisement for all LoadBalancer services, you can use the following expression
+      #    # See https://docs.cilium.io/en/latest/network/bgp-control-plane/bgp-control-plane-v2/#multipool-ipam to learn why
+      #    - { key: somekey, operator: NotIn, values: [ 'never-used-value' ] }
+---
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumBGPPeeringPolicy
+metadata:
+  name: 01-http-bgp-peering-policy
+spec:
+  nodeSelector:
+    matchExpressions:
+    - key: somekey
+      operator: NotIn
+      values:
+      - never-used-value
+  virtualRouters:
+  - exportPodCIDR: false
+    localASN: 65001
+    neighbors:
+    - connectRetryTimeSeconds: 120
+      eBGPMultihopTTL: 1
+      holdTimeSeconds: 90
+      keepAliveTimeSeconds: 30
+      peerASN: 65000
+      peerAddress: 192.168.0.1/32
+      peerPort: 179
+    serviceAdvertisements:
+    - LoadBalancerIP
+    serviceSelector:
+      matchExpressions:
+      - key: somekey
+        operator: NotIn
+        values:
+        - never-used-value
