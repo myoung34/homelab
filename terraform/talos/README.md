@@ -19,7 +19,7 @@ $ terraform apply \
   -target='talos_machine_configuration_apply.controlplane["192.168.1.26"]'
 $ # wait for them to all show waiting to bootstrap
 $ talosctl bootstrap -e ${_node} -n ${_node}
-$ # initially approve all pending CSR's so cilium and cert-approver can start working?
+$ # initially approve all pending CSR's so cert-approver can start working?
 $ k get csr | grep Pending
 $ for csr in $(k get csr | grep Pending | awk '{print $1}'); do kubectl certificate approve ${csr}; done
 $ # dont forget to delete the coredns deployment/replicaset to replace with your own, it has immutable fields
