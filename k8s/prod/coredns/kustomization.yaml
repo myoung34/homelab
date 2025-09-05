@@ -11,6 +11,15 @@ patches:
         path: "/spec/selector/app.kubernetes.io~1instance"
       - op: remove
         path: "/spec/selector/app.kubernetes.io~1name"
+  - target:
+      kind: Deployment
+      name: coredns
+    patch: |-
+      - op: remove
+        path: "/spec/selector/matchLabels/app.kubernetes.io~1instance"
+      - op: remove
+        path: "/spec/selector/matchLabels/app.kubernetes.io~1name"
+
 
 helmCharts:
 - name: coredns
