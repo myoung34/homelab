@@ -12,9 +12,9 @@ machine:
       rotate-server-certificates: true
   network:
     hostname: ${hostname}
-    interfaces:
-        - interface: tailscale0
-          mtu: 1420 # https://github.com/tailscale/tailscale/issues/12393#issuecomment-2893170282
+    #interfaces:
+    #    - interface: tailscale0
+    #      mtu: 1420 # https://github.com/tailscale/tailscale/issues/12393#issuecomment-2893170282
     nameservers:
       - 10.96.0.10
       - 45.90.28.103
