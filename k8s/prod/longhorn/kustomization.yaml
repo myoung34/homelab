@@ -23,3 +23,5 @@ helmCharts:
       snapshotterReplicaCount: 1
       provisionerReplicaCount: 1
       attacherReplicaCount: 1
+    persistence:
+      defaultDataLocality: "best-effort"
