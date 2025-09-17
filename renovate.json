@@ -30,23 +30,33 @@
       ]
     },
     {
-      "matchManagers": ["kustomize"],
-      "matchPaths": ["k8s/prod/datadog/**"],
+      "matchManagers": [
+        "kustomize"
+      ],
+      "matchFileNames": [
+        "k8s/prod/datadog/**"
+      ],
       "automerge": true,
       "separateMinorPatch": true
     },
     {
-      "matchManagers": ["kustomize"],
-      "matchPaths": ["k8s/prod/datadog/**"],
+      "matchManagers": [
+        "kustomize"
+      ],
+      "matchFileNames": [
+        "k8s/prod/datadog/**"
+      ],
       "automerge": true,
-      "matchUpdateTypes": ["patch"],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "enabled": false
     }
   ],
   "kubernetes": {
-    "fileMatch": [
-      "k8s/argo/.+\\.yaml$",
-      "k8s/prod/.+\\.yaml$"
+    "managerFilePatterns": [
+      "/k8s/argo/.+\\.yaml$/",
+      "/k8s/prod/.+\\.yaml$/"
     ]
   },
   "platformAutomerge": true
