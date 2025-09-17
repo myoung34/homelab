@@ -7,8 +7,5 @@ customization:
     - reboot=k
   systemExtensions:
     officialExtensions:
-      - siderolabs/fuse3
       - siderolabs/iscsi-tools
-      - siderolabs/spin
-      - siderolabs/util-linux-tools
       - siderolabs/tailscale

@@ -1,14 +1,14 @@
 locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.10.6" # always do one rev less so we can push in machine.install.extensions with the upgrade cmd
+  talos_version      = "v1.11.1"
   kubernetes_version = "v1.33.3"
 
-  # Installer on rpi_4 board is unsupported without using the factory built one with overlays
-  rpi_overlay_sha   = "893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b"
+  rpi_overlay_sha   = "c84fd32f2b3f4ec5d4463a308297cbb6d71bcd4e74699113cbc884909f205e05"
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
 
-  normal_image = "ghcr.io/siderolabs/installer:${local.talos_version}"
+  normal_overlay_sha   = "fc97d381b38e29a03b9a47876718f7f4bbbffc6a60fea34584c7662b3b1afc0f"
+  normal_overlay_image = "factory.talos.dev/installer/${local.normal_overlay_sha}:${local.talos_version}"
 
   extensions = {
     tailscale = {
@@ -52,7 +52,7 @@ locals {
       "192.168.1.19" = {
         hostname           = "cluster11"
         install_disk       = "/dev/sda"
-        image              = local.normal_image
+        image              = local.normal_overlay_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
@@ -81,7 +81,7 @@ locals {
       "192.168.1.24" = {
         hostname           = "cluster21"
         install_disk       = "/dev/sda"
-        image              = local.normal_image
+        image              = local.normal_overlay_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
