@@ -28,6 +28,19 @@
       "matchPackageNames": [
         "/.*/"
       ]
+    },
+    {
+      "matchManagers": ["kustomize"],
+      "matchPaths": ["k8s/prod/datadog/**"],
+      "automerge": true,
+      "separateMinorPatch": true
+    },
+    {
+      "matchManagers": ["kustomize"],
+      "matchPaths": ["k8s/prod/datadog/**"],
+      "automerge": true,
+      "matchUpdateTypes": ["patch"],
+      "enabled": false
     }
   ],
   "kubernetes": {
