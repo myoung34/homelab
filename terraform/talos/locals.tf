@@ -1,13 +1,13 @@
 locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.11.1"
-  kubernetes_version = "v1.33.3"
+  talos_version      = "v1.11.2"
+  kubernetes_version = "v1.34.1"
 
-  rpi_overlay_sha   = "c84fd32f2b3f4ec5d4463a308297cbb6d71bcd4e74699113cbc884909f205e05"
+  rpi_overlay_sha   = "1ebcf8682462cead022eabbb8f4e1b4127ab53054a3fb0ed705989e5feb0af28"
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
 
-  normal_overlay_sha   = "fc97d381b38e29a03b9a47876718f7f4bbbffc6a60fea34584c7662b3b1afc0f"
+  normal_overlay_sha   = "ee18d6fc347132ea01ecc45be5ab22582613ead3ffd90336ed342df7b13d257d"
   normal_overlay_image = "factory.talos.dev/installer/${local.normal_overlay_sha}:${local.talos_version}"
 
   extensions = {
