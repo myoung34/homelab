@@ -2,7 +2,7 @@ locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
   talos_version      = "v1.11.2"
-  kubernetes_version = "v1.34.1"
+  kubernetes_version = "v1.33.3"
 
   rpi_overlay_sha   = "1ebcf8682462cead022eabbb8f4e1b4127ab53054a3fb0ed705989e5feb0af28"
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
