@@ -39,11 +39,11 @@ helmCharts:
         enabled: true
       resources:
         requests:
-          cpu: 35m
-          memory: 105M
+          cpu: 50m
+          memory: 256M
         limits:
-          cpu: 35m
-          memory: 105M
+          cpu: 50m
+          memory: 256M
     applicationSet:
       webhook:
         ingress:
@@ -84,11 +84,11 @@ helmCharts:
         - --insecure
       resources:
         requests:
-          cpu: 49m
-          memory: 105M
+          cpu: 63m
+          memory: 110M
         limits:
-          cpu: 49m
-          memory: 105M
+          cpu: 63m
+          memory: 110M
     redis:
       resources:
         requests:
