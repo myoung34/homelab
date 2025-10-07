@@ -16,6 +16,11 @@ helmCharts:
     reloader:
       reloadOnCreate: true
       ignoreSecrets: false
+      deployment:
+        resources:
+          cpu: 15m
+          memory: 105M
+
 patches:
   - target:
       group: apps
