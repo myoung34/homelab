@@ -97,11 +97,10 @@ helmCharts:
             limits:
               cpu: 35m
               memory: 105M
-
       resources:
         requests:
-          cpu: 35m
-          memory: 105M
+          cpu: 70m
+          memory: 150M
         limits:
-          cpu: 35m
-          memory: 105M
+          cpu: 70m
+          memory: 150M
