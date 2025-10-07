@@ -18,3 +18,16 @@ helmCharts:
       enabled: true
       address: "http://192.168.3.2:8200"
       skipTLSVerify: true
+    controller:
+      kubeRbacProxy:
+        resources:
+          limits: {}
+          requests:
+            cpu: 11m
+            memory: 64Mi
+      manager:
+        resources:
+          limits: {}
+          requests:
+            cpu: 23m
+            memory: 53Mi

@@ -74,6 +74,10 @@ spec:
         - containerPort: 8081
           name: http
           protocol: TCP
+        resources:
+          requests:
+            cpu: 35m
+            memory: 105M
         livenessProbe:
           failureThreshold: 5
           initialDelaySeconds: 0

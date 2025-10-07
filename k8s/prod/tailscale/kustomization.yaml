@@ -19,3 +19,7 @@ helmCharts:
       mode: "true"
     operatorConfig:
       hostname: "homelab-operator"
+      resources:
+        requests:
+          cpu: 23m
+          memory: 105M

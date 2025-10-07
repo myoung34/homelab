@@ -63,6 +63,10 @@ spec:
         - containerPort: 3000
           name: http
           protocol: TCP
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
         readinessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0

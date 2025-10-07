@@ -14,6 +14,10 @@ helmCharts:
   repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
   valuesInline:
     master:
+      resources:
+        requests:
+          cpu: 15m
+          memory: 105M
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -24,6 +28,10 @@ helmCharts:
                 values:
                 - arm64
     worker:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 105M
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -34,6 +42,10 @@ helmCharts:
                 values:
                 - arm64
     gc:
+      resources:
+        requests:
+          cpu: 15m
+          memory: 105M
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

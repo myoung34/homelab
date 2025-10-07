@@ -80,6 +80,10 @@ spec:
             name: paperless-ngx
         image: "ghcr.io/paperless-ngx/paperless-ngx:2.18.4"
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 35m
+            memory: 1313M
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 120

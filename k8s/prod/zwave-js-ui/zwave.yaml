@@ -66,6 +66,10 @@ spec:
               port: http-ui
             initialDelaySeconds: 15
             periodSeconds: 30
+          resources:
+            requests:
+              cpu: 15m
+              memory: 145M
           readinessProbe:
             httpGet:
               path: /health

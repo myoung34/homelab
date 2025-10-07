@@ -74,6 +74,10 @@ spec:
           value: /data
         image: koenkk/zigbee2mqtt:2.6.2
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 35m
+            memory: 105M
         livenessProbe:
           failureThreshold: 5
           initialDelaySeconds: 0

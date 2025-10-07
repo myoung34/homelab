@@ -74,6 +74,10 @@ spec:
           tcpSocket:
             port: 1883
           timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
         ports:
         - containerPort: 1883
           name: mqtt

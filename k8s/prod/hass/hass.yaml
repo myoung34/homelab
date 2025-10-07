@@ -76,9 +76,6 @@ spec:
             port: 8123
           timeoutSeconds: 1
         resources:
-          limits:
-            cpu: 63m
-            memory: 717M
           requests:
             cpu: 63m
             memory: 717M

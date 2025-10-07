@@ -41,9 +41,6 @@ helmCharts:
         requests:
           cpu: 75m
           memory: 256M
-        limits:
-          cpu: 150m
-          memory: 256M
     applicationSet:
       webhook:
         ingress:
@@ -51,9 +48,6 @@ helmCharts:
       resources:
         requests:
           cpu: 23m
-          memory: 105M
-        limits:
-          cpu: 200m
           memory: 105M
       metrics:
         enabled: true
@@ -64,18 +58,12 @@ helmCharts:
         requests:
           cpu: 15m
           memory: 105M
-        limits:
-          cpu: 15m
-          memory: 105M
     controller:
       metrics:
         enabled: true
       resources:
         requests:
           cpu: 75m
-          memory: 298M
-        limits:
-          cpu: 200m
           memory: 298M
     server:
       metrics:
@@ -86,16 +74,10 @@ helmCharts:
         requests:
           cpu: 63m
           memory: 110M
-        limits:
-          cpu: 63m
-          memory: 110M
     redis:
       resources:
         requests:
           cpu: 15m
-          memory: 105M
-        limits:
-          cpu: 75m
           memory: 105M
 - name: argo-workflows
   releaseName: argocd-workflows
@@ -115,9 +97,6 @@ helmCharts:
         requests:
           cpu: 15m
           memory: 110M
-        limits:
-          cpu: 15m
-          memory: 110M
     server:
       metrics:
         enabled: true
@@ -127,9 +106,6 @@ helmCharts:
         - --insecure-skip-verify=true
       resources:
         requests:
-          cpu: 15m
-          memory: 127M
-        limits:
           cpu: 15m
           memory: 127M
     workflow:

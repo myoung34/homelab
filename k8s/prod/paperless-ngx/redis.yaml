@@ -44,6 +44,10 @@ spec:
           value: "1000"
         image: "redis:8"
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 35m
+            memory: 105M
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0

@@ -69,6 +69,10 @@ spec:
         - "obsidian-rendered"
         - "-address"
         - "0.0.0.0:8080"
+        resources:
+          requests:
+            cpu: 15m
+            memory: 105M
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0
