@@ -18,8 +18,9 @@ helmCharts:
       ignoreSecrets: false
       deployment:
         resources:
-          cpu: 15m
-          memory: 105M
+          requests:
+            cpu: 15m
+            memory: 105M
 
 patches:
   - target:
