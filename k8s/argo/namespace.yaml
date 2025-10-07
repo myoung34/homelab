@@ -6,4 +6,3 @@ metadata:
   labels:
     name: argocd
     app.kubernetes.io/instance: argocd
-    goldilocks.fairwinds.com/enabled: "true"

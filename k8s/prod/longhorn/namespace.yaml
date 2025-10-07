@@ -5,3 +5,4 @@ metadata:
   name: longhorn
   labels:
     pod-security.kubernetes.io/enforce: privileged
+    goldilocks.fairwinds.com/enabled: "true"
