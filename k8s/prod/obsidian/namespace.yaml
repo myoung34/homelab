@@ -5,3 +5,4 @@ metadata:
   name: obsidian
   labels:
     name: obsidian
+    goldilocks.fairwinds.com/enabled: "true"

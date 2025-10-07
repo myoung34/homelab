@@ -5,3 +5,4 @@ metadata:
   name: mosquitto
   labels:
     name: mosquitto
+    goldilocks.fairwinds.com/enabled: "true"

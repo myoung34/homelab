@@ -5,3 +5,4 @@ metadata:
   name: zwave-js-ui
   labels:
     name: zwave-js-ui
+    goldilocks.fairwinds.com/enabled: "true"

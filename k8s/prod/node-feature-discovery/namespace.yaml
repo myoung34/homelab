@@ -5,3 +5,4 @@ metadata:
   name: node-feature-discovery
   labels:
     name: node-feature-discovery
+    goldilocks.fairwinds.com/enabled: "true"

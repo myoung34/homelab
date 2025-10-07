@@ -5,3 +5,4 @@ metadata:
   name: tailscale
   labels:
     name: tailscale
+    goldilocks.fairwinds.com/enabled: "true"

@@ -39,10 +39,10 @@ helmCharts:
         enabled: true
       resources:
         requests:
-          cpu: 50m
+          cpu: 75m
           memory: 256M
         limits:
-          cpu: 50m
+          cpu: 75m
           memory: 256M
     applicationSet:
       webhook:
@@ -72,10 +72,10 @@ helmCharts:
         enabled: true
       resources:
         requests:
-          cpu: 49m
+          cpu: 75m
           memory: 298M
         limits:
-          cpu: 49m
+          cpu: 75m
           memory: 298M
     server:
       metrics:
