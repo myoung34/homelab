@@ -74,6 +74,13 @@ spec:
           tcpSocket:
             port: 6052
           timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 15m
+            memory: 105M
+          requests:
+            cpu: 15m
+            memory: 105M
         securityContext:
           capabilities:
             add:

@@ -5,3 +5,4 @@ metadata:
   name: vault-secrets-operator
   labels:
     name: vault-secrets-operator
+    goldilocks.fairwinds.com/enabled: "true"

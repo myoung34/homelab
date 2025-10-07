@@ -5,4 +5,3 @@ metadata:
   name: hass
   labels:
     name: hass
-    goldilocks.fairwinds.com/enabled: "true"
