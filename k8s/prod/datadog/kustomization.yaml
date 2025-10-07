@@ -54,3 +54,54 @@ helmCharts:
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
           effect: "NoSchedule"
+      containers:
+        agent:
+          resources:
+            requests:
+              cpu: 1469m
+              memory: 298M
+            limits:
+              cpu: 1469m
+              memory: 298M
+        processAgent:
+          resources:
+            requests:
+              cpu: 78m
+              memory: 64M
+            limits:
+              cpu: 78m
+              memory: 64M
+        systemProbe:
+          resources:
+            requests:
+              cpu: 78m
+              memory: 384M
+            limits:
+              cpu: 78m
+              memory: 384M
+        traceAgent:
+          resources:
+            requests:
+              cpu: 78m
+              memory: 37M
+            limits:
+              cpu: 78m
+              memory: 37M
+    clusterAgent:
+      containers:
+        initContainers:
+          resources:
+            requests:
+              cpu: 35m
+              memory: 105M
+            limits:
+              cpu: 35m
+              memory: 105M
+
+      resources:
+        requests:
+          cpu: 35m
+          memory: 105M
+        limits:
+          cpu: 35m
+          memory: 105M
