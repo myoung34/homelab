@@ -39,10 +39,10 @@ helmCharts:
         enabled: true
       resources:
         requests:
-          cpu: 50m
+          cpu: 75m
           memory: 256M
         limits:
-          cpu: 50m
+          cpu: 150m
           memory: 256M
     applicationSet:
       webhook:
@@ -53,7 +53,7 @@ helmCharts:
           cpu: 23m
           memory: 105M
         limits:
-          cpu: 23m
+          cpu: 200m
           memory: 105M
       metrics:
         enabled: true
@@ -72,10 +72,10 @@ helmCharts:
         enabled: true
       resources:
         requests:
-          cpu: 49m
+          cpu: 75m
           memory: 298M
         limits:
-          cpu: 49m
+          cpu: 200m
           memory: 298M
     server:
       metrics:
@@ -95,7 +95,7 @@ helmCharts:
           cpu: 15m
           memory: 105M
         limits:
-          cpu: 15m
+          cpu: 75m
           memory: 105M
 - name: argo-workflows
   releaseName: argocd-workflows

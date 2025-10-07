@@ -5,3 +5,4 @@ metadata:
   name: reloader
   labels:
     name: reloader
+    goldilocks.fairwinds.com/enabled: "true"

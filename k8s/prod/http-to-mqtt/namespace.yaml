@@ -5,3 +5,4 @@ metadata:
   name: http-to-mqtt
   labels:
     name: http-to-mqtt
+    goldilocks.fairwinds.com/enabled: "true"

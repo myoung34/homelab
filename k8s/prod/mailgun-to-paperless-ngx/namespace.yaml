@@ -5,3 +5,4 @@ metadata:
   name: mailgun-to-paperless-ngx
   labels:
     name: mailgun-to-paperless-ngx
+    goldilocks.fairwinds.com/enabled: "true"

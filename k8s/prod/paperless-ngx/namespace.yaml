@@ -5,3 +5,4 @@ metadata:
   name: paperless-ngx
   labels:
     name: paperless-ngx
+    goldilocks.fairwinds.com/enabled: "true"
