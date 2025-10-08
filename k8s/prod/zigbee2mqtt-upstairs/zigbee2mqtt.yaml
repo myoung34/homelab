@@ -76,8 +76,8 @@ spec:
           protocol: TCP
         resources:
           requests:
-            cpu: 35m
-            memory: 105M
+            cpu: 15m
+            memory: 127M
         livenessProbe:
           failureThreshold: 5
           initialDelaySeconds: 0

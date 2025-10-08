@@ -24,10 +24,10 @@ helmCharts:
           limits: {}
           requests:
             cpu: 11m
-            memory: 64Mi
+            memory: 64M
       manager:
         resources:
           limits: {}
           requests:
             cpu: 23m
-            memory: 53Mi
+            memory: 53M

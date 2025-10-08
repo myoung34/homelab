@@ -69,7 +69,7 @@ spec:
           resources:
             requests:
               cpu: 15m
-              memory: 145M
+              memory: 164M
           readinessProbe:
             httpGet:
               path: /health
