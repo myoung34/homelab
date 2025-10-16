@@ -1,0 +1,55 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kyverno
+
+
+resources:
+  - namespace.yaml
+  - sidecar.yaml
+
+helmCharts:
+- name: kyverno
+  releaseName: kyverno
+  namespace: kyverno
+  version: 3.5.2
+  includeCRDs: true
+  repo: https://kyverno.github.io/kyverno/
+  valuesInline:
+    admissionController:
+      replicas: 1
+    backgroundController:
+      backgroundController:
+      podAnnotations:
+        kyverno-policy-sidecar: "true"
+      replicas: 1
+    cleanupController:
+      replicas: 1
+    reportsController:
+      replicas: 1
+    #global:
+    #  nodeSelector:
+    #    kubernetes.io/hostname: cluster14
+
+patches:
+# fix size limit on some crds for their annotations by 
+# telling argocd to use replace=true sync option
+- target:
+    group: "apiextensions.k8s.io"
+    version: ""
+    kind: CustomResourceDefinition
+    name: clusterpolicies.kyverno.io
+  patch: |
+    - op: add
+      path: "/metadata/annotations/argocd.argoproj.io~1sync-options"
+      value: ServerSideApply=true
+      #value: Replace=true,ServerSideApply=true
+- target:
+    group: "apiextensions.k8s.io"
+    version: ""
+    kind: CustomResourceDefinition
+    name: policies.kyverno.io
+  patch: |
+    - op: add
+      path: "/metadata/annotations/argocd.argoproj.io~1sync-options"
+      value: ServerSideApply=true
+      #value: Replace=true,ServerSideApply=true
