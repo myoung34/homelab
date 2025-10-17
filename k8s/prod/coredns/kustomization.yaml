@@ -24,7 +24,7 @@ patches:
 helmCharts:
 - name: coredns
   releaseName: coredns
-  version: 1.44.3
+  version: 1.45.0
   includeCRDs: true
   repo: https://coredns.github.io/helm
   valuesInline:
