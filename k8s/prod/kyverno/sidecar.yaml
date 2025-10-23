@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kyverno-watcher
+  namespace: kyverno
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyverno-watcher
+  namespace: kyverno
+rules:
+- apiGroups:
+  - kyverno.io
+  resources:
+  - policies
+  - policies/status
+  - clusterpolicies
+  - clusterpolicies/status
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kyverno-watcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kyverno-watcher
+subjects:
+- kind: ServiceAccount
+  name: kyverno-watcher
+  namespace: kyverno
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kyverno-watcher
+  namespace: kyverno
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kyverno-watcher
+  template:
+    metadata:
+      labels:
+        app: kyverno-watcher
+    spec:
+      containers:
+      - env:
+        - name: GITHUB_TOKEN
+          value: changeme
+        - name: GH_OWNER
+          value: myoung34
+        - name: PACKAGE
+          value: kyverno-test/policies
+        - name: IMAGE_BASE
+          value: ghcr.io/myoung34/kyverno-test/policies
+        - name: POLL_INTERVAL
+          value: "60"
+        image: ghcr.io/myoung34/kyverno-test:latest
+        imagePullPolicy: Always
+        name: watcher
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+      serviceAccountName: kyverno-watcher
+      volumes:
+      - emptyDir: {}
+        name: tmp
