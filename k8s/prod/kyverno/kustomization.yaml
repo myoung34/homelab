@@ -5,7 +5,6 @@ namespace: kyverno
 
 resources:
   - namespace.yaml
-  - sidecar.yaml
 
 helmCharts:
 - name: kyverno
