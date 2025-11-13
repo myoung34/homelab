@@ -51,7 +51,7 @@ spec:
         - name: zwave-js-ui
           securityContext:
             {}
-          image: "zwavejs/zwave-js-ui:11.6.1"
+          image: "zwavejs/zwave-js-ui:11.7.0"
           imagePullPolicy: IfNotPresent
           ports:
             - name: http-ui
