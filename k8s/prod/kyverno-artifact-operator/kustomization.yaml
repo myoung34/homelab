@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kyverno-artifact-operator-system
+
+resources:
+  - namespace.yaml
+
+helmCharts:
+- name: kyverno-artifact-operator
+  releaseName: kyverno-artifact-operator
+  namespace: kyverno-artifact-operator-system
+  version: 0.1.1
+  includeCRDs: true
+  repo: https://octokode.github.io/helm-charts
+  valuesInline: {}
