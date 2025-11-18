@@ -2,6 +2,6 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: kyverno-artifact-operator-system
+  name: kyverno
   labels:
-    name: kyverno-artifact-operator-system
+    name: kyverno

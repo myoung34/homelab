@@ -1,15 +1,25 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: kyverno-artifact-operator-system
+namespace: kyverno
 
 resources:
   - namespace.yaml
+  #- kyverno-secret.yaml
 
 helmCharts:
 - name: kyverno-artifact-operator
   releaseName: kyverno-artifact-operator
   namespace: kyverno-artifact-operator-system
-  version: 0.1.1
+  version: 0.2.1
   includeCRDs: true
   repo: https://octokode.github.io/helm-charts
-  valuesInline: {}
+  valuesInline:
+    kyverno:
+      enabled: false
+  #  image:
+  #    repository: ghcr.io/octokode/kyverno-artifact-operator
+  #    tag: "0.2.1"
+  #  watcher:
+  #    image:
+  #      repository: ghcr.io/octokode/kyverno-artifact-operator
+  #      tag: "0.2.1"
