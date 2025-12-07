@@ -67,7 +67,7 @@ spec:
       - env:
         - name: ZIGBEE2MQTT_DATA
           value: /data
-        image: koenkk/zigbee2mqtt:2.7.0
+        image: koenkk/zigbee2mqtt:2.7.1
         imagePullPolicy: IfNotPresent
         name: zigbee2mqtt
         ports:
