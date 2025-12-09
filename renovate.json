@@ -27,7 +27,8 @@
       "versioning": "digest",
       "matchPackageNames": [
         "/.*/"
-      ]
+      ],
+      "automerge": true
     },
     {
       "matchManagers": [
@@ -57,7 +58,8 @@
     "managerFilePatterns": [
       "/k8s/argo/.+\\.yaml$/",
       "/k8s/prod/.+\\.yaml$/"
-    ]
+    ],
+    "automerge": true
   },
   "platformAutomerge": true
 }
