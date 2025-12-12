@@ -31,6 +31,7 @@ data:
     homeassistant:
       enabled: true
     serial:
+      reconnect: true
       adapter: deconz
       port: tcp://ser2net.ser2net.svc.cluster.local:3001
     mqtt:
