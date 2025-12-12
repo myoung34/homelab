@@ -13,23 +13,21 @@ metadata:
 data:
   configuration.yaml: |
     ota:
-      ikea_ota_use_test_url: false
       disable_automatic_update_check: true
     advanced:
-      homeassistant_discovery_topic: homeassistant
-      homeassistant_status_topic: homeassistant/status
       last_seen: ISO_8601
       log_level: debug
       log_output:
         - console
       network_key: '!secrets network_key'
       channel: 25
-    experimental:
-      new_api: true
     frontend:
+      enabled: true
       port: 8080
     homeassistant:
       enabled: true
+      discovery_topic: homeassistant
+      status_topic: homeassistant/status
     serial:
       reconnect: true
       adapter: deconz
@@ -38,4 +36,4 @@ data:
       base_topic: zigbee2mqtt
       include_device_information: true
       server: mqtt://mosquitto.mosquitto.svc.cluster.local
-    permit_join: false
+    version: 4

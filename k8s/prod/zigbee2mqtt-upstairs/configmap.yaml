@@ -12,11 +12,8 @@ metadata:
 data:
   configuration.yaml: |
     ota:
-      ikea_ota_use_test_url: false
       disable_automatic_update_check: true
     advanced:
-      homeassistant_discovery_topic: homeassistant
-      homeassistant_status_topic: homeassistant/status
       last_seen: ISO_8601
       log_level: debug
       log_output:
@@ -24,19 +21,27 @@ data:
       network_key: '!secrets network_key'
       channel: 15
       pan_id: 10043
-      ext_pan_id: [135,45,27,127,57,99,139,122]
-    experimental:
-      new_api: true
+      ext_pan_id:
+        - 135
+        - 45
+        - 27
+        - 127
+        - 57
+        - 99
+        - 139
+        - 122
     frontend:
+      enabled: true
       port: 8081
     homeassistant:
       enabled: true
+      discovery_topic: homeassistant
+      status_topic: homeassistant/status
     serial:
-      # Adapter type, allowed values: `zstack`, `ember`, `deconz`, `zigate` or `zboss`
       adapter: zstack
-      port: 'tcp://tubeszb-upstairs.iot.marcyoung.us:6638'
+      port: tcp://tubeszb-upstairs.iot.marcyoung.us:6638
     mqtt:
       base_topic: zigbee2mqtt-upstairs
       include_device_information: true
-      server: 'mqtt://mosquitto.mosquitto.svc.cluster.local'
-    permit_join: false
+      server: mqtt://mosquitto.mosquitto.svc.cluster.local
+    version: 4
