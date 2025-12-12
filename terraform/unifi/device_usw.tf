@@ -11,6 +11,22 @@ resource "unifi_device" "usw" {
   }
 
   port_override {
+    name   = "workspace ap"
+    number = 1
+  }
+
+  port_override {
+    name   = "hallway ap"
+    number = 2
+  }
+
+  port_override {
+    name    = "tubeszb_upstairs"
+    number  = 9
+    op_mode = "switch"
+  }
+
+  port_override {
     name   = "cluster 1,1"
     number = 7
   }
@@ -43,11 +59,17 @@ resource "unifi_device" "usw" {
     number = 5
   }
   port_override {
-    name   = "garage ap"
+    name   = "workspace ap"
     number = 2
   }
   port_override {
     name   = "udm"
     number = 23
+  }
+
+  lifecycle {
+    ignore_changes = [
+      port_override,
+    ]
   }
 }

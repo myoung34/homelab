@@ -1,12 +1,12 @@
 data "unifi_ap_group" "default" {
 }
 
-data "unifi_ap_group" "garage" {
-  name = "Garage"
+data "unifi_ap_group" "workspace" {
+  name = "Workspace"
 }
 
-data "unifi_ap_group" "misc" {
-  name = "misc"
+data "unifi_ap_group" "hallway" {
+  name = "Hallway"
 }
 
 data "unifi_user_group" "default" {

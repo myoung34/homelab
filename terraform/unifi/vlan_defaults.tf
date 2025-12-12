@@ -51,24 +51,3 @@ resource "unifi_network" "default_wan1" {
     ]
   }
 }
-
-resource "unifi_network" "default_wan2" {
-  dhcp_dns                   = local.nextdns_servers
-  name                       = "Backup (WAN2)"
-  purpose                    = "wan"
-  vlan_id                    = 0
-  wan_dns                    = local.nextdns_servers
-  network_group              = ""
-  wan_networkgroup           = "WAN2"
-  wan_type                   = "dhcp"
-  wan_type_v6                = "disabled"
-  dhcp_v6_dns_auto           = false
-  dhcp_v6_lease              = 0
-  ipv6_ra_preferred_lifetime = 0
-  ipv6_ra_valid_lifetime     = 0
-  lifecycle {
-    ignore_changes = [
-      ipv6_interface_type,
-    ]
-  }
-}

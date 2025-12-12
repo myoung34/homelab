@@ -9,11 +9,6 @@ resource "unifi_device" "udm_pro" {
   }
 
   port_override {
-    name   = "office usw"
-    number = 2
-  }
-
-  port_override {
     name    = "bignasty"
     number  = 4
     op_mode = "switch"
@@ -35,7 +30,7 @@ resource "unifi_device" "udm_pro" {
 
   lifecycle {
     ignore_changes = [
-      "port_override"
+      port_override
     ]
   }
 }
