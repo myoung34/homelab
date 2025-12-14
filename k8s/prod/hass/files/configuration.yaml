@@ -3,7 +3,6 @@ homeassistant:
   latitude: 36.05176059430268
   longitude: -86.96233545971482
   elevation: 0
-  unit_system: imperial
   time_zone: America/Chicago
   customize: !include customize.yaml
   allowlist_external_dirs:
@@ -32,11 +31,6 @@ group: !include groups.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
-
-
-datadog:
-  host: 192.168.3.2
-  port: 8126
 
 
 google_assistant:
