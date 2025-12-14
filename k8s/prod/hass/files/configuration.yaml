@@ -1,7 +1,7 @@
 homeassistant:
   name: Home
-  latitude: 36.066
-  longitude: -86.9659
+  latitude: 36.05176059430268
+  longitude: -86.96233545971482
   elevation: 0
   unit_system: imperial
   time_zone: America/Chicago
@@ -46,42 +46,6 @@ google_assistant:
   exposed_domains: []
   entity_config: {}
 
-switch:
-  platform: template
-  switches:
-    front_door:
-      unique_id: front_door
-      turn_on:
-        service: lock.lock
-        data: {}
-        target:
-          entity_id: lock.front_door
-      turn_off:
-        service: lock.unlock
-        data: {}
-        target:
-          entity_id: lock.front_door
-    toggle_front_door:
-      unique_id: toggle_front_door
-      turn_on:
-        service: script.front_door
-      turn_off:
-        service: script.front_door
-    activate_garage:
-      unique_id: garage
-      turn_on:
-        service: script.garage_door
-      turn_off:
-        service: script.garage_door
-    automation_liams_room:
-      unique_id: liams_room
-      turn_on:
-        service: automation.trigger
-        entity_id: automation.liam_turn_things_on
-      turn_off:
-        service: automation.trigger
-        entity_id: automation.liam_turn_things_off
-
 recorder:
   purge_keep_days: 30
   db_url: !secret psql_connector_string
@@ -98,15 +62,3 @@ recorder:
       - sensor.date
     event_types:
       - call_service # Don't record service calls
-
-shell_command:
-  remove_backup: "/config/scripts/remove_backup.sh {{ path }}"
-
-
-rest_command:
-  fire_webhook:
-    url: !secret slack_webhook_url
-    method: "POST"
-    headers:
-      Content-Type: "application/json"
-    payload: '{"message": "{{ message }}"}'
