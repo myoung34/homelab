@@ -43,8 +43,7 @@ google_assistant:
   project_id: something-99631
   service_account: !include SERVICE_ACCOUNT.json
   report_state: true
-  exposed_domains:
-    - switch
+  exposed_domains: []
   entity_config: {}
 
 switch:
