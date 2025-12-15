@@ -18,6 +18,10 @@ helmCharts:
       talos:
         enabled: true
     datadog:
+      clusterName: prod
+      orchestratorExplorer:
+        kubelet_configuration_check:
+          enabled: false
       confd:
         argocd.yaml: |-
           instances:
