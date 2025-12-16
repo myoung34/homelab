@@ -26,6 +26,9 @@ helmCharts:
               app_controller_endpoint: http://argocd-application-controller-metrics.argocd.svc.cluster.local:8082/metrics
               api_server_endpoint: http://argocd-server-metrics.argocd.svc.cluster.local:8083/metrics
               repo_server_endpoint: http://argocd-repo-server-metrics.argocd.svc.cluster.local:8084/metrics
+      orchestratorExplorer:
+        kubelet_configuration_check:
+          enabled: false
       apiKeyExistingSecret:  datadog
       logs:
         enabled: true
@@ -88,20 +91,20 @@ helmCharts:
             limits:
               cpu: 78m
               memory: 37M
-    clusterAgent:
-      containers:
-        initContainers:
-          resources:
-            requests:
-              cpu: 93m
-              memory: 298M
-            limits:
-              cpu: 105m
-              memory: 336M
-      resources:
-        requests:
-          cpu: 70m
-          memory: 150M
-        limits:
-          cpu: 70m
-          memory: 150M
+    #clusterAgent:
+    #  containers:
+    #    initContainers:
+    #      resources:
+    #        requests:
+    #          cpu: 93m
+    #          memory: 298M
+    #        limits:
+    #          cpu: 105m
+    #          memory: 336M
+    #  resources:
+    #    requests:
+    #      cpu: 70m
+    #      memory: 150M
+    #    limits:
+    #      cpu: 70m
+    #      memory: 150M
