@@ -93,11 +93,11 @@ helmCharts:
         initContainers:
           resources:
             requests:
-              cpu: 35m
-              memory: 105M
+              cpu: 93m
+              memory: 298M
             limits:
-              cpu: 35m
-              memory: 105M
+              cpu: 105m
+              memory: 336M
       resources:
         requests:
           cpu: 70m
