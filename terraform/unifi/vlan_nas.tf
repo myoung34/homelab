@@ -18,7 +18,7 @@ resource "unifi_network" "nas" {
   ipv6_ra_preferred_lifetime = 14400
   ipv6_ra_valid_lifetime     = 0
   ipv6_ra_priority           = "high"
-  multicast_dns              = false
+  multicast_dns              = true
   name                       = "NAS"
   purpose                    = "corporate"
   site                       = "default"

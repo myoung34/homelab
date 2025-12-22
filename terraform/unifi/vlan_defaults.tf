@@ -4,7 +4,7 @@ resource "unifi_network" "default" {
   dhcpd_boot_enabled         = false
   domain_name                = "localdomain"
   ipv6_ra_enable             = true
-  multicast_dns              = false
+  multicast_dns              = true
   subnet                     = "192.168.0.0/24"
   vlan_id                    = 0
   dhcp_dns                   = local.nextdns_servers
@@ -32,8 +32,8 @@ resource "unifi_network" "default_wan1" {
   dhcp_dns                   = local.nextdns_servers
   dhcpd_boot_enabled         = false
   ipv6_ra_enable             = false
-  multicast_dns              = false
-  name                       = "Default (WAN1)"
+  multicast_dns              = true
+  name                       = "WAN1"
   purpose                    = "wan"
   vlan_id                    = 0
   wan_dns                    = local.nextdns_servers

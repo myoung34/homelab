@@ -5,7 +5,7 @@ resource "unifi_network" "iot" {
   dhcp_start                 = "192.168.4.100"
   dhcp_stop                  = "192.168.4.254"
   dhcpd_boot_enabled         = false
-  multicast_dns              = false
+  multicast_dns              = true
   name                       = "IoT"
   site                       = "default"
   subnet                     = "192.168.4.0/24"
