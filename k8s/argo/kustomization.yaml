@@ -70,10 +70,6 @@ helmCharts:
         enabled: true
       extraArgs:
         - --insecure
-      resources:
-        requests:
-          cpu: 63m
-          memory: 110M
     redis:
       resources:
         requests:
