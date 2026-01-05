@@ -1,47 +1,15 @@
-resource "cloudflare_dns_record" "pergola-lights" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "pergola-lights.iot.marcyoung.us"
-  content = "192.168.4.100"
-  type    = "A"
-  ttl     = "3600"
-}
-
-resource "cloudflare_dns_record" "garage-switch" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "garage-switch.iot.marcyoung.us"
-  content = "192.168.4.101"
-  type    = "A"
-  ttl     = "3600"
-}
-
-resource "cloudflare_dns_record" "front-porch-switch" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "front-porch-switch.iot.marcyoung.us"
-  content = "192.168.4.103"
-  type    = "A"
-  ttl     = "3600"
-}
-
-resource "cloudflare_dns_record" "liam-room-starlights" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "liam-room-starlights.iot.marcyoung.us"
-  content = "192.168.4.104"
-  type    = "A"
-  ttl     = "3600"
-}
-
-resource "cloudflare_dns_record" "ecobee" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "ecobee.iot.marcyoung.us"
-  content = "192.168.4.105"
-  type    = "A"
-  ttl     = "3600"
-}
-
 resource "cloudflare_dns_record" "tubeszb-upstairs" {
   zone_id = local.marcyoung_us_zone_id
   name    = "tubeszb-upstairs.iot.marcyoung.us"
   content = "192.168.4.108"
+  type    = "A"
+  ttl     = "3600"
+}
+
+resource "cloudflare_dns_record" "tubeszb-workspace" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "tubeszb-workspace.iot.marcyoung.us"
+  content = "192.168.4.102"
   type    = "A"
   ttl     = "3600"
 }
@@ -70,14 +38,6 @@ resource "cloudflare_dns_record" "plaato-airlock" {
   ttl     = "3600"
 }
 
-resource "cloudflare_dns_record" "liamplug" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "liamplug.iot.marcyoung.us"
-  content = "192.168.4.112"
-  type    = "A"
-  ttl     = "3600"
-}
-
 resource "cloudflare_dns_record" "plug1" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plug1.iot.marcyoung.us"
@@ -98,22 +58,6 @@ resource "cloudflare_dns_record" "plug3" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plug3.iot.marcyoung.us"
   content = "192.168.4.114"
-  type    = "A"
-  ttl     = "3600"
-}
-
-resource "cloudflare_dns_record" "driveway-switch" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "driveway-switch.iot.marcyoung.us"
-  content = "192.168.4.120"
-  type    = "A"
-  ttl     = "3600"
-}
-
-resource "cloudflare_dns_record" "unicorn" {
-  zone_id = local.marcyoung_us_zone_id
-  name    = "unicorn.iot.marcyoung.us"
-  content = "192.168.4.166"
   type    = "A"
   ttl     = "3600"
 }
