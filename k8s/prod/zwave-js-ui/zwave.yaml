@@ -88,4 +88,4 @@ spec:
       volumes:
         - name: store
           persistentVolumeClaim:
-            claimName: zwave-js-ui
+            claimName: zwave-js-ui-data

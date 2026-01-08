@@ -10,6 +10,7 @@ resources:
   - recurringjobs.yaml
   - zigbee2mqtt.yaml
   - zigbee2mqtt-upstairs.yaml
+  - zwave-js-ui.yaml
 
 helmCharts:
 - name: longhorn

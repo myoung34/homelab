@@ -1,13 +1,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: zwave-js-ui
+  name: zwave-js-ui-data
+  namespace: zwave-js-ui
 spec:
   accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
+  - ReadWriteOnce
   resources:
     requests:
-      storage: 128Mi
+      storage: 1Gi
+  storageClassName: longhorn-static
   volumeMode: Filesystem
-  volumeName: zwave-js-ui
+  volumeName: zwave-js-ui-data
