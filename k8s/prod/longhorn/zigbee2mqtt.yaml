@@ -1,0 +1,49 @@
+apiVersion: longhorn.io/v1beta2
+kind: Volume
+metadata:
+  labels:
+    backup-target: default
+    backup-volume: zigbee2mqtt-workspace-data
+    longhornvolume: zigbee2mqtt-workspace-data
+    recurring-job-group.longhorn.io/default: enabled
+    recurring-job.longhorn.io/backup: enabled
+    recurring-job.longhorn.io/snapshot: enabled
+    recurring-job.longhorn.io/snapshot-cleanup: enabled
+    recurring-job.longhorn.io/snapshot-delete: enabled
+    setting.longhorn.io/remove-snapshots-during-filesystem-trim: ignored
+    setting.longhorn.io/replica-auto-balance: ignored
+    setting.longhorn.io/snapshot-data-integrity: ignored
+  name: zigbee2mqtt-workspace-data
+  namespace: longhorn-system
+spec:
+  Standby: false
+  accessMode: rwo
+  backingImage: ""
+  backupBlockSize: "2097152"
+  backupCompressionMethod: lz4
+  backupTargetName: default
+  dataEngine: v1
+  dataLocality: disabled
+  dataSource: ""
+  disableFrontend: false
+  diskSelector: []
+  encrypted: false
+  freezeFilesystemForSnapshot: ignored
+  #fromBackup: s3://longhorn@minio.consul.marcyoung.us/backups/?backup=backup-3ed87759d46247c7&volume=zigbee2mqtt-workspace-data
+  frontend: blockdev
+  nodeSelector: []
+  numberOfReplicas: 2
+  offlineRebuilding: ignored
+  replicaAutoBalance: ignored
+  replicaDiskSoftAntiAffinity: ignored
+  replicaRebuildingBandwidthLimit: 0
+  replicaSoftAntiAffinity: ignored
+  replicaZoneSoftAntiAffinity: ignored
+  restoreVolumeRecurringJob: enabled
+  revisionCounterDisabled: false
+  size: "1073741824"
+  snapshotDataIntegrity: ignored
+  snapshotMaxCount: 250
+  snapshotMaxSize: "0"
+  staleReplicaTimeout: 20
+  unmapMarkSnapChainRemoved: ignored

@@ -128,4 +128,4 @@ spec:
         name: zigbee2mqtt-settings
       - name: data
         persistentVolumeClaim:
-          claimName: zigbee2mqtt
+          claimName: zigbee2mqtt-workspace-data
