@@ -21,16 +21,16 @@ data:
         - console
       network_key: '!secrets network_key'
       channel: 15
-      pan_id: 10043
+      pan_id: 23716
       ext_pan_id:
-        - 135
-        - 45
-        - 27
-        - 127
-        - 57
-        - 99
+        - 245
         - 139
-        - 122
+        - 216
+        - 154
+        - 179
+        - 199
+        - 17
+        - 40
     frontend:
       enabled: true
       port: 8080

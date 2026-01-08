@@ -121,13 +121,6 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       enableServiceLinks: true
       hostNetwork: true
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: feature.node.kubernetes.io/usb-08_0bda_9210.present
-                operator: Exists
       serviceAccountName: default
       volumes:
       - configMap:
