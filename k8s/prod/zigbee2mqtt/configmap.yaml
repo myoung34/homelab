@@ -20,7 +20,17 @@ data:
       log_output:
         - console
       network_key: '!secrets network_key'
-      channel: 25
+      channel: 15
+      pan_id: 10043
+      ext_pan_id:
+        - 135
+        - 45
+        - 27
+        - 127
+        - 57
+        - 99
+        - 139
+        - 122
     frontend:
       enabled: true
       port: 8080
@@ -29,11 +39,10 @@ data:
       discovery_topic: homeassistant
       status_topic: homeassistant/status
     serial:
-      reconnect: true
-      adapter: deconz
-      port: tcp://ser2net.ser2net.svc.cluster.local:3001
+      adapter: zstack
+      port: tcp://tubeszb-workspace.iot.marcyoung.us:6638
     mqtt:
-      base_topic: zigbee2mqtt
+      base_topic: zigbee2mqtt-workspace
       include_device_information: true
       server: mqtt://mosquitto.mosquitto.svc.cluster.local
     version: 4

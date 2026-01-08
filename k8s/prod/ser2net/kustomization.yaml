@@ -4,5 +4,4 @@ namespace: ser2net
 
 resources:
   - common.yaml
-  - ser2net-zigbee.yaml
   - ser2net-zwave.yaml
