@@ -57,7 +57,7 @@ resource "cloudflare_dns_record" "plug2" {
 resource "cloudflare_dns_record" "plug3" {
   zone_id = local.marcyoung_us_zone_id
   name    = "plug3.iot.marcyoung.us"
-  content = "192.168.4.114"
+  content = "192.168.4.112"
   type    = "A"
   ttl     = "3600"
 }

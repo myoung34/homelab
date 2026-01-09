@@ -32,6 +32,6 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |plaato-airlock|2c:f4:32:0f:78:68|IoT|192.168.4.111|
 |plug1|e8:68:e7:f3:23:a8|IoT|192.168.4.113|
 |plug2|a4:cf:12:b7:ff:5b|IoT|192.168.4.107|
-|plug3|48:3f:da:2a:d7:01|IoT|192.168.4.114|
+|plug3|48:3f:da:27:7c:c3|IoT|192.168.4.112|
 |tubeszb-upstairs|08:b6:1f:71:18:b7|IoT|192.168.4.108|
 |tubeszb-workspace|ec:c9:ff:ba:61:1f|IoT|192.168.4.102|

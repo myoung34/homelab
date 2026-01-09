@@ -119,4 +119,4 @@ spec:
         name: zigbee2mqtt-upstairs-settings
       - name: data
         persistentVolumeClaim:
-          claimName: zigbee2mqtt-workspace-data
+          claimName: zigbee2mqtt-upstairs-data
