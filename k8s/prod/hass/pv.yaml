@@ -1,21 +1,21 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: hass
+  name: hass-data
 spec:
   accessModes:
   - ReadWriteOnce
   capacity:
-    storage: 128Mi
-  hostPath:
-    path: /var/mnt/storage/hass
-    type: DirectoryOrCreate
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: feature.node.kubernetes.io/usb-08_0bda_9210.present
-          operator: Exists
+    storage: 1Gi
+  csi:
+    driver: driver.longhorn.io
+    fsType: ext4
+    volumeAttributes:
+      diskSelector: ""
+      nodeSelector: ""
+      numberOfReplicas: "2"
+      staleReplicaTimeout: "20"
+    volumeHandle: hass-data
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-path
+  storageClassName: longhorn-static
   volumeMode: Filesystem

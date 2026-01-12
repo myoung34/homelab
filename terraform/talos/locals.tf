@@ -74,8 +74,8 @@ locals {
         image              = local.rpi_overlay_image
         talos_version      = ""
         kubernetes_version = ""
-        extra_device       = "/dev/disk/by-id/usb-SSK_SSK_Storage_012345678923-0:0"
-        mount_point        = "/var/mnt/storage"
+        extra_device       = ""
+        mount_point        = ""
 
       },
       "192.168.1.24" = {

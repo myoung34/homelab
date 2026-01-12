@@ -18,4 +18,5 @@ configMapGenerator:
   - devices/plug3.yaml
   - devices/tubeszb-upstairs.yaml
   - devices/tubeszb-workspace.yaml
-  - devices/ble_proxy.yaml
+  - devices/ble_proxy_meater_1.yaml
+  - devices/ble_proxy_meater_2.yaml
