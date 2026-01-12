@@ -11,7 +11,6 @@ machine:
     extraArgs:
       rotate-server-certificates: true
   network:
-    hostname: ${hostname}
     #interfaces:
     #    - interface: tailscale0
     #      mtu: 1420 # https://github.com/tailscale/tailscale/issues/12393#issuecomment-2893170282
@@ -28,13 +27,8 @@ machine:
     image: ${image}
     bootloader: true
     wipe: true
-    extraKernelArgs:
-      - talos.logging.kernel=tcp://192.168.3.2:5046/
-      - reboot=k
-      - selinux=0
   features:
     rbac: true
-    stableHostname: true
     apidCheckExtKeyUsage: true
     diskQuotaSupport: false
   time:
@@ -46,3 +40,8 @@ machine:
     fs.inotify.max_user_instances: "256"
     vm.swappiness: "1"
     net.ipv4.ip_forward: "1"
+---
+apiVersion: v1alpha1
+kind: HostnameConfig
+auto: off
+hostname: ${hostname}
