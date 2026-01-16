@@ -17,7 +17,8 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |----|----|----|----|
 |barcaderator|f8:e4:e3:75:0e:3b|WIFI|192.168.2.70|
 |bigNASty|00:11:32:97:da:3c|NAS|192.168.3.2|
-|ble-proxy|64:e8:33:84:06:98|WIFI|192.168.4.109|
+|ble-proxy-meater-1|64:e8:33:84:06:98|WIFI|192.168.4.109|
+|ble-proxy-meater-1|58:8c:81:ae:4b:78|WIFI|192.168.4.106|
 |cluster11|00:e0:4c:88:0b:85|cluster|192.168.1.19|
 |cluster22|e4:5f:01:58:2d:7d|cluster|192.168.1.25|
 |cluster23|e4:5f:01:58:de:82|cluster|192.168.1.26|

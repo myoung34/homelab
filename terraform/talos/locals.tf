@@ -4,11 +4,8 @@ locals {
   talos_version      = "v1.12.1"
   kubernetes_version = "v1.33.3"
 
-  rpi_overlay_sha   = "1ebcf8682462cead022eabbb8f4e1b4127ab53054a3fb0ed705989e5feb0af28"
+  rpi_overlay_sha   = "893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b"
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
-
-  normal_overlay_sha   = "ee18d6fc347132ea01ecc45be5ab22582613ead3ffd90336ed342df7b13d257d"
-  normal_overlay_image = "factory.talos.dev/installer/${local.normal_overlay_sha}:${local.talos_version}"
 
   extensions = {
     tailscale = {
@@ -52,7 +49,7 @@ locals {
       "192.168.1.19" = {
         hostname           = "cluster11"
         install_disk       = "/dev/sda"
-        image              = local.normal_overlay_image
+        image              = local.rpi_overlay_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
@@ -81,7 +78,7 @@ locals {
       "192.168.1.24" = {
         hostname           = "cluster21"
         install_disk       = "/dev/sda"
-        image              = local.normal_overlay_image
+        image              = local.rpi_overlay_image
         talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""

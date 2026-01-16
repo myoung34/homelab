@@ -14,10 +14,18 @@ resource "cloudflare_dns_record" "tubeszb-workspace" {
   ttl     = "3600"
 }
 
-resource "cloudflare_dns_record" "ble-proxy" {
+resource "cloudflare_dns_record" "ble-proxy-meater-1" {
   zone_id = local.marcyoung_us_zone_id
-  name    = "ble-proxy.iot.marcyoung.us"
+  name    = "ble-proxy-meater-1.iot.marcyoung.us"
   content = "192.168.4.109"
+  type    = "A"
+  ttl     = "3600"
+}
+
+resource "cloudflare_dns_record" "ble-proxy-meater-2" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "ble-proxy-meater-2.iot.marcyoung.us"
+  content = "192.168.4.106"
   type    = "A"
   ttl     = "3600"
 }
