@@ -47,6 +47,8 @@ data:
     version: 4
     devices:
       "0x04e3e5fffef24450":
-        friendly_name: front-porch-light # sonoff 2 way switch (w. neutral - ZBMINIR2) - 2nd switch in gangbox
+        friendly_name: front-porch-light
+        description: "sonoff 2 way switch (w. neutral - ZBMINIR2) - location:2nd switch in gangbox"
       "0x00be44fffe634f3f":
-        friendly_name: front-flood-lights # sonoff 2 way switch (w. neutral - ZBMINIR2) - 3rd switch in gangbox
+        friendly_name: front-flood-lights
+        description: "sonoff 2 way switch (w. neutral - ZBMINIR2) - location:3rd switch in gangbox"

@@ -48,16 +48,23 @@ data:
     version: 4
     devices:
       "0xffffb40e0605214d":
-        friendly_name: wall-1 # THIRDREALITY
+        friendly_name: wall-1
+        description: "THIRDREALITY 3RSP02028BZ location:tbd"
       "0xffffb40e0605366d":
-        friendly_name: wall-2 # THIRDREALITY
+        friendly_name: wall-2
+        description: "THIRDREALITY 3RSP02028BZ location:tbd"
       "0xffffb40e06054321":
-        friendly_name: wall-3 # THIRDREALITY
+        friendly_name: wall-3
+        description: "THIRDREALITY 3RSP02028BZ location:tbd"
       "0xffffb40e060579ee":
-        friendly_name: wall-4 # THIRDREALITY
+        friendly_name: wall-4
+        description: "THIRDREALITY 3RSP02028BZ location:tbd"
       "0x00158d008bbf3f0e":
-        friendly_name: water-1 # aqara
+        friendly_name: water-1
+        description: "aqara LUMI LUMI (Water leak sensor) location:hvac pan"
       "0x00158d008bc192ea":
-        friendly_name: water-2 # aqara
+        friendly_name: water-2
+        description: "aqara LUMI LUMI (Water leak sensor) location:under bar sink"
       "0x00158d008bc19938":
-        friendly_name: water-3 # aqara
+        friendly_name: water-3
+        description: "aqara LUMI LUMI (Water leak sensor) location:main exit"
