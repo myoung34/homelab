@@ -45,7 +45,8 @@ data:
       include_device_information: true
       server: mqtt://mosquitto.mosquitto.svc.cluster.local
     version: 4
-  '0x04e3e5fffef24450':
-    friendly_name: 'front-porch-light' # sonoff 2 way switch (w. neutral - ZBMINIR2) - 2nd switch in gangbox
-  '0x00be44fffe634f3f':
-    friendly_name: 'front-flood-lights' # sonoff 2 way switch (w. neutral - ZBMINIR2) - 3rd switch in gangbox
+    devices:
+      0x04e3e5fffef24450:
+        friendly_name: front-porch-light # sonoff 2 way switch (w. neutral - ZBMINIR2) - 2nd switch in gangbox
+      0x00be44fffe634f3f:
+        friendly_name: front-flood-lights # sonoff 2 way switch (w. neutral - ZBMINIR2) - 3rd switch in gangbox
