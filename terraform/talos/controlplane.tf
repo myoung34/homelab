@@ -16,7 +16,6 @@ resource "talos_machine_configuration_apply" "controlplane" {
       install_disk       = each.value.install_disk
       image              = each.value.image
       machine_token      = local.machine_secrets.secrets.machine_token
-      talos_version      = length(each.value.talos_version) == 0 ? local.talos_version : each.value.talos_version
       kubernetes_version = length(each.value.kubernetes_version) == 0 ? local.kubernetes_version : each.value.kubernetes_version
     }),
     templatefile("${path.module}/templates/controlplane.yaml.tmpl", {

@@ -27,6 +27,7 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |cluster24|d8:3a:dd:55:c8:e0|cluster|192.168.1.27|
 |cluster13|dc:a6:32:d3:86:35|cluster|192.168.1.22|
 |cluster21|00:e0:4c:88:00:cd|cluster|192.168.1.24|
+|cluster31|88:a2:9e:87:77:35|cluster|192.168.1.28|
 |neon-lights|40:22:d8:e3:f4:d8|WIFI|192.168.4.250|
 |office brother|84:9e:56:d2:80:a0|printer|192.168.6.9|
 |plaato-keg|84:0d:8e:e3:01:78|IoT|192.168.4.110|

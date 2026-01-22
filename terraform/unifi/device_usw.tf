@@ -59,6 +59,10 @@ resource "unifi_device" "usw" {
     number = 5
   }
   port_override {
+    name   = "cluster 3,1"
+    number = 21
+  }
+  port_override {
     name   = "workspace ap"
     number = 2
   }

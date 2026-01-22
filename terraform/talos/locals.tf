@@ -7,6 +7,8 @@ locals {
   rpi_overlay_sha   = "893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b"
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
 
+  rpi5_overlay_image = "ghcr.io/myoung34/homelab:talos-installer-v1.11.0-rpi5"
+
   extensions = {
     tailscale = {
       env = {
@@ -25,7 +27,6 @@ locals {
         install_disk          = "/dev/sda"
         image                 = local.rpi_overlay_image
         network_hardware_addr = "dc*"
-        talos_version         = ""
         kubernetes_version    = ""
       },
       "192.168.1.25" = {
@@ -33,7 +34,6 @@ locals {
         install_disk          = "/dev/sda"
         image                 = local.rpi_overlay_image
         network_hardware_addr = "e4*"
-        talos_version         = ""
         kubernetes_version    = ""
       },
       "192.168.1.26" = {
@@ -41,7 +41,6 @@ locals {
         install_disk          = "/dev/sda"
         image                 = local.rpi_overlay_image
         network_hardware_addr = "e4*"
-        talos_version         = ""
         kubernetes_version    = ""
       },
     }
@@ -50,7 +49,6 @@ locals {
         hostname           = "cluster11"
         install_disk       = "/dev/sda"
         image              = local.rpi_overlay_image
-        talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
@@ -60,7 +58,6 @@ locals {
         hostname           = "cluster12"
         install_disk       = "/dev/sda"
         image              = local.rpi_overlay_image
-        talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
@@ -69,7 +66,6 @@ locals {
         hostname           = "cluster14"
         install_disk       = "/dev/sda"
         image              = local.rpi_overlay_image
-        talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
@@ -79,7 +75,6 @@ locals {
         hostname           = "cluster21"
         install_disk       = "/dev/sda"
         image              = local.rpi_overlay_image
-        talos_version      = ""
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
@@ -88,7 +83,14 @@ locals {
         hostname           = "cluster24"
         install_disk       = "/dev/sda"
         image              = local.rpi_overlay_image
-        talos_version      = ""
+        kubernetes_version = ""
+        extra_device       = ""
+        mount_point        = ""
+      },
+      "192.168.1.28" = {
+        hostname           = "cluster31"
+        install_disk       = "/dev/mmcblk0"
+        image              = local.rpi5_overlay_image
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
