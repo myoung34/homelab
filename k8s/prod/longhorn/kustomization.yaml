@@ -16,7 +16,7 @@ resources:
 helmCharts:
 - name: longhorn
   releaseName: longhorn
-  version: 1.10.1
+  version: 1.10.2
   includeCRDs: true
   repo: https://charts.longhorn.io
   valuesInline:
