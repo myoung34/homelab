@@ -15,7 +15,7 @@ terraform {
   required_providers {
     tailscale = {
       source  = "tailscale/tailscale"
-      version = "~> 0.25"
+      version = "~> 0.26"
     }
   }
   required_version = "1.14.4"
