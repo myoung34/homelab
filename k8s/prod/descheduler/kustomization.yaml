@@ -10,7 +10,7 @@ helmCharts:
   includeCRDs: true
   namespace: descheduler
   releaseName: descheduler
-  version: 0.34.0
+  version: 0.35.0
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
     schedule: "0 4 */3 * *" # every 3 days at 4am
