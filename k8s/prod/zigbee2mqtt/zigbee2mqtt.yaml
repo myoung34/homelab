@@ -74,7 +74,7 @@ spec:
           value: /data
         - name: Z2M_WATCHDOG
           value: "1,1,1,1,1,1,1,1,1,1"  # 10 retries, 1 minute apart
-        image: koenkk/zigbee2mqtt:2.8.0
+        image: koenkk/zigbee2mqtt:2.9.0
         imagePullPolicy: IfNotPresent
         resources:
           requests:
