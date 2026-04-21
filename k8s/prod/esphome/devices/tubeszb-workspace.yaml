@@ -1,52 +1,96 @@
 substitutions:
   human_devicename: Zigbee Coordinator Workspace
 esphome:
-  name: tubeszb-workspace
+  name: tubeszb-cc2652p2-poe-2023
   project:
-    name: tubezb.cc2652-poe-2023
-    version: "1.0"
+    name: tubezb.cc2652p2-poe-2023
+    version: "2026.03.28.1"
+  min_version: 2026.3.2
   on_boot:
-    priority: 600
-    then:
-      - switch.turn_on: zRST_gpio
-      - delay: 15ms
-      - switch.turn_off: zRST_gpio
+    - priority: 600
+      then:
+        - switch.turn_on: zRST_gpio
+        - delay: 15ms
+        - switch.turn_off: zRST_gpio
+        - cc2652_flasher.detect_variant:
+            id: zigbee_flasher
+    - priority: -10
+      then:
+        - delay: 20s
+        - component.update: fw_updater
 
 esp32:
-  board: esp-wrover-kit
+  board: esp32-poe
   framework:
-    type: arduino
-
-logger:
+    type: esp-idf
+    advanced:
+      include_builtin_idf_components:
+        - esp_http_client
+        - esp_crt_bundle
+    sdkconfig_options:
+      CONFIG_LWIP_MAX_SOCKETS: "16"
+      CONFIG_PM_ENABLE: "n"
+      # Prevent IDF from trying to power-down UART in light sleep, which causes
+      # uart_param_config to return ESP_ERR_NOT_SUPPORTED on some targets
+      CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP: "n"
+      CONFIG_UART_ISR_IN_IRAM: "y"
 
 api:
- encryption:
+  encryption:
     key: !secret tubeszb_workspace_key
+  reboot_timeout: 0s
 
 ota:
 - platform: esphome
   password: !secret ota_password
+- platform: web_server
+- platform: http_request
 
 external_components:
-  - source: github://tube0013/esphome-stream-server-v2
-  - source: github://syssi/esphome-zeroconf@main
+  - source: github://tube0013/esphome-components
+    components: [cc2652_flasher, stream_server]
+  - source: github://tjhorner/esphome-custom-components
+    components: [ project_version ]
 
 dashboard_import:
-  package_import_url: github://tube0013/tube_gateways/models/current/tubeszb-cc2652-poe-2023/firmware/esphome/tubeszb-cc2652-poe-2023.yaml
+  package_import_url: github://tube0013/tube_gateways/models/current/tubeszb-cc2652-P2-poe-2023/firmware/esphome/tubeszb-cc2652p2-poe-2023.yaml
 
+#Olimex ESP32-PoE Ethernet
 ethernet:
   type: LAN8720
   mdc_pin: GPIO23
   mdio_pin: GPIO18
-  clk_mode: GPIO17_OUT
+  clk:
+    pin: GPIO17
+    mode: CLK_OUT
   phy_addr: 0
   power_pin: GPIO12
-  domain: !secret wifi_domain
+
+    # Optional manual IP
+  #manual_ip:
+  #  static_ip: STATIC_IP
+  #  gateway: GATEWAY
+  #  subnet: SUBNET
+
+# Enable logging
+logger:
+  level: DEBUG
+
+
+http_request:
+
+update:
+  - platform: http_request
+    id: fw_updater
+    name: TubesZB Firmware Update
+    source: https://tube0013.github.io/TubesZB-ESPHome-Builder/ota_manifests/ota-tubeszb-cc2652p2-poe-2023.json
+    update_interval: 12h
+
 
 web_server:
-
-preferences:
-  flash_write_interval: 10min
+  port: 80
+  version: 2
+  js_url: "https://tube0013.github.io/TubesZB-ESPHome-Builder/common/www.js"
 
 
 script:
@@ -60,8 +104,8 @@ script:
       - logger.log: "Delaying ~10 seconds for cc2652p2 to settle"
       - delay: 11s
       - switch.turn_off: zBSL
-      - logger.log: "Please try update with cc-bsl tool now"
-      - logger.log: "cc-bsl usage: cc2538-bsl.py -p socket://10.9.1.75:6638 -evw firmware.hex"
+      - logger.log: "Please try update with cc2538-bsl tool now"
+      - logger.log: "cc-bsl usage: cc2538-bsl.py -p socket://ip-of-gw:6638 -evw firmware.hex"
 
 switch:
   - platform: gpio
@@ -72,15 +116,94 @@ switch:
 
   - platform: gpio
     pin: 16
-    name: "${human_devicename} Zigbee Module Bootloader Pin"
+    name: "Zigbee Module Bootloader Pin"
     id: zBSL
     inverted: yes
     restore_mode: ALWAYS_OFF
     disabled_by_default: true
 
+uart:
+  id: uart_bus
+  rx_pin: GPIO36
+  tx_pin: GPIO4
+  baud_rate: 115200
+  rx_buffer_size: 1024
+
+stream_server:
+  uart_id: uart_bus
+  port: 6638 # optional, default is 6638
+  buffer_size: 1024
+
+binary_sensor:
+  - platform: stream_server
+    connected:
+      name: "TubesZB Serial Connected"
+
+mdns:
+  services:
+    - service: "_zigbee-coordinator"
+      protocol: "_tcp"
+      port: 6638
+      txt:
+        version: 1
+        name: "TubesZB"
+        radio_type: "znp"
+        serial_number: !lambda 'return esphome::get_mac_address();'
+
+
+cc2652_flasher:
+  id: zigbee_flasher
+  uart_id: uart_bus
+  url: "https://raw.githubusercontent.com/tube0013/tube_gateways/refs/heads/main/misc/manifest.json"
+  bsl_switch: zBSL
+  rst_switch: zRST_gpio
+  boot_baud_rate: 500000
+  restore_baud_rate: 115200
+  erase_mode: bank
+  debug: false
+  show_progress: true
+  progress_step: 5
+  fw_version_text: zb_fw_version
+  ieee_text: zb_ieee
+  latest_fw_version_text: zb_latest_fw
+  variant_text: zb_variant
+  check_on_boot: false
+  check_interval_days: 7
+  detect_on_boot: true
+  detect_on_boot_delay_ms: 0
+
+
 button:
   - platform: template
-    name: "${human_devicename} Zigbee Module Reset"
+    name: "Flash CC2652"
+    id: flash_cc2652
+    on_press:
+      then:
+        - cc2652_flasher.update_firmware:
+            id: zigbee_flasher
+
+  - platform: template
+    name: "Check CC2652 Update"
+    id: check_cc2652_update
+    on_press:
+      then:
+        - cc2652_flasher.check_update:
+            id: zigbee_flasher
+
+  - platform: template
+    name: "Detect CC2652 Variant"
+    id: detect_cc2652_variant
+    on_press:
+      then:
+        - cc2652_flasher.detect_variant:
+            id: zigbee_flasher
+
+  - platform: restart
+    name: "Restart the Device"
+
+  - platform: template
+    name: "Zigbee Module Reset"
+    disabled_by_default: true
     id: zRST
     on_press:
       - switch.turn_on: zRST_gpio
@@ -88,39 +211,35 @@ button:
       - switch.turn_off: zRST_gpio
 
   - platform: template
-    name: "${human_devicename} Trigger Zigbee Module Bootloader"
+    name: "Trigger Zigbee Module Bootloader"
     disabled_by_default: true
     on_press:
       - script.execute: fw_update_mode
 
-uart:
-  id: uart_bus
-  rx_pin: GPIO36
-  tx_pin: GPIO4
-  baud_rate: 115200
-
-stream_server:
-  uart_id: uart_bus
-  port: 6638
-  id: ss
-
-binary_sensor:
-  - platform: stream_server
-    stream_server: ss
-    name: "${human_devicename} TubesZB Serial Connected"
-
-zeroconf:
-  - service: "tubeszb"
-    protocol: "tcp"
-    port: 6638
-    txt:
-      version: 1.0
-      name: TubesZB
-      radio_type: znp
-      baud_rate: 115200
-      data_flow_control: software
-
 text_sensor:
+  - platform: template
+    name: "Zigbee FW Version"
+    id: zb_fw_version
+    icon: mdi:chip
+  - platform: template
+    name: "Zigbee IEEE"
+    id: zb_ieee
+    icon: mdi:identifier
+  - platform: template
+    name: "Zigbee Latest FW"
+    id: zb_latest_fw
+    icon: mdi:update
+  - platform: template
+    name: "Zigbee Variant"
+    id: zb_variant
+    icon: mdi:chip
+
+  - platform: project_version
+    name: "TubesZB Device Firmware Version"
+    internal: true
+
   - platform: ethernet_info
     ip_address:
-      name: "${human_devicename} IP Address"
+      name: ESP IP Address
+    mac_address:
+      name: ESP MAC Address
