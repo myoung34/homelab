@@ -58,13 +58,21 @@ resource "tailscale_acl" "acl" {
 			"target": ["tag:k8s"],
 			"attr":   ["funnel"],
 		},
-    // work laptop
 		{"target": ["100.125.107.125"], "attr": ["mullvad"]},
-    // home desktop
 		{"target": ["100.69.116.77"], "attr": ["mullvad"]},
-    // phone
+		{"target": ["100.119.170.123"], "attr": ["mullvad"]},
 		{"target": ["100.112.88.4"], "attr": ["mullvad"]},
 	],
+
+	// Test access rules every time they're saved.
+	// "tests": [
+	//  	{
+	//  		"src": "alice@example.com",
+	//  		"accept": ["tag:example"],
+	//  		"deny": ["100.101.102.103:443"],
+	//  	},
+	// ],
 }
+
   EOF
 }
