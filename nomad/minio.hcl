@@ -2,53 +2,51 @@ job "minio" {
   datacenters = ["dc1"]
 
   group "minio" {
+
     network {
       port "api" {
-        static = "9000"
+        static = 9000
       }
+
       port "http" {
-        static = "9001"
+        static = 9001
       }
     }
+
     task "minio" {
-
       driver = "docker"
-      resources {
-        memory = 1024
-      }
 
-      env {
-        TZ = "America/Chicago"
+      identity {
+        name = "vault_default"
+        aud  = ["vault.io"]
+        file = false
+        env  = false
       }
 
       vault {
         policies = ["minio"]
       }
 
+      env {
+        TZ = "America/Chicago"
+      }
+
       template {
         data = <<EOH
-          MINIO_ROOT_USER="{{with secret "secret/data/minio"}}{{.Data.data.MINIO_ROOT_USER}}{{end}}"
-          MINIO_ROOT_PASSWORD="{{with secret "secret/data/minio"}}{{.Data.data.MINIO_ROOT_PASSWORD}}{{end}}"
-        EOH
+MINIO_ROOT_USER="{{with secret "secret/data/minio"}}{{.Data.data.MINIO_ROOT_USER}}{{end}}"
+MINIO_ROOT_PASSWORD="{{with secret "secret/data/minio"}}{{.Data.data.MINIO_ROOT_PASSWORD}}{{end}}"
+EOH
 
         destination = "secrets/config.env"
         env         = true
       }
 
-      service {
-        name = "minio"
-        port = "http"
-        tags = [
-          "traefik.http.routers.minio_https.entrypoints=https",
-          "traefik.http.routers.minio_https.tls=true",
-
-          "traefik.http.routers.minio_http.entrypoints=api",
-          "traefik.http.routers.http.rule=Host(`minio.consul.marcyoung.us`)",
-        ]
-      }
       config {
-        ports = ["api", "http"]
+        image      = "minio/minio:RELEASE.2024-10-13T13-34-11Z"
+        force_pull = true
+
         command = "server"
+
         args = [
           "--address",
           "0.0.0.0:9000",
@@ -56,12 +54,16 @@ job "minio" {
           ":9001",
           "/data"
         ]
-        image = "minio/minio:latest"
 
-        force_pull = true
+        ports = ["api", "http"]
+
         volumes = [
           "/volume1/minio:/data"
         ]
+      }
+
+      resources {
+        memory = 1024
       }
     }
   }
