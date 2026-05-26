@@ -1,34 +1,51 @@
 job "fluent-bit" {
   datacenters = ["dc1"]
+  type        = "service"
 
   group "fluent-bit" {
+
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "bigNASty"
+    }
+
     network {
       port "syslog" {
-        static = "5044"
+        static = 5044
       }
+
       port "syslog2" {
-        static = "5045"
+        static = 5045
       }
+
       port "syslog3" {
-        static = "5046"
+        static = 5046
       }
     }
-    task "fluent-bit" {
 
+    task "fluent-bit" {
       driver = "docker"
 
+      identity {
+        name = "vault_default"
+        aud  = ["vault.io"]
+        file = false
+        env  = false
+      }
+
       vault {
-        policies = ["datadog"]
+        disable_file = true
+        policies     = ["datadog"]
       }
 
-      #resources {
-      #  cpu    = 300
-      #  memory = 256
-      #}
+      template {
+        data = <<EOH
+DD_API_KEY="{{with secret "secret/data/datadog"}}{{.Data.data.DD_API_KEY}}{{end}}"
+EOH
 
-      env {
+        destination = "secrets/config.env"
+        env         = true
       }
-
 
       template {
         data = <<EOH
@@ -38,9 +55,11 @@ job "fluent-bit" {
     Regex       ^\<(?<pri>[0-9]{1,5})\>(?<date>[a-zA-Z]{3}  [0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2})? ?(?<message>.*)
     Time_Key    time
     Time_Keep   On
-        EOH
+EOH
+
         destination = "local/parsers.conf"
       }
+
       template {
         data = <<EOH
 [SERVICE]
@@ -59,10 +78,10 @@ job "fluent-bit" {
 
 [INPUT]
     Name                syslog
-    Tag                 nas
     Mode                udp
     Port                5045
     Parser              rfc3164
+    Tag                 nas
     Buffer_Chunk_Size   32000
     Buffer_Max_Size     64000
     Receive_Buffer_Size 512000
@@ -77,18 +96,22 @@ job "fluent-bit" {
     Name  modify
     Match *
     Add Host bigNASty
+
 [FILTER]
     Name  modify
     Match talos
     Add service talos
+
 [FILTER]
     Name  modify
     Match unifi
     Add service unifi
+
 [FILTER]
     Name  modify
     Match nas
     Add service synology
+
 [OUTPUT]
     Name           datadog
     Match          *
@@ -97,32 +120,35 @@ job "fluent-bit" {
     apikey         ${DD_API_KEY}
     dd_source      bigNASty
     dd_tags        env:home
-        EOH
+EOH
+
         destination = "local/fluent-bit.conf"
       }
 
-      template {
-        data = <<EOH
-          DD_API_KEY="{{with secret "secret/data/datadog"}}{{.Data.data.DD_API_KEY}}{{end}}"
-        EOH
-
-        destination = "secrets/config.env"
-        env         = true
-      }
-
       config {
-        ports = ["syslog", "syslog2", "syslog3"]
-        image = "fluent/fluent-bit:latest"
+        image      = "fluent/fluent-bit:latest"
+        force_pull = true
+
+        ports = [
+          "syslog",
+          "syslog2",
+          "syslog3"
+        ]
+
         args = [
           "-c",
           "/opt/fluent-bit.conf"
         ]
 
-        force_pull = true
         volumes = [
           "local/parsers.conf:/opt/parsers.conf",
-          "local/fluent-bit.conf:/opt/fluent-bit.conf",
+          "local/fluent-bit.conf:/opt/fluent-bit.conf"
         ]
+      }
+
+      resources {
+        cpu    = 300
+        memory = 256
       }
     }
   }

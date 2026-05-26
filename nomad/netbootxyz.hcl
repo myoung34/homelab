@@ -1,21 +1,31 @@
 job "netbootxyz" {
   datacenters = ["dc1"]
+  type        = "service"
 
   group "tftp" {
+
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "bigNASty"
+    }
+
     network {
       mode = "host"
     }
 
     task "tftp" {
+      driver = "docker"
+
       template {
         data = <<EOH
 #!ipxe
 set os_arch amd64
 set talos_hostname talos.hostname=cluster11
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster11"
       }
+
       template {
         data = <<EOH
 #!ipxe
@@ -23,9 +33,10 @@ set os_arch arm64
 set talos_board talos.board=rpi_4
 set talos_hostname talos.hostname=cluster12
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster12"
       }
+
       template {
         data = <<EOH
 #!ipxe
@@ -33,9 +44,10 @@ set os_arch arm64
 set talos_board talos.board=rpi_4
 set talos_hostname talos.hostname=cluster13
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster13"
       }
+
       template {
         data = <<EOH
 #!ipxe
@@ -43,18 +55,20 @@ set os_arch arm64
 set talos_board talos.board=rpi_4
 set talos_hostname talos.hostname=cluster14
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster14"
       }
+
       template {
         data = <<EOH
 #!ipxe
 set os_arch amd64
 set talos_hostname talos.hostname=cluster21
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster21"
       }
+
       template {
         data = <<EOH
 #!ipxe
@@ -62,9 +76,10 @@ set os_arch arm64
 set talos_board talos.board=rpi_4
 set talos_hostname talos.hostname=cluster22
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster22"
       }
+
       template {
         data = <<EOH
 #!ipxe
@@ -72,9 +87,10 @@ set os_arch arm64
 set talos_board talos.board=rpi_4
 set talos_hostname talos.hostname=cluster23
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster23"
       }
+
       template {
         data = <<EOH
 #!ipxe
@@ -82,9 +98,10 @@ set os_arch arm64
 set talos_board talos.board=rpi_4
 set talos_hostname talos.hostname=cluster24
 chain --autofree tftp://192.168.3.2/home-talos.ipxe
-        EOH
+EOH
         destination = "local/cluster24"
       }
+
       template {
         data = <<EOH
 #!ipxe
@@ -105,8 +122,6 @@ iseq ${os_arch} amd64 && goto amd64 ||
 iseq ${os_arch} arm64 && goto arm64 ||
 
 :amd64
-# always do one revision less so that we can set up machine.install.extensions and use the upgrade cmd
-# because extensions cant be injected into raw kernel/initram
 set talos_kernel https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.9.3/kernel-amd64
 set talos_initrd https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.9.3/initramfs-amd64.xz
 goto boot
@@ -125,24 +140,24 @@ initrd ${talos_initrd}
 kernel ${talos_kernel} ${boot_params}
 
 boot
-        EOH
+EOH
         destination = "local/talos"
       }
 
-      driver = "docker"
-
       env {
-        TZ = "America/Chicago"
-        PGID = "100"
-        PUID = "1026"
-        NGINX_PORT = "8080"
+        TZ           = "America/Chicago"
+        PGID         = "100"
+        PUID         = "1026"
+        NGINX_PORT   = "8080"
         WEB_APP_PORT = "3000"
       }
 
       config {
-        force_pull = true
-        image = "linuxserver/netbootxyz:latest"
+        image        = "linuxserver/netbootxyz:latest"
+        force_pull   = true
+        privileged   = true
         network_mode = "host"
+
         volumes = [
           "local/cluster11:/config/menus/MAC-00e04c880b85.ipxe",
           "local/cluster12:/config/menus/MAC-d83add285051.ipxe",
@@ -152,12 +167,13 @@ boot
           "local/cluster22:/config/menus/MAC-e45f01582d7d.ipxe",
           "local/cluster23:/config/menus/MAC-e45f0158de82.ipxe",
           "local/cluster24:/config/menus/MAC-d83add55c8e0.ipxe",
-          "local/talos:/config/menus/home-talos.ipxe",
+          "local/talos:/config/menus/home-talos.ipxe"
         ]
-        privileged = true
       }
-      resources {
 
+      resources {
+        cpu    = 500
+        memory = 512
       }
     }
   }

@@ -3,6 +3,7 @@ apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
   name: argocd
+  namespace: argocd
 spec:
   vaultAuthRef: argocd
   mount: secret/
@@ -17,6 +18,7 @@ apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
 metadata:
   name: argocd
+  namespace: argocd
 spec:
   method: kubernetes
   mount: kubernetes

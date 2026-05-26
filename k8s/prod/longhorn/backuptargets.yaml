@@ -3,6 +3,6 @@ kind: BackupTarget
 metadata:
   name: default
 spec:
-  backupTargetURL: s3://longhorn@minio.consul.marcyoung.us/backups/
+  backupTargetURL: s3://longhorn@192.168.3.2/backups/
   credentialSecret: longhorn # pragma: allowlist secret
   pollInterval: 5m0s

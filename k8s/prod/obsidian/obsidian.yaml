@@ -64,7 +64,7 @@ spec:
         command:
         - "/s3www"
         - "-endpoint"
-        - "http://minio.consul.marcyoung.us:9000"
+        - "http://192.168.3.2:9000"
         - "-bucket"
         - "obsidian-rendered"
         - "-address"
