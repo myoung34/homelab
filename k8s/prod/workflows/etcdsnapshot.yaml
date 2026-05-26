@@ -4,7 +4,8 @@ kind: CronWorkflow
 metadata:
   name: etcd-backup
 spec:
-  schedule: "0 0 1 * *"
+  schedules:
+    - "0 0 1 * *"
   startingDeadlineSeconds: 0
   suspend: false
   workflowSpec:
