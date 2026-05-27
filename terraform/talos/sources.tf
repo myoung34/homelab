@@ -10,7 +10,7 @@ terraform {
       version = "~> 5.0"
     }
   }
-  required_version = "1.15.4"
+  required_version = "1.15.5"
 }
 
 provider "talos" {}
