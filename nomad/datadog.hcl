@@ -244,7 +244,13 @@ EOH
             source   = "/etc/passwd"
             target   = "/etc/passwd"
             readonly = true
-          }
+          },
+          {
+            type     = "bind"
+            source   = "/volume1/@docker/containers"
+            target   = "/var/lib/docker/containers"
+            readonly = true
+          },
         ]
       }
 
