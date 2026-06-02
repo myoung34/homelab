@@ -2,6 +2,20 @@
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret
 metadata:
+  name: datadog-cluster-agent-token
+spec:
+  vaultAuthRef: datadog
+  mount: secret
+  type: kv-v2
+  path: datadog-cluster-agent
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: datadog-cluster-agent
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
   name: datadog
 spec:
   vaultAuthRef: datadog
