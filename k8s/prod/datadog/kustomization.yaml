@@ -18,6 +18,9 @@ helmCharts:
       talos:
         enabled: true
     datadog:
+      ignoreAutoConfig:
+        - kube_scheduler
+        - kube_controller_manager
       clusterName: prod
       confd:
         argocd.yaml: |-
