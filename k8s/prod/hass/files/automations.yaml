@@ -1,1 +1,67 @@
-#todo
+- alias: Basement Deck Motion Light On
+  id: basement_deck_motion_light_on
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.g4_instant_motion_2
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.g4_instant_is_dark_2
+      state: "on"
+  action:
+    - service: switch.turn_on
+      target:
+        entity_id: switch.wall_2
+
+- alias: Upstairs Deck Motion Light On
+  id: upstairs_deck_motion_light_on
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.g4_instant_motion
+      to: "on"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.g4_instant_is_dark
+      state: "on"
+  action:
+    - service: switch.turn_on
+      target:
+        entity_id: switch.wall_4
+# Turn off basement lights after 5 min no motion
+- alias: Basement Deck Motion Light Off
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.g4_instant_motion_2
+      to: "off"
+      for:
+        minutes: 5
+  action:
+    - service: switch.turn_off
+      target:
+        entity_id: switch.wall_2
+# Turn off upstairs deck lights after 5 min no motion
+- alias: Upstairs Deck Motion Light Off
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.g4_instant_motion
+      to: "off"
+      for:
+        minutes: 5
+  action:
+    - service: switch.turn_off
+      target:
+        entity_id: switch.wall_4
+# Turn off all outside lights at midnight
+- alias: Deck Lights Off At Midnight
+  id: deck_lights_off_at_midnight
+  trigger:
+    - platform: time
+      at: "00:00:00"
+  action:
+    - service: switch.turn_off
+      target:
+        entity_id:
+          - switch.wall_2
+          - switch.wall_4
