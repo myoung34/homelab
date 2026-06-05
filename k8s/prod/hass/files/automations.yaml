@@ -65,3 +65,25 @@
         entity_id:
           - switch.wall_2
           - switch.wall_4
+# Stupid eco+ ecobee.
+- alias: Set Ecobee From Helper At 6:35am
+  trigger:
+    - platform: time
+      at: "06:35:00"
+  action:
+    - service: climate.set_temperature
+      target:
+        entity_id: climate.main_floor
+      data:
+        temperature: "{{ states('input_number.ecobee_setpoint') | float }}"
+
+- alias: Set Ecobee From Helper At 11:35pm
+  trigger:
+    - platform: time
+      at: "23:35:00"
+  action:
+    - service: climate.set_temperature
+      target:
+        entity_id: climate.main_floor
+      data:
+        temperature: "{{ states('input_number.ecobee_setpoint') | float }}"

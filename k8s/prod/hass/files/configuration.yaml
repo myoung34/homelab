@@ -58,3 +58,12 @@ recorder:
       - sensor.date
     event_types:
       - call_service # Don't record service calls
+
+input_number:
+  ecobee_setpoint:
+    name: Ecobee Setpoint
+    min: 60
+    max: 85
+    step: 1
+    mode: box
+    initial: 72
