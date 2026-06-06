@@ -39,6 +39,8 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: zwave-js-ui
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
