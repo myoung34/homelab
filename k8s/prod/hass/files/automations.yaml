@@ -1,9 +1,9 @@
 - alias: Basement Deck Motion Light On
-  id: basement_deck_motion_light_on
+  id: basement_deck_person_motion_light_on
   mode: restart
   trigger:
     - platform: state
-      entity_id: binary_sensor.g4_instant_motion_2
+      entity_id: binary_sensor.g4_instant_person_detected_2
       to: "on"
   condition:
     - condition: state
@@ -15,11 +15,11 @@
         entity_id: switch.wall_2
 
 - alias: Upstairs Deck Motion Light On
-  id: upstairs_deck_motion_light_on
+  id: upstairs_deck_person_motion_light_on
   mode: restart
   trigger:
     - platform: state
-      entity_id: binary_sensor.g4_instant_motion
+      entity_id: binary_sensor.g4_instant_person_detected
       to: "on"
   condition:
     - condition: state
@@ -29,26 +29,26 @@
     - service: switch.turn_on
       target:
         entity_id: switch.wall_4
-# Turn off basement lights after 5 min no motion
+# Turn off basement lights after 30 min no person motion
 - alias: Basement Deck Motion Light Off
   trigger:
     - platform: state
-      entity_id: binary_sensor.g4_instant_motion_2
+      entity_id: binary_sensor.g4_instant_person_detected_2
       to: "off"
       for:
-        minutes: 5
+        minutes: 30
   action:
     - service: switch.turn_off
       target:
         entity_id: switch.wall_2
-# Turn off upstairs deck lights after 5 min no motion
+# Turn off upstairs deck lights after 30 min no person motion
 - alias: Upstairs Deck Motion Light Off
   trigger:
     - platform: state
-      entity_id: binary_sensor.g4_instant_motion
+      entity_id: binary_sensor.g4_instant_person_detected
       to: "off"
       for:
-        minutes: 5
+        minutes: 30
   action:
     - service: switch.turn_off
       target:
