@@ -87,3 +87,55 @@
         entity_id: climate.main_floor
       data:
         temperature: "{{ states('input_number.ecobee_setpoint') | float }}"
+
+# doorbell person/package notification
+- alias: Front Door Person Detected
+  id: front_door_person_detected
+  mode: single
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.g4_doorbell_pro_person_detected
+      to: "on"
+      for:
+        seconds: 5
+  action:
+    - service: rest_command.slack_notify
+      data:
+        message: >
+          🚶 Person detected at the front door
+          ({{ now().strftime('%Y-%m-%d %I:%M:%S %p') }})
+
+- alias: Front Door Package Detected
+  id: front_door_package_detected
+  mode: single
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.g4_doorbell_pro_package_detected
+      to: "on"
+      for:
+        seconds: 5
+  action:
+    - service: rest_command.slack_notify
+      data:
+        message: >
+          📦 Package detected at the front door
+          ({{ now().strftime('%Y-%m-%d %I:%M:%S %p') }})
+# smoke detectors from cameras
+- alias: Smoke Alarm Detected
+  id: smoke_alarm_detected
+  mode: single
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.g4_doorbell_pro_smoke_alarm_detected
+        - binary_sensor.g4_instant_smoke_alarm_detected
+        - binary_sensor.g4_instant_smoke_alarm_detected_2
+      to: "on"
+      for:
+        seconds: 5
+  action:
+    - service: rest_command.slack_notify
+      data:
+        message: >
+          🚨🚨 SMOKE ALARM DETECTED
+          Time: {{ now().strftime('%Y-%m-%d %I:%M:%S %p') }}

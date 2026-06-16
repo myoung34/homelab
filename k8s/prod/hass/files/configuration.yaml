@@ -67,3 +67,13 @@ input_number:
     step: 1
     mode: box
     initial: 72
+
+rest_command:
+  slack_notify:
+    url: !secret slack_webhook_url
+    method: POST
+    content_type: application/json
+    payload: >
+      {
+        "message": "{{ message }}"
+      }
