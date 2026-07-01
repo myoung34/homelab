@@ -18,8 +18,9 @@ spec:
             - sh
             - '-c'
             - |
-              apk add -U bash curl aws-cli pigz >/dev/null 2>&1
+              apk add -U bash curl bind-tools python3 py3-pip pigz >/dev/null 2>&1
               apk add -U postgresql16-client --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
+              pip3 install --break-system-packages awscli==1.42.27
 
               aws configure set default.s3.signature_version s3v4
 

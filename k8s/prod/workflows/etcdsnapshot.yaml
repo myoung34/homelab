@@ -23,7 +23,8 @@ spec:
           - sh
           - -c
           - |
-            apk add -U curl aws-cli
+            apk add -U curl bind-tools python3 py3-pip
+            pip3 install --break-system-packages awscli==1.42.27
 
             dig @8.8.8.8 github.com
             dig @8.8.8.8 hooks.zapier.com
