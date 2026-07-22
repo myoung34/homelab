@@ -12,6 +12,7 @@ resources:
   - zigbee2mqtt-upstairs.yaml
   - zwave-js-ui.yaml
   - hass.yaml
+  - paperless.yaml
 
 helmCharts:
 - name: longhorn
