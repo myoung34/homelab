@@ -41,7 +41,7 @@ spec:
   replicaZoneSoftAntiAffinity: ignored
   restoreVolumeRecurringJob: enabled
   revisionCounterDisabled: false
-  size: "2073741824"
+  size: "4294967296"
   snapshotDataIntegrity: ignored
   snapshotMaxCount: 250
   snapshotMaxSize: "0"
