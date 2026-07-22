@@ -29,7 +29,7 @@ spec:
   diskSelector: []
   encrypted: false
   freezeFilesystemForSnapshot: ignored
-  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-362298f1998d447e&volume=zigbee2mqtt-upstairs-data
+  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-2833ec1b58494bfd&volume=zigbee2mqtt-upstairs-data
   frontend: blockdev
   nodeSelector: []
   numberOfReplicas: 2

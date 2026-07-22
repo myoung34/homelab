@@ -1,13 +1,11 @@
 locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.12.1"
-  kubernetes_version = "v1.33.3"
+  talos_version      = "v1.13.7"
+  kubernetes_version = "v1.36.2"
 
-  rpi_overlay_sha   = "893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b"
+  rpi_overlay_sha   = "1ebcf8682462cead022eabbb8f4e1b4127ab53054a3fb0ed705989e5feb0af28"  # pragma: allowlist secret
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
-
-  rpi5_overlay_image = "ghcr.io/myoung34/homelab:talos-installer-v1.11.0-rpi5"
 
   extensions = {
     tailscale = {
@@ -83,14 +81,6 @@ locals {
         hostname           = "cluster24"
         install_disk       = "/dev/sda"
         image              = local.rpi_overlay_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
-      },
-      "192.168.1.28" = {
-        hostname           = "cluster31"
-        install_disk       = "/dev/mmcblk0"
-        image              = local.rpi5_overlay_image
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""

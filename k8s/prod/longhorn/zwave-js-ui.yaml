@@ -29,7 +29,7 @@ spec:
   diskSelector: []
   encrypted: false
   freezeFilesystemForSnapshot: ignored
-  #fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-3ed87759d46247c7&volume=zwave-js-ui-data
+  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-f978728008bc4528&volume=zwave-js-ui-data
   frontend: blockdev
   nodeSelector: []
   numberOfReplicas: 2

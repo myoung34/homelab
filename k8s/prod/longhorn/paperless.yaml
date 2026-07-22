@@ -3,8 +3,8 @@ kind: Volume
 metadata:
   labels:
     backup-target: default
-    backup-volume: hass-data
-    longhornvolume: hass-data
+    backup-volume: paperless-ngx-data
+    longhornvolume: paperless-ngx-data
     recurring-job-group.longhorn.io/default: enabled
     recurring-job.longhorn.io/backup: enabled
     recurring-job.longhorn.io/snapshot: enabled
@@ -13,7 +13,7 @@ metadata:
     setting.longhorn.io/remove-snapshots-during-filesystem-trim: ignored
     setting.longhorn.io/replica-auto-balance: ignored
     setting.longhorn.io/snapshot-data-integrity: ignored
-  name: hass-data
+  name: paperless-ngx-data
   namespace: longhorn-system
 spec:
   Standby: false
@@ -29,7 +29,7 @@ spec:
   diskSelector: []
   encrypted: false
   freezeFilesystemForSnapshot: ignored
-  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-30f389c075bb4e9f&volume=hass-data
+  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-eab8cd6ce2184d9e&volume=paperless-ngx-data
   frontend: blockdev
   nodeSelector: []
   numberOfReplicas: 2
@@ -41,7 +41,7 @@ spec:
   replicaZoneSoftAntiAffinity: ignored
   restoreVolumeRecurringJob: enabled
   revisionCounterDisabled: false
-  size: "1073741824"
+  size: "2073741824"
   snapshotDataIntegrity: ignored
   snapshotMaxCount: 250
   snapshotMaxSize: "0"
