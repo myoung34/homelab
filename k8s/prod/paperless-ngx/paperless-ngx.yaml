@@ -64,7 +64,7 @@ spec:
         - name: PAPERLESS_REDIS
           value: "redis://redis.paperless-ngx.svc.cluster.local:6379"
         - name: PAPERLESS_DBENGINE
-          value: "postgres"
+          value: "postgresql"
         - name: PAPERLESS_DBHOST
           value: "192.168.3.2"
         - name: PAPERLESS_DBPORT
