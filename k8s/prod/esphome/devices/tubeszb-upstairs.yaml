@@ -1,7 +1,7 @@
 substitutions:
   human_devicename: Zigbee Coordinator Upstairs
 esphome:
-  name: tubeszb-cc2652p2-poe-2023
+  name: tubeszb-upstairs
   project:
     name: tubezb.cc2652p2-poe-2023
     version: "2026.03.28.1"
