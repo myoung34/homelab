@@ -139,3 +139,40 @@
         message: >
           🚨🚨 SMOKE ALARM DETECTED
           Time: {{ now().strftime('%Y-%m-%d %I:%M:%S %p') }}
+# liams room motion and dark turn on stuff
+- alias: Liams Room Motion Lights On
+  id: liams_room_motion_lights_on
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.kids_room_motion
+      to: "on"
+  condition:
+    - condition: time
+      after: "20:00:00"
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.g4_instant_is_dark
+          state: "on"
+        - condition: state
+          entity_id: binary_sensor.g4_instant_is_dark_2
+          state: "on"
+  action:
+    - service: switch.turn_on
+      target:
+        entity_id:
+          - switch.wall_1
+          - switch.dnd_lights_lights
+
+- alias: Liams Room Motion Lights Off At Midnight
+  id: liams_room_motion_lights_off_midnight
+  trigger:
+    - platform: time
+      at: "00:00:00"
+  action:
+    - service: switch.turn_off
+      target:
+        entity_id:
+          - switch.wall_1
+          - switch.dnd_lights_lights

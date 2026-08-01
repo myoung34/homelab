@@ -38,3 +38,4 @@ $ ( echo $'|name|mac|network|ip|\n|----|----|----|----|'; cat clients.json | jq 
 |tubeszb-upstairs|08:b6:1f:71:18:b7|IoT|192.168.4.108|
 |tubeszb-workspace|ec:c9:ff:ba:61:1f|IoT|192.168.4.102|
 |traeger|c4:dd:57:5e:fc:84|IoT|192.168.4.199|
+|dnd-lights|ec:da:3b:bb:ca:0c|IoT|192.168.4.230|

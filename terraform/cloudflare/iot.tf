@@ -101,3 +101,11 @@ resource "cloudflare_dns_record" "pinball" {
   type    = "A"
   ttl     = "3600"
 }
+
+resource "cloudflare_dns_record" "dnd_lights" {
+  zone_id = local.marcyoung_us_zone_id
+  name    = "dnd-lights.iot.marcyoung.us"
+  content = "192.168.4.230"
+  type    = "A"
+  ttl     = "3600"
+}
