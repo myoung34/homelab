@@ -20,4 +20,4 @@ configMapGenerator:
   - devices/tubeszb-workspace.yaml
   - devices/ble_proxy_meater_1.yaml
   - devices/ble_proxy_meater_2.yaml
-  - devices/dnd_lights.yaml
+  - devices/dnd-lights.yaml
