@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: network-optimizer
+spec:
+  vaultAuthRef: network-optimizer
+  mount: secret/
+  type: kv-v2
+  path: network-optimizer
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: network-optimizer
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: network-optimizer
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: network-optimizer
+    serviceAccount: default

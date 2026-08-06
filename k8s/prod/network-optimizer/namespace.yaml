@@ -2,6 +2,6 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: vpa
+  name: network-optimizer
   labels:
-    name: vpa
+    name: network-optimizer

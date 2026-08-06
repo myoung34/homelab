@@ -4,4 +4,3 @@ metadata:
   name: zigbee2mqtt
   labels:
     name: zigbee2mqtt
-    goldilocks.fairwinds.com/enabled: "true"

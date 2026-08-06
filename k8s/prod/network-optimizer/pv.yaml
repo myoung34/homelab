@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: network-optimizer-data
+  namespace: network-optimizer
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  csi:
+    driver: driver.longhorn.io
+    fsType: ext4
+    volumeAttributes:
+      diskSelector: ""
+      nodeSelector: ""
+      numberOfReplicas: "2"
+      staleReplicaTimeout: "20"
+    volumeHandle: network-optimizer-data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: longhorn-static
+  volumeMode: Filesystem

@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: network-optimizer
+    app.kubernetes.io/name: network-optimizer
+  name: network-optimizer
+  namespace: network-optimizer
+spec:
+  ports:
+  - name: http
+    port: 8042
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: network-optimizer
+    app.kubernetes.io/name: network-optimizer
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    secret.reloader.stakater.com/reload: network-optimizer
+  labels:
+    app.kubernetes.io/instance: network-optimizer
+    app.kubernetes.io/name: network-optimizer
+  name: network-optimizer
+  namespace: network-optimizer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: network-optimizer
+      app.kubernetes.io/name: network-optimizer
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: network-optimizer
+        app.kubernetes.io/name: network-optimizer
+    spec:
+      automountServiceAccountToken: true
+      containers:
+      - env:
+        - name: TZ
+          value: "America/Chicago"
+        - name: REVERSE_PROXIED_HOST_NAME
+          value: "network-optimizer.king-gila.ts.net"
+        - name: TRUSTED_PROXIES
+          value: "10.0.0.0/8,127.0.0.1"
+        - name: TRUSTED_PROXY_HOPS
+          value: "1"
+        - name: APP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: APP_PASSWORD
+              name: network-optimizer
+        image: "ghcr.io/ozark-connect/network-optimizer:latest"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512M
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          httpGet:
+            path: /api/health
+            port: http
+          timeoutSeconds: 1
+        name: network-optimizer
+        ports:
+        - containerPort: 8042
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          httpGet:
+            path: /api/health
+            port: http
+          timeoutSeconds: 1
+        startupProbe:
+          failureThreshold: 30
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          httpGet:
+            path: /api/health
+            port: http
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /app/data
+          name: data
+      serviceAccountName: default
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: network-optimizer-data

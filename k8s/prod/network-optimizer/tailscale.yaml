@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: network-optimizer
+  namespace: network-optimizer
+spec:
+  defaultBackend:
+    service:
+      name: network-optimizer
+      port:
+        number: 8042
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - network-optimizer

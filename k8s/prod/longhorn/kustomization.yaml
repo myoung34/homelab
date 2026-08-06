@@ -13,6 +13,7 @@ resources:
   - zwave-js-ui.yaml
   - hass.yaml
   - paperless.yaml
+  - network-optimizer.yaml
 
 helmCharts:
 - name: longhorn
