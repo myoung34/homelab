@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# No kustomization-level namespace: it would also get stamped onto the
+# cluster-scoped NodeFeatureRule and break apply. Namespaced resources carry
+# an explicit metadata.namespace instead.
+
+# One file pair per printer: <name>-configmap.yaml (printer.cfg seed) and
+# <name>.yaml (PV/PVC/Deployment/Service/Ingress). Future printers:
+#   - enderleft (ender 3)
+#   - enderbig (ender 5)
+resources:
+  - namespace.yaml
+  - nodefeaturerule.yaml
+  - moonraker-configmap.yaml
+  - enderright-configmap.yaml
+  - enderright.yaml

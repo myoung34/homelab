@@ -1,0 +1,49 @@
+# Fluidd is a static web UI; the browser talks to each printer's Moonraker
+# directly, so no USB affinity here - only the klipper Deployments pin to
+# hardware. Add printers in the UI as https://enderright (and later
+# https://enderleft, https://enderbig); instances are saved client-side.
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: fluidd
+  namespace: fluidd
+  labels:
+    app.kubernetes.io/name: fluidd
+    app.kubernetes.io/instance: fluidd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fluidd
+      app.kubernetes.io/instance: fluidd
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fluidd
+        app.kubernetes.io/instance: fluidd
+    spec:
+      containers:
+        - name: fluidd
+          image: ghcr.io/fluidd-core/fluidd:latest
+          resources: {}
+          ports:
+            - containerPort: 80
+              protocol: TCP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: fluidd
+  namespace: fluidd
+  labels:
+    app.kubernetes.io/name: fluidd
+    app.kubernetes.io/instance: fluidd
+spec:
+  selector:
+    app.kubernetes.io/name: fluidd
+    app.kubernetes.io/instance: fluidd
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80

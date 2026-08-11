@@ -1,0 +1,145 @@
+# enderright: Ender 3 (BTT SKR mini e3 v3) running Klipper + Moonraker.
+# Pinned to whichever node has the MCU's USB serial plugged in (see
+# nodefeaturerule.yaml). Fluidd (k8s/prod/fluidd) is the UI; add
+# https://enderright as a printer instance in it.
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: enderright
+  namespace: klipper
+  labels:
+    app.kubernetes.io/name: klipper
+    app.kubernetes.io/instance: enderright
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: klipper
+      app.kubernetes.io/instance: enderright
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: klipper
+        app.kubernetes.io/instance: enderright
+    spec:
+      initContainers:
+        # Seed configs onto the PVC on first boot only; SAVE_CONFIG and fluidd
+        # config edits need printer.cfg writable, so it lives on the PVC after.
+        - name: seed-config
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -eux
+              cfg=/opt/printer_data
+              mkdir -p "$cfg/config" "$cfg/gcodes" "$cfg/logs" "$cfg/run"
+              if [ ! -f "$cfg/config/printer.cfg" ]; then cp /seed/printer.cfg "$cfg/config/printer.cfg"; fi
+              if [ ! -f "$cfg/config/moonraker.conf" ]; then cp /seed-moonraker/moonraker.conf "$cfg/config/moonraker.conf"; fi
+              ls -la "$cfg/config"
+              chown -R 1000:1000 "$cfg"
+          volumeMounts:
+            - name: printer-data
+              mountPath: /opt/printer_data
+            - name: printer-cfg-seed
+              mountPath: /seed
+            - name: moonraker-conf-seed
+              mountPath: /seed-moonraker
+      containers:
+        - name: klipper
+          image: mkuf/klipper:latest
+          args:
+            - "-l"
+            - "/opt/printer_data/logs/klippy.log"
+            - "-a"
+            - "/opt/printer_data/run/klipper.sock"
+            - "/opt/printer_data/config/printer.cfg"
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: true
+            privileged: true
+          volumeMounts:
+            - name: printer-data
+              mountPath: /opt/printer_data
+            - name: usb-mcu
+              mountPath: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_43002E000C50564837383420-if00
+        - name: moonraker
+          image: mkuf/moonraker:latest
+          args:
+            - "-d"
+            - "/opt/printer_data"
+          resources: {}
+          ports:
+            - containerPort: 7125
+              protocol: TCP
+          volumeMounts:
+            - name: printer-data
+              mountPath: /opt/printer_data
+      volumes:
+        - name: printer-data
+          persistentVolumeClaim:
+            claimName: klipper-enderright-data
+        - name: printer-cfg-seed
+          configMap:
+            name: klipper-enderright-printer-cfg
+        - name: moonraker-conf-seed
+          configMap:
+            name: moonraker
+        - name: usb-mcu
+          hostPath:
+            path: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_43002E000C50564837383420-if00
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            # Preferred: per-serial label from nodefeaturerule.yaml, exact to
+            # this printer's MCU.
+            - matchExpressions:
+              - key: feature.node.kubernetes.io/klipper-enderright
+                operator: Exists
+            # Fallback (terms are ORed): any node with a Klipper USB MCU
+            # (1d50:614e, CDC class 02 - already in the NFD usb
+            # deviceClassWhitelist). Remove this term once a second printer
+            # exists so scheduling stays serial-exact.
+            - matchExpressions:
+              - key: feature.node.kubernetes.io/usb-02_1d50_614e.present
+                operator: Exists
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: enderright
+  namespace: klipper
+  labels:
+    app.kubernetes.io/name: klipper
+    app.kubernetes.io/instance: enderright
+spec:
+  selector:
+    app.kubernetes.io/name: klipper
+    app.kubernetes.io/instance: enderright
+  ports:
+    - name: moonraker
+      protocol: TCP
+      port: 7125
+      targetPort: 7125
+---
+# Moonraker API over tailscale; fluidd (browser-side) talks to this directly,
+# so it must be reachable from the tailnet, not just in-cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: enderright
+  namespace: klipper
+spec:
+  defaultBackend:
+    service:
+      name: enderright
+      port:
+        number: 7125
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - enderright

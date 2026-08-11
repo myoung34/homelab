@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    name: klipper
+    # klipper pods are privileged with a hostPath USB device mount
+    pod-security.kubernetes.io/enforce: privileged
+  name: klipper
