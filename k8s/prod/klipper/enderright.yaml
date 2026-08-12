@@ -93,6 +93,10 @@ spec:
             - "-d"
             - "/opt/printer_data"
           resources: {}
+          securityContext:
+            # Klipper's unix socket is created as root:root; moonraker needs
+            # to connect to it, so run as the same UID.
+            runAsUser: 0
           ports:
             - containerPort: 7125
               protocol: TCP
