@@ -23,7 +23,7 @@ spec:
   backupCompressionMethod: lz4
   backupTargetName: default
   dataEngine: v1
-  dataLocality: disabled
+  dataLocality: best-effort
   dataSource: ""
   disableFrontend: false
   diskSelector: []
