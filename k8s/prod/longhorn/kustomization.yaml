@@ -31,6 +31,13 @@ patches:
       - op: add
         path: /metadata/annotations/argocd.argoproj.io~1hook
         value: Skip
+  - target:
+      kind: Job
+      name: longhorn-post-upgrade
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1hook
+        value: Skip
 
 helmCharts:
 - name: longhorn
