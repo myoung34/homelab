@@ -62,8 +62,25 @@ spec:
             allowPrivilegeEscalation: true
             privileged: true
           volumeMounts:
+            # The mkuf/klipper image declares VOLUME on config/gcodes/logs/run.
+            # Without explicit subPath mounts here, containerd covers those
+            # paths with anonymous ephemeral volumes on the node's own disk,
+            # hiding the PVC contents (and the seed-config output). Explicit
+            # subPath mounts override that.
             - name: printer-data
               mountPath: /opt/printer_data
+            - name: printer-data
+              mountPath: /opt/printer_data/config
+              subPath: config
+            - name: printer-data
+              mountPath: /opt/printer_data/gcodes
+              subPath: gcodes
+            - name: printer-data
+              mountPath: /opt/printer_data/logs
+              subPath: logs
+            - name: printer-data
+              mountPath: /opt/printer_data/run
+              subPath: run
             - name: usb-mcu
               mountPath: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_43002E000C50564837383420-if00
         - name: moonraker
@@ -78,6 +95,18 @@ spec:
           volumeMounts:
             - name: printer-data
               mountPath: /opt/printer_data
+            - name: printer-data
+              mountPath: /opt/printer_data/config
+              subPath: config
+            - name: printer-data
+              mountPath: /opt/printer_data/gcodes
+              subPath: gcodes
+            - name: printer-data
+              mountPath: /opt/printer_data/logs
+              subPath: logs
+            - name: printer-data
+              mountPath: /opt/printer_data/run
+              subPath: run
       volumes:
         - name: printer-data
           persistentVolumeClaim:
