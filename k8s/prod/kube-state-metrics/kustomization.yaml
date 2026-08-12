@@ -12,8 +12,6 @@ helmCharts:
   valuesInline:
     service:
       clusterIP: "10.96.0.255"
-    extraArgs:
-      - "-v=6"
     livenessProbe:
       initialDelaySeconds: 120
       failureThreshold: 10
