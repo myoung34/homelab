@@ -59,6 +59,10 @@ spec:
             - "/opt/printer_data/config/printer.cfg"
           resources: {}
           securityContext:
+            # Run as root so klipper can open the USB serial (0600 root:root).
+            # Container is already privileged for USB access, so this is not
+            # an additional isolation loss.
+            runAsUser: 0
             allowPrivilegeEscalation: true
             privileged: true
           volumeMounts:
