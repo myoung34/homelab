@@ -16,6 +16,22 @@ resources:
   - network-optimizer.yaml
   - klipper-enderright.yaml
 
+patches:
+  - target:
+      kind: Job
+      name: longhorn-pre-upgrade
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1hook
+        value: Skip
+  - target:
+      kind: Job
+      name: longhorn-uninstall
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1hook
+        value: Skip
+
 helmCharts:
 - name: longhorn
   releaseName: longhorn
