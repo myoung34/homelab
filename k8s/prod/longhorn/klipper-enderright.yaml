@@ -29,7 +29,7 @@ spec:
   diskSelector: []
   encrypted: false
   freezeFilesystemForSnapshot: ignored
-  fromBackup: ""
+  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-13caee85695f41e1&volume=klipper-enderright-data
   frontend: blockdev
   nodeSelector: []
   numberOfReplicas: 2
