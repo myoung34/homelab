@@ -115,7 +115,18 @@ spec:
             - name: printer-data
               mountPath: /opt/printer_data/run
               subPath: run
+            # mkuf's slim moonraker image lacks klipper's example configs and
+            # docs directories; moonraker warns on their absence. Mount empty
+            # stubs so the paths exist and validation passes.
+            - name: klipper-config-stub
+              mountPath: /opt/klipper/config
+            - name: klipper-docs-stub
+              mountPath: /opt/klipper/docs
       volumes:
+        - name: klipper-config-stub
+          emptyDir: {}
+        - name: klipper-docs-stub
+          emptyDir: {}
         - name: printer-data
           persistentVolumeClaim:
             claimName: klipper-enderright-data
