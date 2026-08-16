@@ -14,7 +14,9 @@ resources:
   - hass.yaml
   - paperless.yaml
   - network-optimizer.yaml
-  - klipper-enderright.yaml
+  #- klipper-enderright.yaml
+  - klipper-enderleft.yaml
+  - klipper-enderbig.yaml
 
 patches:
   - target:

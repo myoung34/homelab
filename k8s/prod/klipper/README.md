@@ -8,8 +8,8 @@ that printer's MCU plugged in via USB. The UI lives in `k8s/prod/fluidd`.
 | name       | model   | board              | USB serial                 | status  |
 |------------|---------|--------------------|----------------------------|---------|
 | enderright | Ender 3 | SKR mini e3 v3     | `43002E000C50564837383420` | active  |
-| enderleft  | Ender 3 | SKR mini e3 v3     | `4800420008504E5238363120` | planned |
-| enderbig   | Ender 5 | TODO               | TODO                       | planned |
+| enderleft  | Ender 3 | SKR mini e3 v3     | `4800420008504E5238363120` | active  |
+| enderbig   | Ender 5 | SKR mini e3 v3     | `320014000350415339373620` | active  |
 
 ## Adding a printer
 

@@ -25,22 +25,21 @@ spec:
             vendor: {op: In, value: ["1d50"]}
             device: {op: In, value: ["614e"]}
             serial: {op: In, value: ["43002E000C50564837383420"]}
-    # Uncomment and fill in the serials when the other printers come online:
-    # - name: klipper-enderleft
-    #   labels:
-    #     "feature.node.kubernetes.io/klipper-enderleft": "true"
-    #   matchFeatures:
-    #     - feature: usb.device
-    #       matchExpressions:
-    #         vendor: {op: In, value: ["1d50"]}
-    #         device: {op: In, value: ["614e"]}
-    #         serial: {op: In, value: ["4800420008504E5238363120"]}
-    # - name: klipper-enderbig
-    #   labels:
-    #     "feature.node.kubernetes.io/klipper-enderbig": "true"
-    #   matchFeatures:
-    #     - feature: usb.device
-    #       matchExpressions:
-    #         vendor: {op: In, value: ["1d50"]}
-    #         device: {op: In, value: ["614e"]}
-    #         serial: {op: In, value: ["TODO"]}
+    - name: klipper-enderleft
+      labels:
+        "feature.node.kubernetes.io/klipper-enderleft": "true"
+      matchFeatures:
+        - feature: usb.device
+          matchExpressions:
+            vendor: {op: In, value: ["1d50"]}
+            device: {op: In, value: ["614e"]}
+            serial: {op: In, value: ["4800420008504E5238363120"]}
+    - name: klipper-enderbig
+      labels:
+        "feature.node.kubernetes.io/klipper-enderbig": "true"
+      matchFeatures:
+        - feature: usb.device
+          matchExpressions:
+            vendor: {op: In, value: ["1d50"]}
+            device: {op: In, value: ["614e"]}
+            serial: {op: In, value: ["320014000350415339373620"]}

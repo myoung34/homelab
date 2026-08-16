@@ -5,12 +5,14 @@ kind: Kustomization
 # an explicit metadata.namespace instead.
 
 # One file pair per printer: <name>-configmap.yaml (printer.cfg seed) and
-# <name>.yaml (PV/PVC/Deployment/Service/Ingress). Future printers:
-#   - enderleft (ender 3)
-#   - enderbig (ender 5)
+# <name>.yaml (PV/PVC/Deployment/Service/Ingress).
 resources:
   - namespace.yaml
   - nodefeaturerule.yaml
   - moonraker-configmap.yaml
-  - enderright-configmap.yaml
-  - enderright.yaml
+  - enderleft-configmap.yaml
+  - enderleft.yaml
+  - enderbig-configmap.yaml
+  - enderbig.yaml
+#  - enderright-configmap.yaml
+#  - enderright.yaml

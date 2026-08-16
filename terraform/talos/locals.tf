@@ -4,8 +4,12 @@ locals {
   talos_version      = "v1.13.7"
   kubernetes_version = "v1.36.2"
 
-  rpi_overlay_sha   = "1ebcf8682462cead022eabbb8f4e1b4127ab53054a3fb0ed705989e5feb0af28"  # pragma: allowlist secret
+  rpi_overlay_sha   = "1ebcf8682462cead022eabbb8f4e1b4127ab53054a3fb0ed705989e5feb0af28" # pragma: allowlist secret
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
+
+  rpi5_overlay_sha   = "0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791" # pragma: allowlist secret
+  rpi5_overlay_image = "factory.talos.dev/installer/${local.rpi5_overlay_sha}:${local.talos_version}"
+
 
   extensions = {
     tailscale = {
@@ -44,46 +48,72 @@ locals {
     }
     workers = {
       "192.168.1.19" = {
-        hostname           = "cluster11"
-        install_disk       = "/dev/sda"
-        image              = local.rpi_overlay_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
+        hostname               = "cluster11"
+        install_disk           = "/dev/sda"
+        image                  = local.rpi_overlay_image
+        kubernetes_version     = ""
+        extra_device           = ""
+        mount_point            = ""
+        longhorn_disk_selector = ""
+        ephemeral_max_size     = ""
+        longhorn_min_size      = ""
         #network_hardware_addr = "00:e0*"
       },
       "192.168.1.21" = {
-        hostname           = "cluster12"
-        install_disk       = "/dev/sda"
-        image              = local.rpi_overlay_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
+        hostname               = "cluster12"
+        install_disk           = "/dev/sda"
+        image                  = local.rpi_overlay_image
+        kubernetes_version     = ""
+        extra_device           = ""
+        mount_point            = ""
+        longhorn_disk_selector = ""
+        ephemeral_max_size     = ""
+        longhorn_min_size      = ""
       },
       "192.168.1.23" = {
-        hostname           = "cluster14"
-        install_disk       = "/dev/sda"
-        image              = local.rpi_overlay_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
+        hostname               = "cluster14"
+        install_disk           = "/dev/sda"
+        image                  = local.rpi_overlay_image
+        kubernetes_version     = ""
+        extra_device           = ""
+        mount_point            = ""
+        longhorn_disk_selector = ""
+        ephemeral_max_size     = ""
+        longhorn_min_size      = ""
 
       },
       "192.168.1.24" = {
-        hostname           = "cluster21"
-        install_disk       = "/dev/sda"
-        image              = local.rpi_overlay_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
+        hostname               = "cluster21"
+        install_disk           = "/dev/sda"
+        image                  = local.rpi_overlay_image
+        kubernetes_version     = ""
+        extra_device           = ""
+        mount_point            = ""
+        longhorn_disk_selector = ""
+        ephemeral_max_size     = ""
+        longhorn_min_size      = ""
       },
       "192.168.1.27" = {
-        hostname           = "cluster24"
-        install_disk       = "/dev/sda"
-        image              = local.rpi_overlay_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
+        hostname               = "cluster24"
+        install_disk           = "/dev/sda"
+        image                  = local.rpi_overlay_image
+        kubernetes_version     = ""
+        extra_device           = ""
+        mount_point            = ""
+        longhorn_disk_selector = ""
+        ephemeral_max_size     = ""
+        longhorn_min_size      = ""
+      },
+      "192.168.1.69" = {
+        hostname               = "klipper"
+        install_disk           = "/dev/nvme0n1"
+        image                  = local.rpi5_overlay_image
+        kubernetes_version     = ""
+        extra_device           = ""
+        mount_point            = ""
+        longhorn_disk_selector = "disk.transport == \"nvme\""
+        ephemeral_max_size     = "64GB"
+        longhorn_min_size      = "50GB"
       },
     }
   }

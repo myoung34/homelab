@@ -1,16 +1,16 @@
-# enderright: Ender 3 (BTT SKR mini e3 v3) running Klipper + Moonraker.
+# enderleft: Ender 3 (BTT SKR mini e3 v3) running Klipper + Moonraker.
 # Pinned to whichever node has the MCU's USB serial plugged in (see
 # nodefeaturerule.yaml). Fluidd (k8s/prod/fluidd) is the UI; add
-# https://enderright as a printer instance in it.
+# https://enderleft as a printer instance in it.
 ---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: enderright
+  name: enderleft
   namespace: klipper
   labels:
     app.kubernetes.io/name: klipper
-    app.kubernetes.io/instance: enderright
+    app.kubernetes.io/instance: enderleft
 spec:
   replicas: 1
   strategy:
@@ -18,12 +18,12 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: klipper
-      app.kubernetes.io/instance: enderright
+      app.kubernetes.io/instance: enderleft
   template:
     metadata:
       labels:
         app.kubernetes.io/name: klipper
-        app.kubernetes.io/instance: enderright
+        app.kubernetes.io/instance: enderleft
     spec:
       initContainers:
         # Seed configs onto the PVC on first boot only; SAVE_CONFIG and fluidd
@@ -86,7 +86,7 @@ spec:
               mountPath: /opt/printer_data/run
               subPath: run
             - name: usb-mcu
-              mountPath: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_43002E000C50564837383420-if00
+              mountPath: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_4800420008504E5238363120-if00
         - name: moonraker
           image: mkuf/moonraker:latest
           args:
@@ -129,16 +129,16 @@ spec:
           emptyDir: {}
         - name: printer-data
           persistentVolumeClaim:
-            claimName: klipper-enderright-data
+            claimName: klipper-enderleft-data
         - name: printer-cfg-seed
           configMap:
-            name: klipper-enderright-printer-cfg
+            name: klipper-enderleft-printer-cfg
         - name: moonraker-conf-seed
           configMap:
             name: moonraker
         - name: usb-mcu
           hostPath:
-            path: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_43002E000C50564837383420-if00
+            path: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_4800420008504E5238363120-if00
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -148,21 +148,21 @@ spec:
             # VID/PID 1d50:614e, so with multiple printers only the
             # per-serial labels pin correctly.
             - matchExpressions:
-              - key: feature.node.kubernetes.io/klipper-enderright
+              - key: feature.node.kubernetes.io/klipper-enderleft
                 operator: Exists
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: enderright
+  name: enderleft
   namespace: klipper
   labels:
     app.kubernetes.io/name: klipper
-    app.kubernetes.io/instance: enderright
+    app.kubernetes.io/instance: enderleft
 spec:
   selector:
     app.kubernetes.io/name: klipper
-    app.kubernetes.io/instance: enderright
+    app.kubernetes.io/instance: enderleft
   ports:
     - name: moonraker
       protocol: TCP
@@ -174,15 +174,15 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: enderright
+  name: enderleft
   namespace: klipper
 spec:
   defaultBackend:
     service:
-      name: enderright
+      name: enderleft
       port:
         number: 7125
   ingressClassName: tailscale
   tls:
   - hosts:
-    - enderright
+    - enderleft

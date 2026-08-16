@@ -22,8 +22,11 @@ resource "talos_machine_configuration_apply" "worker" {
       name = "tailscale"
       env  = local.extensions.tailscale.env
     }),
-    templatefile("${path.module}/templates/longhorn.yaml.tmpl", {
-    }),
+    length(each.value.longhorn_disk_selector) == 0 ? [templatefile("${path.module}/templates/longhorn.yaml.tmpl", {})] : [templatefile("${path.module}/templates/longhorn-dedicated-volume.yaml.tmpl", {
+      disk_selector      = each.value.longhorn_disk_selector
+      ephemeral_max_size = each.value.ephemeral_max_size
+      longhorn_min_size  = each.value.longhorn_min_size
+    })],
     length(each.value.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
       mount_point  = each.value.mount_point
       extra_device = each.value.extra_device
