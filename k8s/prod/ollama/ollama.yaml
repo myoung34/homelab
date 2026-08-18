@@ -40,8 +40,8 @@ spec:
         app.kubernetes.io/name: ollama
     spec:
       automountServiceAccountToken: true
-      # qwen3:8b needs ~6-8GB resident just for weights; the requests below are
-      # a floor so the scheduler avoids Pi 4 nodes that can't actually fit it.
+      # qwen3:4b needs ~2.5-3GB resident for weights; the requests below are
+      # a floor so the scheduler avoids nodes that can't actually fit it.
       # No hard node affinity is set - if scheduling still lands somewhere too
       # small, pin this to a specific node via nodeSelector/affinity.
       initContainers:
@@ -62,7 +62,8 @@ spec:
           ollama serve &
           pid=$!
           until ollama list >/dev/null 2>&1; do sleep 1; done
-          ollama pull qwen3:8b
+          ollama pull qwen3:4b
+          ollama rm qwen3:8b || true
           kill $pid
         volumeMounts:
         - name: data
@@ -90,7 +91,7 @@ spec:
         resources:
           requests:
             cpu: 1000m
-            memory: 6Gi
+            memory: 3Gi
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 30
