@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: coder
+spec:
+  vaultAuthRef: coder
+  mount: secret/
+  type: kv-v2
+  path: coder
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: coder
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: coder
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: coder
+    serviceAccount: default
