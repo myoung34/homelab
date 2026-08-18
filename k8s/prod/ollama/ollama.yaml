@@ -48,6 +48,13 @@ spec:
       - name: pull-model
         image: "ollama/ollama:latest"
         imagePullPolicy: IfNotPresent
+        env:
+        # Default splits each blob into many concurrent chunk downloads: fine
+        # on a solid link, but on a flaky one all of them stall together and
+        # the whole pull restarts from 0%. Cutting concurrency trades peak
+        # throughput for actually finishing.
+        - name: OLLAMA_MAX_TRANSFER_STREAMS
+          value: "1"
         command:
         - /bin/sh
         - -c
@@ -71,6 +78,8 @@ spec:
         env:
         - name: OLLAMA_HOST
           value: "0.0.0.0:11434"
+        - name: OLLAMA_MAX_TRANSFER_STREAMS
+          value: "1"
         ports:
         - containerPort: 11434
           name: http
