@@ -98,6 +98,12 @@ spec:
           value: "0.0.0.0:11434"
         - name: OLLAMA_MAX_TRANSFER_STREAMS
           value: "1"
+        # Default (5m) unloads the model from VRAM between requests, paying
+        # a ~150s reload (mostly reading the blob off the Longhorn-backed
+        # PVC) on the next one. This node's dedicated to Ollama and qwen3:4b
+        # only uses ~3GB of the card's 16GB, so just keep it resident.
+        - name: OLLAMA_KEEP_ALIVE
+          value: "-1"
         # See the HSA_OVERRIDE_GFX_VERSION note on the pull-model
         # initContainer above if the GPU isn't actually getting used.
         ports:
