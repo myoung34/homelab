@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ollama
+  namespace: ollama
+spec:
+  defaultBackend:
+    service:
+      name: ollama
+      port:
+        number: 11434
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - ollama

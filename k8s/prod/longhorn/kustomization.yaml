@@ -17,6 +17,8 @@ resources:
   #- klipper-enderright.yaml
   - klipper-enderleft.yaml
   - klipper-enderbig.yaml
+  - ollama.yaml
+  - bifrost.yaml
 
 patches:
   - target:

@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bifrost
+  namespace: bifrost
+data:
+  # Bootstrap config, only read by Bifrost on first launch (before config.db
+  # exists on the data PVC). Further provider changes made via the Bifrost
+  # UI persist to config.db and take over from there.
+  config.json: |
+    {
+      "providers": {
+        "ollama": {
+          "keys": [
+            {
+              "name": "ollama-key",
+              "value": "dummy",
+              "models": ["*"],
+              "weight": 1.0
+            }
+          ],
+          "network_config": {
+            "base_url": "http://ollama.ollama.svc.cluster.local:11434",
+            "allow_private_network": true,
+            "default_request_timeout_in_seconds": 300
+          },
+          "custom_provider_config": {
+            "base_provider_type": "openai",
+            "allowed_requests": {
+              "chat_completion": true,
+              "chat_completion_stream": true
+            }
+          }
+        },
+        "openai": {
+          "keys": [
+            {
+              "name": "openai-key-1",
+              "value": "env.OPENAI_API_KEY",
+              "models": ["*"],
+              "weight": 1.0
+            }
+          ]
+        },
+        "anthropic": {
+          "keys": [
+            {
+              "name": "anthropic-key-1",
+              "value": "env.ANTHROPIC_API_KEY",
+              "models": ["*"],
+              "weight": 1.0
+            }
+          ]
+        }
+      }
+    }
