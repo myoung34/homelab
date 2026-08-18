@@ -16,20 +16,16 @@ data:
               "name": "ollama-key",
               "value": "dummy",
               "models": ["*"],
-              "weight": 1.0
+              "weight": 1.0,
+              "ollama_key_config": {
+                "url": "http://ollama.ollama.svc.cluster.local:11434"
+              }
             }
           ],
           "network_config": {
             "base_url": "http://ollama.ollama.svc.cluster.local:11434",
             "allow_private_network": true,
             "default_request_timeout_in_seconds": 300
-          },
-          "custom_provider_config": {
-            "base_provider_type": "openai",
-            "allowed_requests": {
-              "chat_completion": true,
-              "chat_completion_stream": true
-            }
           }
         },
         "openai": {
