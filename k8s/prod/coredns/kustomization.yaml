@@ -46,6 +46,11 @@ helmCharts:
           lameduck 5s
       # Serves a /ready endpoint on :8181, required for readinessProbe
       - name: ready
+      # Coder's pod isn't tailnet-joined, so its own DNS can't resolve its
+      # Tailscale access URL; point it at the in-cluster Service instead so
+      # Coder's self health-check (dialing its own access URL) succeeds.
+      - name: rewrite
+        parameters: name coder.king-gila.ts.net coder.coder.svc.cluster.local
       # Required to query kubernetes API for data
       - name: kubernetes
         parameters: cluster.local in-addr.arpa ip6.arpa
