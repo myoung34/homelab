@@ -42,11 +42,20 @@ spec:
       automountServiceAccountToken: true
       # qwen3:4b needs ~2.5-3GB resident for weights; the requests below are
       # a floor so the scheduler avoids nodes that can't actually fit it.
-      # No hard node affinity is set - if scheduling still lands somewhere too
-      # small, pin this to a specific node via nodeSelector/affinity.
+      #
+      # GPU offload (AMD Radeon RX 9060 / gfx1201 via ROCm): requesting
+      # amd.com/gpu below requires the siderolabs/amdgpu Talos extension on
+      # the node plus the ROCm/k8s-device-plugin DaemonSet running in the
+      # cluster - both are set up outside this manifest. The device plugin
+      # injects /dev/kfd + /dev/dri itself; no manual hostPath mount needed.
+      # The resource request alone would already constrain scheduling to
+      # gpu1 (it's the only node that will ever advertise amd.com/gpu), but
+      # pin it explicitly too so intent isn't implicit.
+      nodeSelector:
+        kubernetes.io/hostname: gpu1
       initContainers:
       - name: pull-model
-        image: "ollama/ollama:latest"
+        image: "ollama/ollama:rocm"
         imagePullPolicy: IfNotPresent
         env:
         # Default splits each blob into many concurrent chunk downloads: fine
@@ -55,6 +64,11 @@ spec:
         # throughput for actually finishing.
         - name: OLLAMA_MAX_TRANSFER_STREAMS
           value: "1"
+        # If gfx1201 gets detected but Ollama still falls back to CPU (a
+        # known rough edge for the 9060 as of mid-2026), uncomment and set
+        # this to a supported target to force recognition:
+        # - name: HSA_OVERRIDE_GFX_VERSION
+        #   value: "11.0.0"
         command:
         - /bin/sh
         - -c
@@ -72,15 +86,20 @@ spec:
           requests:
             cpu: 500m
             memory: 2Gi
+            amd.com/gpu: 1
+          limits:
+            amd.com/gpu: 1
       containers:
       - name: ollama
-        image: "ollama/ollama:latest"
+        image: "ollama/ollama:rocm"
         imagePullPolicy: IfNotPresent
         env:
         - name: OLLAMA_HOST
           value: "0.0.0.0:11434"
         - name: OLLAMA_MAX_TRANSFER_STREAMS
           value: "1"
+        # See the HSA_OVERRIDE_GFX_VERSION note on the pull-model
+        # initContainer above if the GPU isn't actually getting used.
         ports:
         - containerPort: 11434
           name: http
@@ -92,6 +111,9 @@ spec:
           requests:
             cpu: 1000m
             memory: 3Gi
+            amd.com/gpu: 1
+          limits:
+            amd.com/gpu: 1
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 30

@@ -10,6 +10,12 @@ locals {
   rpi5_overlay_sha   = "0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791" # pragma: allowlist secret
   rpi5_overlay_image = "factory.talos.dev/installer/${local.rpi5_overlay_sha}:${local.talos_version}"
 
+  # Bare-metal AMD (amdgpu) node - already imaged/booted at v1.13.8, independent
+  # of the shared talos_version above. Regenerate via:
+  #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
+  # and drop the returned "id" in below.
+  bare_metal_sha   = "REPLACE_ME_WITH_FACTORY_SCHEMATIC_ID" # pragma: allowlist secret
+  bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:v1.13.8"
 
   extensions = {
     tailscale = {
@@ -114,6 +120,20 @@ locals {
         longhorn_disk_selector = "disk.transport == \"nvme\""
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "50GB"
+      },
+      "192.168.0.251" = {
+        hostname           = "gpu1"
+        install_disk       = "/dev/nvme0n1"
+        image              = local.bare_metal_image
+        kubernetes_version = ""
+        extra_device       = ""
+        mount_point        = ""
+        # 1TB NVMe, single-disk: same disk serves EPHEMERAL (capped at 64GB)
+        # and the "longhorn" UserVolumeConfig (floor of 900GB, grows to fill
+        # whatever's left).
+        longhorn_disk_selector = "disk.transport == \"nvme\""
+        ephemeral_max_size     = "64GB"
+        longhorn_min_size      = "900GB"
       },
     }
   }

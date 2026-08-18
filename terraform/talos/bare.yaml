@@ -1,0 +1,10 @@
+customization:
+  extraKernelArgs:
+    - talos.logging.kernel=tcp://192.168.3.2:5046/
+    - reboot=k
+    - selinux=0
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/amdgpu
+      - siderolabs/iscsi-tools
+      - siderolabs/tailscale
