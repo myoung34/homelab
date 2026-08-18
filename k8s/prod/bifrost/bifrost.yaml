@@ -43,6 +43,11 @@ spec:
         app.kubernetes.io/name: bifrost
     spec:
       automountServiceAccountToken: true
+      # Longhorn mounts /app/data owned by root; Bifrost runs as uid/gid 1000
+      # and needs write access for config.db/logs.db, so chown the volume's
+      # group to match via fsGroup.
+      securityContext:
+        fsGroup: 1000
       containers:
       - env:
         - name: APP_PORT
