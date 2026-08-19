@@ -35,4 +35,23 @@ spec:
         automated:
           prune: true
           selfHeal: true
+      # The tailscale operator owns spec.externalName on egress Services: it
+      # rewrites our required-but-meaningless "placeholder" to the proxy it
+      # generates (ts-aperture-<random>.tailscale.svc.cluster.local). The
+      # suffix is random and regenerated if the Service is recreated, so we
+      # can't commit the real value - without this, coder sits OutOfSync and
+      # selfHeal fights the operator every sync.
+      #
+      # Scoped to this one Service by name+namespace, so no other Service and
+      # no other generated app is affected. That scoping only works here in
+      # the Application spec; argocd-cm resource.customizations would match
+      # every Service in the cluster. RespectIgnoreDifferences=true above is
+      # what stops selfHeal reverting the field, not just hiding it in the UI.
+      ignoreDifferences:
+        - group: ""
+          kind: Service
+          name: aperture
+          namespace: coder
+          jsonPointers:
+            - /spec/externalName
       revisionHistoryLimit: 5
