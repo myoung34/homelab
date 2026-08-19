@@ -128,9 +128,14 @@ locals {
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
-        # 1TB NVMe, single-disk: same disk serves EPHEMERAL (capped at 64GB)
-        # and the "longhorn" UserVolumeConfig (floor of 900GB, grows to fill
-        # whatever's left).
+        # nvme0n1/nvme1n1 device names are NOT stable across reboots on this
+        # box (the two NVMe disks have been observed to swap names), so the
+        # disk must be targeted by a selector, never a hardcoded device path
+        # (rules out machine.disks). 1TB NVMe, single-disk: same disk serves
+        # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
+        # (floor of 900GB, grows to fill whatever's left). Longhorn doesn't
+        # see this disk's full size due to an unresolved Talos mount-stacking
+        # bug (siderolabs/talos#13069) masking it behind EPHEMERAL.
         longhorn_disk_selector = "disk.transport == \"nvme\""
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "900GB"

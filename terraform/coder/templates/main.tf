@@ -37,6 +37,27 @@ variable "node_arch" {
   default = "amd64"
 }
 
+# The agent's init script is generated from CODER_ACCESS_URL
+# (https://coder.king-gila.ts.net), which no workspace pod can reach:
+#   - CoreDNS rewrites that name to the coder ClusterIP (the "rewrite name"
+#     line in kube-system/coredns), but that Service only listens on 8080/http
+#     while the access URL implies 443/https - so curl gets ECONNREFUSED.
+#   - The only thing serving 443 for that name is the Tailscale Ingress proxy
+#     (tailscale/ts-coder-*), and it binds the tailnet interface, not its pod
+#     IP. Tailscale's fix for that is the experimental
+#     `tailscale.com/experimental-forward-cluster-traffic-via-ingress`
+#     annotation, which is a known crash-loop on Talos - see
+#     https://github.com/tailscale/tailscale/issues/19538.
+# So substitute the access URL out of the init script and send the agent
+# straight at the Service. This leg is cluster-internal but unencrypted, and
+# the agent token rides on it; acceptable here, revisit if the cluster ever
+# hosts anything untrusted.
+variable "coder_internal_url" {
+  description = "In-cluster URL the workspace agent uses instead of the public access URL."
+  type        = string
+  default     = "http://coder.coder.svc.cluster.local:8080"
+}
+
 data "coder_parameter" "cpu" {
   name         = "cpu"
   display_name = "CPU cores"
@@ -106,9 +127,12 @@ resource "kubernetes_pod" "main" {
     }
     service_account_name = "default"
     container {
-      name    = "dev"
-      image   = "codercom/enterprise-base:ubuntu"
-      command = ["sh", "-c", coder_agent.main.init_script]
+      name  = "dev"
+      image = "codercom/enterprise-base:ubuntu"
+      # See coder_internal_url above - access_url is the bare base URL with no
+      # trailing slash, so this catches both the binary download and the
+      # exported CODER_AGENT_URL.
+      command = ["sh", "-c", replace(coder_agent.main.init_script, data.coder_workspace.me.access_url, var.coder_internal_url)]
       security_context {
         run_as_user = "1000"
       }

@@ -13,3 +13,24 @@ spec:
   tls:
   - hosts:
     - coder
+---
+# Cluster -> tailnet egress so coderd can reach Aperture. coderd has no route
+# to the tailnet and CoreDNS can't resolve ai.king-gila.ts.net, so pointing an
+# AI provider straight at the MagicDNS name fails with NXDOMAIN. The operator
+# rewrites the placeholder externalName below to an in-cluster egress proxy
+# that DNATs to the tailnet host.
+#
+# Consume this as http://aperture.coder.svc.cluster.local/v1/ - plain http on
+# port 80, per Tailscale's guidance for Aperture clients: the hop is already
+# WireGuard-encrypted, and http sidesteps the cert/SNI mismatch you'd hit
+# addressing Aperture by a name its cert doesn't cover.
+apiVersion: v1
+kind: Service
+metadata:
+  name: aperture
+  namespace: coder
+  annotations:
+    tailscale.com/tailnet-fqdn: ai.king-gila.ts.net
+spec:
+  type: ExternalName
+  externalName: placeholder
