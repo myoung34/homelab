@@ -13,6 +13,7 @@ resource "tailscale_acl" "acl" {
 		"tag:k8s-operator":  [],
 		"tag:k8s":           ["tag:k8s-operator"],
 		"tag:mullvad":       ["tag:admin-device"],
+		"tag:ai":            [],
 	},
 
 	// Define access control lists for users, groups, autogroups, tags,
@@ -27,6 +28,15 @@ resource "tailscale_acl" "acl" {
 			"action": "accept",
 			"src":    ["autogroup:admin", "tag:admin-device", "tag:k8s", "tag:k8s-operator"],
 			"dst":    ["*:*"],
+		},
+	],
+
+	// Define grants for access to specific apps/capabilities.
+	"grants": [
+		{
+			"src": ["autogroup:member"],
+			"dst": ["tag:ai"],
+			"ip":  ["tcp:80", "tcp:443", "icmp:*"],
 		},
 	],
 
