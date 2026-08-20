@@ -92,11 +92,19 @@ helmCharts:
         systemProbe:
           resources:
             requests:
-              cpu: 78m
-              memory: 384M
+              # Steady state is 276-363Mi with networkMonitoring + serviceMonitoring
+              # both on. eBPF maps are kernel allocations charged to the container
+              # memcg (GFP_KERNEL_ACCOUNT), so they count on top of RSS -- the old
+              # 384M (= 366Mi) limit sat right on peak usage and OOM-killed on
+              # nearly every node. Request tracks steady state, limit leaves room
+              # for map churn without reserving it on the 3.1Gi nodes.
+              cpu: 200m
+              memory: 448Mi
             limits:
-              cpu: 78m
-              memory: 384M
+              # BPF program loading + verification at startup is CPU-bursty; the
+              # previous 78m limit throttled it into probe failures.
+              cpu: 1
+              memory: 768Mi
         traceAgent:
           resources:
             requests:
