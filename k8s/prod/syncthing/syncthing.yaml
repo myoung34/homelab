@@ -1,0 +1,168 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: syncthing
+    app.kubernetes.io/name: syncthing
+  name: syncthing
+spec:
+  ports:
+  - name: gui
+    port: 8384
+    protocol: TCP
+    targetPort: gui
+  selector:
+    app.kubernetes.io/instance: syncthing
+    app.kubernetes.io/name: syncthing
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: syncthing
+    app.kubernetes.io/name: syncthing
+  name: syncthing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: syncthing
+      app.kubernetes.io/name: syncthing
+  strategy:
+    # The config volume is RWO, so the old pod has to release it before the new
+    # one can attach.
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: syncthing
+        app.kubernetes.io/name: syncthing
+    spec:
+      # No arch nodeAffinity: syncthing/syncthing is published for amd64,
+      # arm64 and arm/v7, so it schedules anywhere in the cluster.
+      automountServiceAccountToken: false
+      securityContext:
+        # Must match the owner of the media on the Synology (uid 1026 myoung,
+        # gid 100 users). NFS enforces permissions from the uid/gid the client
+        # sends, so getting this wrong means Syncthing cannot even create
+        # .stfolder and the folder never starts.
+        runAsUser: 1026
+        runAsGroup: 100
+        runAsNonRoot: true
+        supplementalGroups:
+        - 100
+        # Deliberately NO fsGroup. For NFS volumes the kubelet would apply it
+        # by walking and chgrp-ing the entire tree - across a multi-TB library
+        # that is a very long startup and a lot of pointless metadata writes.
+        # The init container below fixes the one directory that actually needs
+        # it.
+      initContainers:
+      # A freshly provisioned Longhorn volume is root-owned, and with no
+      # fsGroup nothing else will hand it to uid 1026. Chown only the config
+      # dir; the NFS mounts are left completely untouched.
+      - name: chown-config
+        image: "syncthing/syncthing:2.1.3"
+        imagePullPolicy: IfNotPresent
+        command:
+        - sh
+        - -c
+        - chown 1026:100 /var/syncthing/config
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          runAsNonRoot: false
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16M
+        volumeMounts:
+        - mountPath: /var/syncthing/config
+          name: config
+      containers:
+      - name: syncthing
+        image: "syncthing/syncthing:2.1.3"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TZ
+          value: "America/Chicago"
+        - name: STHOMEDIR
+          value: "/var/syncthing/config"
+        # The image ships HOME=/var/syncthing, which is a root-owned directory
+        # in the image layer - unwritable for uid 1026, and the entrypoint only
+        # chowns it when it starts as root (which we do not). Point HOME at the
+        # config PVC instead so anything resolving the home dir lands somewhere
+        # writable.
+        - name: HOME
+          value: "/var/syncthing/config"
+        # Binding the GUI to a non-loopback address is what disables
+        # Syncthing's Host-header check, which is only enforced for
+        # localhost listeners. That is what lets the tailscale Ingress reach
+        # it by hostname without setting insecureSkipHostcheck.
+        - name: STGUIADDRESS
+          value: "0.0.0.0:8384"
+        # Stop Syncthing creating its example ~/Sync folder on first boot.
+        - name: STNODEFAULTFOLDER
+          value: "1"
+        # Default umask 022 would create files 0644 - readable but NOT writable
+        # by the users group, which defeats the point of a group-RW share. 002
+        # yields 0664 files and 0775 dirs so anything else in gid 100 (DSM
+        # users, other jobs on the NAS) can manage what lands here. The image
+        # entrypoint applies this before exec'ing syncthing.
+        - name: UMASK
+          value: "002"
+        ports:
+        - containerPort: 8384
+          name: gui
+          protocol: TCP
+        - containerPort: 22000
+          name: sync-tcp
+          protocol: TCP
+        - containerPort: 22000
+          name: sync-udp
+          protocol: UDP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512M
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          tcpSocket:
+            port: gui
+          timeoutSeconds: 1
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          tcpSocket:
+            port: gui
+          timeoutSeconds: 1
+        startupProbe:
+          # First boot hashes whatever already exists under the NFS mounts,
+          # which over the network is not fast.
+          failureThreshold: 60
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          tcpSocket:
+            port: gui
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /var/syncthing/config
+          name: config
+        - mountPath: /var/syncthing/Movies
+          name: movies
+        - mountPath: /var/syncthing/TV
+          name: tv
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: syncthing-config
+      - name: movies
+        persistentVolumeClaim:
+          claimName: syncthing-movies
+      - name: tv
+        persistentVolumeClaim:
+          claimName: syncthing-tv

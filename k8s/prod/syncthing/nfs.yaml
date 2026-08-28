@@ -1,0 +1,125 @@
+---
+# Static NFS PVs pointing at bigNASty (192.168.3.2, NAS VLAN 3).
+#
+# Talos needs no system extension for this - the NFS client ships inside the
+# kubelet image (unlike iscsi-tools, which we do carry in the schematic). The
+# flip side is that NFS mounting is coupled to the kubelet patch version, so if
+# mounts suddenly fail with "you might need a /sbin/mount.<type> helper
+# program" after a Talos upgrade, suspect the kubelet, not this file.
+#
+# reclaimPolicy is Retain on purpose. These volumes hold the actual media
+# library; a Released PV must never hand Kubernetes permission to delete it.
+#
+# storageClassName "" on both PV and PVC keeps the dynamic provisioners out,
+# and claimRef pre-binds each PV to its intended PVC so nothing else can claim
+# them.
+#
+# NFS is already enabled on the NAS - rpcbind, mountd, nfs and nlockmgr are all
+# registered - but no shared folder has an export rule yet, so `showmount -e`
+# returns an empty list and nothing can mount. Adding those rules (see README)
+# is the remaining step.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: syncthing-movies
+  labels:
+    app.kubernetes.io/instance: syncthing
+    app.kubernetes.io/name: syncthing
+spec:
+  capacity:
+    # Not enforced for NFS - the real ceiling is the Synology volume. This is
+    # only here because the field is required.
+    storage: 1Ti
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+  # v3, not v4.1: rpcinfo against 192.168.3.2 registers nfs versions 2 and 3
+  # only, so v4 is not currently enabled in DSM and a v4.1 mount would fail.
+  # nolock because NLM locking needs rpc.statd on the client and Talos nodes do
+  # not run one - the server offers nlockmgr/status, but nothing here can use
+  # it. Syncthing does not need cross-host locking; it is the sole writer.
+  - nfsvers=3
+  - nolock
+  - hard
+  - noatime
+  # No explicit rsize/wsize: DSM is set to an 8KB read/write packet size, so
+  # asking for 1MB just negotiates back down to 8KB and makes this file lie
+  # about what is happening. Raising it on the NAS side (File Services -> NFS
+  # -> Advanced) is worth doing for media-sized sequential IO - 8KB means a lot
+  # of round trips per file.
+  - timeo=600
+  - retrans=2
+  nfs:
+    server: 192.168.3.2
+    path: /volume1/Movies
+  claimRef:
+    namespace: syncthing
+    name: syncthing-movies
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: syncthing-movies
+  namespace: syncthing
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Ti
+  storageClassName: ""
+  volumeName: syncthing-movies
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: syncthing-tv
+  labels:
+    app.kubernetes.io/instance: syncthing
+    app.kubernetes.io/name: syncthing
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+  # v3, not v4.1: rpcinfo against 192.168.3.2 registers nfs versions 2 and 3
+  # only, so v4 is not currently enabled in DSM and a v4.1 mount would fail.
+  # nolock because NLM locking needs rpc.statd on the client and Talos nodes do
+  # not run one - the server offers nlockmgr/status, but nothing here can use
+  # it. Syncthing does not need cross-host locking; it is the sole writer.
+  - nfsvers=3
+  - nolock
+  - hard
+  - noatime
+  # No explicit rsize/wsize: DSM is set to an 8KB read/write packet size, so
+  # asking for 1MB just negotiates back down to 8KB and makes this file lie
+  # about what is happening. Raising it on the NAS side (File Services -> NFS
+  # -> Advanced) is worth doing for media-sized sequential IO - 8KB means a lot
+  # of round trips per file.
+  - timeo=600
+  - retrans=2
+  nfs:
+    server: 192.168.3.2
+    path: /volume1/TV
+  claimRef:
+    namespace: syncthing
+    name: syncthing-tv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: syncthing-tv
+  namespace: syncthing
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Ti
+  storageClassName: ""
+  volumeName: syncthing-tv

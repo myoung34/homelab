@@ -14,6 +14,7 @@ resource "tailscale_acl" "acl" {
 		"tag:k8s":           ["tag:k8s-operator"],
 		"tag:mullvad":       ["tag:admin-device"],
 		"tag:ai":            [],
+		"tag:seedbox":       [],
 	},
 
 	// Define access control lists for users, groups, autogroups, tags,
@@ -28,6 +29,15 @@ resource "tailscale_acl" "acl" {
 			"action": "accept",
 			"src":    ["autogroup:admin", "tag:admin-device", "tag:k8s", "tag:k8s-operator"],
 			"dst":    ["*:*"],
+		},
+		// The remote seedbox reaches Syncthing's transport port and nothing
+		// else. Deliberately NOT tag:admin-device - that carries the *:*
+		// grant above, and this is an internet-facing box running a torrent
+		// client, so it should not be able to touch the NAS or the k8s API.
+		{
+			"action": "accept",
+			"src":    ["tag:seedbox"],
+			"dst":    ["tag:k8s:22000"],
 		},
 	],
 

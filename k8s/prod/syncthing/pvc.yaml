@@ -1,0 +1,19 @@
+---
+# Syncthing's config + index database. This MUST live on local (Longhorn)
+# storage and never on the NFS mounts below: v2 keeps its index in SQLite,
+# which relies on file locking and mmap/fsync semantics that NFS does not
+# provide reliably. A corrupt index makes Syncthing refuse to start and forces
+# a full re-hash of every shared folder.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: syncthing-config
+  namespace: syncthing
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: longhorn
+  volumeMode: Filesystem

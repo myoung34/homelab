@@ -1,0 +1,52 @@
+---
+# GUI, reachable at https://syncthing.king-gila.ts.net
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: syncthing
+  namespace: syncthing
+spec:
+  defaultBackend:
+    service:
+      name: syncthing
+      port:
+        number: 8384
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - syncthing
+---
+# The sync protocol itself. The Ingress above is L7/HTTP and cannot carry BEP,
+# so the transport port gets its own tailnet node via the operator's L3
+# expose annotation, which forwards raw TCP/UDP.
+#
+# This is what makes a remote seedbox workable without punching a hole in the
+# UDM. The seedbox joins the tailnet and dials
+# syncthing-sync.king-gila.ts.net:22000 directly - WireGuard end to end, no
+# port forward, and no falling back to Syncthing's public relays (which are
+# bandwidth-throttled and would be miserable for movie-sized files).
+apiVersion: v1
+kind: Service
+metadata:
+  name: syncthing-sync
+  namespace: syncthing
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: "syncthing-sync"
+  labels:
+    app.kubernetes.io/instance: syncthing
+    app.kubernetes.io/name: syncthing
+spec:
+  ports:
+  - name: sync-tcp
+    port: 22000
+    protocol: TCP
+    targetPort: sync-tcp
+  - name: sync-udp
+    port: 22000
+    protocol: UDP
+    targetPort: sync-udp
+  selector:
+    app.kubernetes.io/instance: syncthing
+    app.kubernetes.io/name: syncthing
+  type: ClusterIP
