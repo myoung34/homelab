@@ -45,26 +45,41 @@ data:
       base_topic: zigbee2mqtt-workspace
       include_device_information: true
       server: mqtt://mosquitto.mosquitto.svc.cluster.local
-    version: 4
+    version: 5
     devices:
-      "0xffffb40e0605214d":
+      '0xffffb40e0605214d':
         friendly_name: wall-1
-        description: "THIRDREALITY 3RSP02028BZ location:tbd"
-      "0xffffb40e0605366d":
+        description: THIRDREALITY 3RSP02028BZ location:tbd
+      '0xffffb40e0605366d':
         friendly_name: wall-2
-        description: "THIRDREALITY 3RSP02028BZ location:tbd"
-      "0xffffb40e06054321":
+        description: THIRDREALITY 3RSP02028BZ location:tbd
+      '0xffffb40e06054321':
         friendly_name: wall-3
-        description: "THIRDREALITY 3RSP02028BZ location:tbd"
-      "0xffffb40e060579ee":
+        description: THIRDREALITY 3RSP02028BZ location:tbd
+      '0xffffb40e060579ee':
         friendly_name: wall-4
-        description: "THIRDREALITY 3RSP02028BZ location:tbd"
-      "0x00158d008bbf3f0e":
+        description: THIRDREALITY 3RSP02028BZ location:tbd
+      '0x00158d008bbf3f0e':
         friendly_name: water-1
-        description: "aqara LUMI LUMI (Water leak sensor) location:hvac pan"
-      "0x00158d008bc192ea":
+        description: aqara LUMI LUMI (Water leak sensor) location:hvac pan
+      '0x00158d008bc192ea':
         friendly_name: water-2
-        description: "aqara LUMI LUMI (Water leak sensor) location:under bar sink"
-      "0x00158d008bc19938":
+        description: aqara LUMI LUMI (Water leak sensor) location:under bar sink
+      '0x00158d008bc19938':
         friendly_name: water-3
-        description: "aqara LUMI LUMI (Water leak sensor) location:main exit"
+        description: aqara LUMI LUMI (Water leak sensor) location:main exit
+      '0xd44867fffe08df72':
+        friendly_name: light_sconce_office
+        description: switch next to rudys tank in office controls outside sconce
+      '0x44e2f8fffe33fa01':
+        friendly_name: light_sconce_bar
+        description: switch next to outside door in bar; controls outside sconce
+      '0x00158d008cd07af0':
+        friendly_name: under_fermenter
+        description: under fermenter in workspace
+      '0x00158d008c869ddd':
+        friendly_name: squirt_tank
+        description: under squirt tank
+      '0x00158d008c869de1':
+        friendly_name: rudy_tank
+        description: under squirts tank
