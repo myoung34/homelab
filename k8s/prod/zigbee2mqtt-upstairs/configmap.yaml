@@ -48,10 +48,14 @@ data:
     devices:
       '0x04e3e5fffef24450':
         friendly_name: front-porch-light
-        description: sonoff 2 way switch (w. neutral - ZBMINIR2) - location:2nd switch in gangbox
+        description: >-
+          sonoff 2 way switch (w. neutral - ZBMINIR2) - location:2nd switch in
+          gangbox
       '0x00be44fffe634f3f':
         friendly_name: front-flood-lights
-        description: sonoff 2 way switch (w. neutral - ZBMINIR2) - location:3rd switch in gangbox
+        description: >-
+          sonoff 2 way switch (w. neutral - ZBMINIR2) - location:3rd switch in
+          gangbox
       '0x00be44fffe634f47':
         friendly_name: master_bedroom_outside_sconce
         description: switch in master bedroom right of outside door
@@ -61,3 +65,21 @@ data:
       '0xe406bffffeacc4d7':
         friendly_name: kitchen_outside_flood
         description: 2 gang switch in kitchen next to outside door, switch on right
+      '0x00158d008cd1a88f':
+        friendly_name: water-9
+        description: location tbd
+      '0x00158d008cd0533f':
+        friendly_name: water-5
+        description: location tbd
+      '0x00158d008cd1a665':
+        friendly_name: water-7
+        description: location tbd
+      '0x00158d008cd1a818':
+        friendly_name: water-8
+        description: location tbd
+      '0x00158d008c865760':
+        friendly_name: water-4
+        description: location tbd
+      '0x00158d008cd0540e':
+        friendly_name: water-6
+        description: location tbd
