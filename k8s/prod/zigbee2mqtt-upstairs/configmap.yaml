@@ -44,11 +44,20 @@ data:
       base_topic: zigbee2mqtt-upstairs
       include_device_information: true
       server: mqtt://mosquitto.mosquitto.svc.cluster.local
-    version: 4
+    version: 5
     devices:
-      "0x04e3e5fffef24450":
+      '0x04e3e5fffef24450':
         friendly_name: front-porch-light
-        description: "sonoff 2 way switch (w. neutral - ZBMINIR2) - location:2nd switch in gangbox"
-      "0x00be44fffe634f3f":
+        description: sonoff 2 way switch (w. neutral - ZBMINIR2) - location:2nd switch in gangbox
+      '0x00be44fffe634f3f':
         friendly_name: front-flood-lights
-        description: "sonoff 2 way switch (w. neutral - ZBMINIR2) - location:3rd switch in gangbox"
+        description: sonoff 2 way switch (w. neutral - ZBMINIR2) - location:3rd switch in gangbox
+      '0x00be44fffe634f47':
+        friendly_name: master_bedroom_outside_sconce
+        description: switch in master bedroom right of outside door
+      '0xe406bffffeac7de9':
+        friendly_name: kitchen_outside_sconce
+        description: 2 gang switch in kitchen next to outside door, switch on left
+      '0xe406bffffeacc4d7':
+        friendly_name: kitchen_outside_flood
+        description: 2 gang switch in kitchen next to outside door, switch on right

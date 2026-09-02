@@ -68,6 +68,8 @@
           - switch.front_porch_light
           - switch.light_sconce_bar
           - switch.light_sconce_office
+          - switch.kitchen_outside_sconce
+          - switch.master_bedroom_outside_sconce
 # Turn on the night lights once it's dark at both the front door and the upstairs deck
 - alias: Night Lights On When Dark
   id: night_lights_on_when_dark
@@ -92,6 +94,8 @@
           - switch.front_porch_light
           - switch.light_sconce_bar
           - switch.light_sconce_office
+          - switch.kitchen_outside_sconce
+          - switch.master_bedroom_outside_sconce
 # Stupid eco+ ecobee.
 - alias: Set Ecobee From Helper At 6:35am
   trigger:
