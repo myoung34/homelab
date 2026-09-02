@@ -67,19 +67,19 @@ data:
         description: 2 gang switch in kitchen next to outside door, switch on right
       '0x00158d008cd1a88f':
         friendly_name: water-9
-        description: location tbd
+        description: liam bath
       '0x00158d008cd0533f':
         friendly_name: water-5
-        description: location tbd
+        description: hvac pan
       '0x00158d008cd1a665':
         friendly_name: water-7
-        description: location tbd
+        description: master bath
       '0x00158d008cd1a818':
         friendly_name: water-8
-        description: location tbd
+        description: half bath
       '0x00158d008c865760':
         friendly_name: water-4
-        description: location tbd
+        description: kitchen sink
       '0x00158d008cd0540e':
         friendly_name: water-6
-        description: location tbd
+        description: laundry room
