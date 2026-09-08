@@ -63,7 +63,7 @@ spec:
       # fsGroup nothing else will hand it to uid 1026. Chown only the config
       # dir; the NFS mounts are left completely untouched.
       - name: chown-config
-        image: "syncthing/syncthing:2.1.3"
+        image: "syncthing/syncthing:2.1.5"
         imagePullPolicy: IfNotPresent
         command:
         - sh
@@ -82,7 +82,7 @@ spec:
           name: config
       containers:
       - name: syncthing
-        image: "syncthing/syncthing:2.1.3"
+        image: "syncthing/syncthing:2.1.5"
         imagePullPolicy: IfNotPresent
         env:
         - name: TZ
