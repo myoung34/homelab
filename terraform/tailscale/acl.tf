@@ -14,7 +14,9 @@ resource "tailscale_acl" "acl" {
 		"tag:k8s":           ["tag:k8s-operator"],
 		"tag:mullvad":       ["tag:admin-device"],
 		"tag:ai":            [],
-		"tag:seedbox":       [],
+		"tag:seedbox":       ["autogroup:admin"],
+		"tag:mark-desktop":  [],
+		"tag:ai-client":     [],
 	},
 
 	// Define access control lists for users, groups, autogroups, tags,
@@ -27,8 +29,15 @@ resource "tailscale_acl" "acl" {
 		},
 		{
 			"action": "accept",
-			"src":    ["autogroup:admin", "tag:admin-device", "tag:k8s", "tag:k8s-operator"],
-			"dst":    ["*:*"],
+
+			"src": [
+				"autogroup:admin",
+				"tag:admin-device",
+				"tag:k8s",
+				"tag:k8s-operator",
+			],
+
+			"dst": ["*:*"],
 		},
 		// The remote seedbox reaches Syncthing's transport port and nothing
 		// else. Deliberately NOT tag:admin-device - that carries the *:*
@@ -44,7 +53,12 @@ resource "tailscale_acl" "acl" {
 	// Define grants for access to specific apps/capabilities.
 	"grants": [
 		{
-			"src": ["autogroup:member"],
+			// autogroup:member covers user-owned devices. tag:ai-client is for
+			// non-user nodes that must reach Aperture (tag:ai) - e.g. the
+			// ts-unplug reverse proxy. Tagged nodes are excluded from
+			// autogroup:member, so they need this explicit source grant or
+			// traffic to Aperture times out.
+			"src": ["autogroup:member", "tag:ai-client"],
 			"dst": ["tag:ai"],
 			"ip":  ["tcp:80", "tcp:443", "icmp:*"],
 		},
@@ -67,30 +81,45 @@ resource "tailscale_acl" "acl" {
 			"users":  ["tag:admin-device", "autogroup:nonroot", "myoung"],
 		},
 	],
+
 	"nodeAttrs": [
 		{
 			"target": ["*"],
-			"app": {
-				"tailscale.com/app-connectors": [],
-			},
+			"app":    {"tailscale.com/app-connectors": []},
 		},
 		{
 			"target": ["tag:k8s"],
 			"attr":   ["funnel"],
 		},
-		{"target": ["100.125.107.125"], "attr": ["mullvad"]},
-		{"target": ["100.69.116.77"], "attr": ["mullvad"]},
-		{"target": ["100.119.170.123"], "attr": ["mullvad"]},
-		{"target": ["100.112.88.4"], "attr": ["mullvad"]},
+		{
+			"target": ["100.125.107.125"],
+			"attr":   ["mullvad"],
+		},
+		{
+			"target": ["100.69.116.77"],
+			"attr":   ["mullvad"],
+		},
+		{
+			"target": ["100.119.170.123"],
+			"attr":   ["mullvad"],
+		},
+		{
+			"target": ["100.112.88.4"],
+			"attr":   ["mullvad"],
+		},
+		{
+			"target": ["100.119.83.90"],
+			"attr":   ["mullvad"],
+		},
 	],
 
 	// Test access rules every time they're saved.
 	// "tests": [
-	//  	{
-	//  		"src": "alice@example.com",
-	//  		"accept": ["tag:example"],
-	//  		"deny": ["100.101.102.103:443"],
-	//  	},
+	//   {
+	//       "src": "alice@example.com",
+	//       "accept": ["tag:example"],
+	//       "deny": ["100.101.102.103:443"],
+	//   },
 	// ],
 }
 
