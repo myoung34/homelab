@@ -1,0 +1,29 @@
+---
+# Holds POSTGRES_DATABASE_URL, the full DSN for the kagent database on
+# bigNASty. The controller reads it as a file rather than an env var (see
+# database.postgres.urlFile in kustomization.yaml), so the password never
+# appears in the pod spec, in `kubectl describe`, or in this repo.
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: kagent
+spec:
+  vaultAuthRef: kagent
+  mount: secret/
+  type: kv-v2
+  path: kagent
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: kagent
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: kagent
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: kagent
+    serviceAccount: default

@@ -5,6 +5,7 @@ namespace: kagent
 resources:
   - namespace.yaml
   - tailscale.yaml
+  - vault.yaml
   - mcp.yaml
   - agent.yaml
 
@@ -74,6 +75,19 @@ helmCharts:
           memory: 128Mi
         limits:
           memory: 512Mi
+      # The DSN is a secret, so it is mounted as a file and referenced by
+      # database.postgres.urlFile rather than passed inline. Injecting it as a
+      # duplicate POSTGRES_DATABASE_URL env entry does not work: kubelet would
+      # take the last one, but Argo CD's structured merge diff treats env as a
+      # list keyed on name and rejects duplicates outright.
+      volumes:
+        - name: db
+          secret:
+            secretName: kagent  # pragma: allowlist secret
+      volumeMounts:
+        - name: db
+          mountPath: /etc/kagent/db
+          readOnly: true
     ui:
       resources:
         requests:
@@ -87,18 +101,17 @@ helmCharts:
         enabled: false
     database:
       postgres:
+        # Use the postgres on bigNASty rather than the chart's bundled one,
+        # which is where the other services' databases already live and where
+        # the psql backup CronWorkflows already point.
         bundled:
-          storage: 1Gi
-          storageClassName: longhorn
-          resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              memory: 512Mi
+          enabled: false
+        # Reads the DSN from the secret mounted at controller.volumeMounts
+        # above. The chart hard-fails the render unless url, urlFile or
+        # bundled is set, and url would mean committing the password here.
+        urlFile: /etc/kagent/db/POSTGRES_DATABASE_URL  # pragma: allowlist secret
         # Idle sessions (and their events/tasks/checkpoints) are hard-deleted
-        # after this many days. 0, the default, never cleans up, which on a
-        # 1Gi longhorn volume eventually wedges the controller.
+        # after this many days. 0, the default, never cleans up.
         sessionRetentionDays: 30
     # Everything below ships enabled by default. The canned agents that target
     # things we don't run (istio, cilium, argo-rollouts, ...) are off - they
