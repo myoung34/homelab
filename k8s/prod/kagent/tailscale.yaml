@@ -1,0 +1,58 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kagent
+  namespace: kagent
+spec:
+  defaultBackend:
+    service:
+      name: kagent-ui
+      port:
+        number: 8080
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - kagent
+---
+# Cluster -> tailnet egress so the kagent controller and its agent pods can
+# reach Aperture. Nothing in the cluster has a route to the tailnet and CoreDNS
+# can't resolve ai.king-gila.ts.net, so pointing ModelConfig.openAI.baseUrl or
+# RemoteMCPServer.url straight at the MagicDNS name fails with NXDOMAIN. The
+# tailscale operator rewrites the placeholder externalName below to an
+# in-cluster egress proxy that DNATs to the tailnet host.
+#
+# Consume this as http://aperture.kagent.svc.cluster.local - plain http on
+# port 80, per Tailscale's guidance for Aperture clients: the hop is already
+# WireGuard-encrypted, and http sidesteps the cert/SNI mismatch you'd hit
+# addressing Aperture by a name its cert doesn't cover. Aperture authenticates
+# us by tailnet identity, so no API key is involved.
+#
+# The operator joins the proxy pod to the tailnet as its own device, named
+# <namespace>-<service> - so this creates a device called kagent-aperture,
+# which transparently forwards to Aperture. tailscale.com/tags puts it in
+# tag:ai-client, which terraform/tailscale/acl.tf grants tcp:80/443 to tag:ai
+# and nothing else.
+#
+# That annotation replaces the operator's default tag rather than adding to
+# it, which is the point: as tag:k8s the proxy would inherit the blanket
+# "dst": ["*:*"] acl, and every tailnet peer able to reach tag:k8s could route
+# through it to Aperture under the proxy's identity instead of its own.
+# tag:ai-client is exactly the access this needs.
+#
+# tag:ai-client must list tag:k8s-operator in tagOwners or the operator can't
+# apply it and the proxy never registers.
+#
+# k8s/argo/appset.yaml carries a matching ignoreDifferences entry for this
+# Service - without it argocd's selfHeal fights the operator over
+# spec.externalName on every sync.
+apiVersion: v1
+kind: Service
+metadata:
+  name: aperture
+  namespace: kagent
+  annotations:
+    tailscale.com/tailnet-fqdn: ai.king-gila.ts.net
+    tailscale.com/tags: tag:ai-client
+spec:
+  type: ExternalName
+  externalName: placeholder

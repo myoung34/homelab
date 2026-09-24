@@ -9,3 +9,5 @@ talos/kubeconfig
 # Because we want no oopsies
 k8s/prod/vault-secrets-operator/ca.crt
 k8s/prod/vault-secrets-operator/sa.token
+
+k8s/*/*/charts

@@ -1,0 +1,17 @@
+---
+# Aperture aggregates remote MCP servers behind a single /v1/mcp endpoint and
+# speaks streamable HTTP. Today it exposes aperture_web_search and
+# aperture_web_fetch; anything else wired into Aperture shows up here too.
+# `kubectl get remotemcpserver aperture -n kagent -o yaml` lists what the
+# controller actually discovered.
+apiVersion: kagent.dev/v1alpha2
+kind: RemoteMCPServer
+metadata:
+  name: aperture
+  namespace: kagent
+spec:
+  description: "Tailscale Aperture MCP proxy (web search + fetch)"
+  protocol: STREAMABLE_HTTP
+  url: http://aperture.kagent.svc.cluster.local/v1/mcp
+  timeout: 30s
+  sseReadTimeout: 5m0s

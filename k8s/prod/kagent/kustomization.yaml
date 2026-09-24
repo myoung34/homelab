@@ -1,0 +1,177 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kagent
+
+resources:
+  - namespace.yaml
+  - tailscale.yaml
+  - mcp.yaml
+  - agent.yaml
+
+helmCharts:
+- name: kagent-crds
+  includeCRDs: true
+  namespace: kagent
+  releaseName: kagent-crds
+  version: 0.10.2
+  repo: oci://ghcr.io/kagent-dev/kagent/helm
+  valuesInline:
+    kmcp:
+      enabled: false
+    substrate:
+      enabled: false
+- name: kagent
+  includeCRDs: true
+  namespace: kagent
+  releaseName: kagent
+  version: 0.10.2
+  repo: oci://ghcr.io/kagent-dev/kagent/helm
+  valuesInline:
+    # The chart's "default" provider generates the ModelConfig named
+    # default-model-config, which agent.yaml references and which the UI hands
+    # to anything created through the wizard.
+    #
+    # Provider is Anthropic rather than OpenAI because claude-opus-5 is served
+    # on /v1/messages only. kagent's Anthropic provider speaks that natively,
+    # and `baseUrl` redirects it at Aperture. Note the missing /v1 - the
+    # Anthropic client appends /v1/messages itself, where the OpenAI client
+    # expects the /v1 to already be in the base.
+    #
+    # Aperture authorizes by tailnet identity and ignores the Authorization
+    # header, but the client still insists on a non-empty key, hence the
+    # placeholder. There is no real credential here and nothing to rotate, so
+    # this deliberately does not go through vault like the other apps do.
+    #
+    # On model ids: `curl -s http://ai.king-gila.ts.net/v1/models` splits three
+    # ways on metadata.provider.upstream.
+    #   - upstream=anthropic / upstream=openai are our own subscriptions, free
+    #     to us. claude-opus-5 is one of these.
+    #   - upstream=spool (every vendor-prefixed id: anthropic/..., google/...,
+    #     deepseek/...) is Aperture-provided and billed. Most answer
+    #     402 "payment method required" - anthropic/claude-haiku-4.5 does.
+    #     Confusingly anthropic/claude-opus-5 does *not*; it appears to fall
+    #     back to the subscription. Prefer the unprefixed id so we aren't
+    #     relying on that.
+    #   - provider.id=codex carries requires_client_auth=true.
+    # Also check supported_endpoints before switching: ids differ on whether
+    # they serve /v1/messages, /v1/chat/completions or /v1/responses, and the
+    # provider block here has to match.
+    providers:
+      default: anthropic
+      anthropic:
+        provider: Anthropic
+        model: "claude-opus-5"
+        apiKeySecretRef: aperture-model-key  # pragma: allowlist secret
+        apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
+        apiKey: "unused-aperture-authenticates-by-tailnet-identity"  # pragma: allowlist secret
+        config:
+          baseUrl: "http://aperture.kagent.svc.cluster.local"
+    controller:
+      loglevel: "info"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+    ui:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 1Gi
+      # OpenShift-only Route, and we front the UI with the tailscale Ingress in
+      # tailscale.yaml instead.
+      route:
+        enabled: false
+    database:
+      postgres:
+        bundled:
+          storage: 1Gi
+          storageClassName: longhorn
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+        # Idle sessions (and their events/tasks/checkpoints) are hard-deleted
+        # after this many days. 0, the default, never cleans up, which on a
+        # 1Gi longhorn volume eventually wedges the controller.
+        sessionRetentionDays: 30
+    # Everything below ships enabled by default. The canned agents that target
+    # things we don't run (istio, cilium, argo-rollouts, ...) are off - they
+    # cost memory on an 8-node arm64 pi cluster for no benefit.
+    kmcp:
+      enabled: false
+    substrate:
+      enabled: false
+    grafana-mcp:
+      enabled: false
+    # This block is the *controller's* RBAC, not the agent's. It binds to the
+    # kagent-controller SA, which needs write because it creates the
+    # Deployment/Service/ConfigMap behind every Agent resource. Empty
+    # namespaces = cluster-scoped, which is what lets agents live anywhere.
+    # This is kagent's own machinery and no LLM drives it directly.
+    #
+    # (rbac.clusterScoped was removed upstream and now hard-fails the render;
+    # an empty namespaces list is how you ask for cluster scope.)
+    rbac:
+      namespaces: []
+    # k8s-agent's tools all come from the RemoteMCPServer named
+    # kagent-tool-server, which only exists when kagent-tools is enabled. The
+    # chart does not enforce that pairing, so disabling tools leaves the agent
+    # running and toolless. Keep these two flags in step.
+    kagent-tools:
+      enabled: true
+      # THIS is the RBAC the LLM actually wields - the tool server executes
+      # every k8s_* tool call under its own SA. The chart's default is
+      # readOnly: false, which binds a ClusterRole of apiGroups "*",
+      # resources "*", verbs "*" - literal cluster-admin - to a service whose
+      # inputs are model output. readOnly swaps that for a curated get/list/
+      # watch role over pods, services, events, logs, apps workloads etc.
+      #
+      # Consequence to expect: k8s-agent still advertises all 18 tools,
+      # including k8s_delete_resource / k8s_apply_manifest / k8s_execute_command,
+      # because the subchart hardcodes that list. Those now fail with
+      # Forbidden at call time and the agent reports the error. Diagnosis
+      # works; remediation doesn't. Flip to false to allow writes.
+      #
+      # allowSecrets stays false - otherwise reads cover Secrets too, and
+      # every credential in the cluster becomes model context.
+      rbac:
+        readOnly: true
+        allowSecrets: false
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
+    k8s-agent:
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 1Gi
+    kgateway-agent:
+      enabled: false
+    istio-agent:
+      enabled: false
+    promql-agent:
+      enabled: false
+    observability-agent:
+      enabled: false
+    argo-rollouts-agent:
+      enabled: false
+    helm-agent:
+      enabled: false
+    cilium-policy-agent:
+      enabled: false
+    cilium-manager-agent:
+      enabled: false
+    cilium-debug-agent:
+      enabled: false
