@@ -18,6 +18,48 @@ data:
       usernameSecret:
         name: argocd-secret
         key: github_username
+  # Overrides the argo-cd chart's default resource.exclusions for two reasons.
+  #
+  # First, discovery.k8s.io/EndpointSlice is no longer excluded. kagent
+  # reaches Aperture over the tailnet through a selectorless Service backed by
+  # a hand-written EndpointSlice, and argocd skips excluded kinds outright
+  # rather than merely hiding them in the UI, so it would never create that
+  # slice and the Service would come up with no backend. Core v1/Endpoints
+  # stays excluded - it is the legacy mirror and nothing here declares one.
+  #
+  # Second, the chart default also excludes cilium, kyverno and cert-manager
+  # kinds. None of those are installed (the CNI is flannel), so they are
+  # dropped rather than carried as dead config. Add them back alongside the
+  # thing that needs them. What remains is core kubernetes, present in every
+  # cluster: Endpoints and Lease churn constantly, and the authz/authn review
+  # kinds are virtual resources that cannot be listed at all.
+  #
+  # Being a full override, this does not track upstream. Re-check it against
+  # the chart defaults when bumping argo-cd (currently 10.9.2) - a stale list
+  # costs extra watched events, not correctness.
+  resource.exclusions: |
+    - apiGroups:
+      - ''
+      kinds:
+      - Endpoints
+    - apiGroups:
+      - coordination.k8s.io
+      kinds:
+      - Lease
+    - apiGroups:
+      - authentication.k8s.io
+      - authorization.k8s.io
+      kinds:
+      - SelfSubjectReview
+      - TokenReview
+      - LocalSubjectAccessReview
+      - SelfSubjectAccessReview
+      - SelfSubjectRulesReview
+      - SubjectAccessReview
+    - apiGroups:
+      - certificates.k8s.io
+      kinds:
+      - CertificateSigningRequest
   resource.customizations: |
       PersistentVolume:
           ignoreDifferences: |
