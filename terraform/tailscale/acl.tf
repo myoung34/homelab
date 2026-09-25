@@ -16,9 +16,6 @@ resource "tailscale_acl" "acl" {
 		"tag:ai":            [],
 		"tag:seedbox":       ["autogroup:admin"],
 		"tag:mark-desktop":  [],
-		// The k8s operator provisions the kagent egress proxy and must be able to
-		// assign this tag, same as it does for tag:k8s above.
-		"tag:ai-client":     ["tag:k8s-operator"],
 	},
 
 	// Define access control lists for users, groups, autogroups, tags,
@@ -46,12 +43,10 @@ resource "tailscale_acl" "acl" {
 	// Define grants for access to specific apps/capabilities.
 	"grants": [
 		{
-			// autogroup:member covers user-owned devices. tag:ai-client is for
-			// non-user nodes that must reach Aperture (tag:ai) - e.g. the
-			// ts-unplug reverse proxy. Tagged nodes are excluded from
-			// autogroup:member, so they need this explicit source grant or
-			// traffic to Aperture times out.
-			"src": ["autogroup:member", "tag:ai-client"],
+			// autogroup:member covers user-owned devices. The k8s nodes reach
+			// Aperture as tag:k8s, which the blanket admin acl above already
+			// permits, so they need no grant here.
+			"src": ["autogroup:member"],
 			"dst": ["tag:ai"],
 			"ip":  ["tcp:80", "tcp:443", "icmp:*"],
 		},
