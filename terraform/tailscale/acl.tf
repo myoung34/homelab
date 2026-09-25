@@ -39,15 +39,6 @@ resource "tailscale_acl" "acl" {
 
 			"dst": ["*:*"],
 		},
-		// The remote seedbox reaches Syncthing's transport port and nothing
-		// else. Deliberately NOT tag:admin-device - that carries the *:*
-		// grant above, and this is an internet-facing box running a torrent
-		// client, so it should not be able to touch the NAS or the k8s API.
-		{
-			"action": "accept",
-			"src":    ["tag:seedbox"],
-			"dst":    ["tag:k8s:22000"],
-		},
 	],
 
 	// Define grants for access to specific apps/capabilities.
