@@ -16,7 +16,9 @@ resource "tailscale_acl" "acl" {
 		"tag:ai":            [],
 		"tag:seedbox":       ["autogroup:admin"],
 		"tag:mark-desktop":  [],
-		"tag:ai-client":     [],
+		// The k8s operator provisions the kagent egress proxy and must be able to
+		// assign this tag, same as it does for tag:k8s above.
+		"tag:ai-client":     ["tag:k8s-operator"],
 	},
 
 	// Define access control lists for users, groups, autogroups, tags,
