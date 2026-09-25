@@ -95,6 +95,25 @@ helmCharts:
           memory: 256Mi
         limits:
           memory: 1Gi
+      # The UI image needs ARMv8.1+ instructions that the Pi 4's Cortex-A72
+      # does not implement. Next.js reaches that code only while serving a
+      # request, so the pod passes its health probe, runs for minutes, then
+      # dies with SIGILL the moment someone loads a page - supervisord
+      # restarts it and nginx returns 502 from the closed upstream.
+      #
+      # Select on the node-feature-discovery label rather than a hostname:
+      # ATOMICS means ARMv8.1 LSE (CAS/SWP/LDADD). Only the Pi 5 (Cortex-A76)
+      # advertises it; every Pi 4 here reports a bare ARMv8.0 baseline and
+      # also lacks AES/SHA1/SHA2/PMULL. Expressing the CPU requirement keeps
+      # this correct as nodes are added or rebuilt.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: feature.node.kubernetes.io/cpu-cpuid.ATOMICS
+                    operator: In
+                    values: ["true"]
       # OpenShift-only Route, and we front the UI with the tailscale Ingress in
       # tailscale.yaml instead.
       route:
