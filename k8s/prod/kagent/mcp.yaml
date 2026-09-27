@@ -1,7 +1,15 @@
 ---
 # Aperture aggregates remote MCP servers behind a single /v1/mcp endpoint and
-# speaks streamable HTTP. Today it exposes aperture_web_search and
-# aperture_web_fetch; anything else wired into Aperture shows up here too.
+# speaks streamable HTTP. It currently discovers 118 tools - GitHub 48,
+# Datadog 34, Zapier 17, GoogleCalendar 9, GoogleDrive 8, plus
+# aperture_web_search and aperture_web_fetch. Anything else wired into
+# Aperture shows up here too, with no change needed on this side.
+#
+# Note that only the two aperture web tools carry an `aperture_` prefix on the
+# wire; the rest are bare `GitHub_*`, `Datadog_*`, `GoogleCalendar_*`,
+# `GoogleDrive_*`, `Zapier_*`. MCP clients that namespace tools by server
+# (pi, for one) display them as `aperture_GitHub_get_me`, which is NOT the
+# name to put in an Agent's toolNames.
 # `kubectl get remotemcpserver aperture -n kagent -o yaml` lists what the
 # controller actually discovered.
 apiVersion: kagent.dev/v1alpha2

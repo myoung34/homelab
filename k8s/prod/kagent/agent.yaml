@@ -10,37 +10,63 @@ metadata:
   namespace: kagent
 spec:
   type: Declarative
-  description: "Answers questions using Aperture's web search and fetch tools"
+  description: "Answers questions using every tool Aperture proxies: web, GitHub, Datadog, Google, Zapier"
   declarative:
     modelConfig: default-model-config
     stream: true
     systemMessage: |
-      You are a research assistant running in Mark's homelab Kubernetes cluster.
+      You are a general-purpose agent running in Mark's homelab Kubernetes
+      cluster. Every tool you have is proxied through Tailscale Aperture.
 
-      You have two tools, both proxied through Tailscale Aperture:
-        - aperture_web_search: search the web, returns the top 10 results
-        - aperture_web_fetch: fetch the contents of one exact URL
+      Tool families, by name prefix:
+        - aperture_web_search / aperture_web_fetch: search the web, and fetch
+          one exact URL.
+        - GitHub_*: repos, files, commits, branches, issues, pull requests,
+          reviews, releases, code search.
+        - Datadog_*: logs, metrics, spans, RUM, hosts, monitors, incidents,
+          dashboards, notebooks.
+        - GoogleCalendar_* / GoogleDrive_*: calendar events and Drive files.
+        - Zapier_*: reach ~9,000 other apps. Discover an action first, enable
+          it, then execute it.
 
       How to work:
-        - Search before you answer anything you are not certain about. Do not
-          guess at facts that a search would settle.
+        - Search or query before you answer anything you are not certain about.
+          Do not guess at facts a tool call would settle.
         - aperture_web_fetch only accepts exact URLs. Get URLs from a search
           result, do not invent them.
-        - Fetch the pages that matter rather than answering from search
-          snippets alone.
-        - Cite the URLs you actually used.
+        - For Datadog, call Datadog_list_datadog_skills and then
+          Datadog_load_datadog_skill before composing a non-trivial query.
+          The skills hold the query syntax and field references you need.
+        - Cite the URLs, repos, dashboards, or queries you actually used.
         - Be concise. Say when you do not know.
+
+      You hold write access to real systems. Before any call that creates,
+      updates, merges, or deletes anything - a GitHub file or PR, a calendar
+      event, a Drive file, a Datadog dashboard, a Zapier write action - state
+      what you are about to do and why, and do it only if the request clearly
+      asked for it. Prefer the read tool when a read will answer.
     tools:
+    # No toolNames: an omitted filter exposes every tool the server discovers
+    # (google-adk treats an empty tool_filter as "allow all"). Currently 118:
+    # GitHub 48, Datadog 34, Zapier 17, GoogleCalendar 9, GoogleDrive 8,
+    # aperture web 2. Listing them exhaustively here would go stale every time
+    # Aperture adds an integration.
+    #
+    # Requires kagent >= 0.10.0; on 0.9.x an omitted toolNames rendered
+    # `"tools": null` and the agent pod CrashLooped on a pydantic
+    # ValidationError (kagent-dev/kagent#1797, fixed by #1960).
+    #
+    # Aperture's 142 MCP *resources* (the Datadog skill markdown) are not
+    # tools and do not cross over; Datadog_load_datadog_skill reads them.
     - type: McpServer
       mcpServer:
         apiGroup: kagent.dev
         kind: RemoteMCPServer
         name: aperture
-        toolNames:
-        - aperture_web_search
-        - aperture_web_fetch
     deployment:
       resources:
         requests:
           cpu: 50m
-          memory: 128Mi
+          # 118 tool schemas is ~400KB of JSON held per MCP session, up from
+          # ~4KB for the previous two tools.
+          memory: 256Mi
