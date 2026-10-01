@@ -75,6 +75,8 @@ spec:
           value: "/opt/paperless/media"
         - name: PAPERLESS_DATA_DIR
           value: "/opt/paperless/data"
+        - name: PAPERLESS_EMAIL_TASK_CRON
+          value: "disable"
         envFrom:
         - secretRef:
             name: paperless-ngx
