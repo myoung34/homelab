@@ -27,6 +27,15 @@ cluster:
   scheduler:
     image: registry.k8s.io/kube-scheduler:${kubernetes_version}
   etcd:
+    # Pin peer traffic to the LAN. Without these, Talos picks advertised
+    # addresses from whatever node addresses exist when etcd starts, which has
+    # selected Tailscale CGNAT addresses (100.64.0.0/10) on some nodes and LAN
+    # addresses on others. That makes etcd quorum depend on the tailnet being
+    # up, and makes the choice a boot-order race.
+    advertisedSubnets:
+      - 192.168.1.0/24
+    listenSubnets:
+      - 192.168.1.0/24
     extraArgs:
       election-timeout: "50000"
       heartbeat-interval: "5000"

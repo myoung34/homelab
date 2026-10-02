@@ -71,6 +71,14 @@ spec:
           value: "5432"
         - name: PAPERLESS_DBNAME
           value: "paperless"
+        # no workflows or AI configured, and the classifier is unused:
+        # stop the task-history spam
+        - name: PAPERLESS_TRAIN_TASK_CRON
+          value: "disable"
+        - name: PAPERLESS_WORKFLOW_SCHEDULED_TASK_CRON
+          value: "disable"
+        - name: PAPERLESS_LLM_INDEX_TASK_CRON
+          value: "disable"
         - name: PAPERLESS_MEDIA_ROOT
           value: "/opt/paperless/media"
         - name: PAPERLESS_DATA_DIR
