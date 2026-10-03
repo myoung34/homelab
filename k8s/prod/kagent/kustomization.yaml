@@ -14,7 +14,7 @@ helmCharts:
   includeCRDs: true
   namespace: kagent
   releaseName: kagent-crds
-  version: 0.10.2
+  version: 0.10.3
   repo: oci://ghcr.io/kagent-dev/kagent/helm
   valuesInline:
     kmcp:
