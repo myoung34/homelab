@@ -25,7 +25,7 @@ helmCharts:
   includeCRDs: true
   namespace: kagent
   releaseName: kagent
-  version: 0.10.2
+  version: 0.10.3
   repo: oci://ghcr.io/kagent-dev/kagent/helm
   valuesInline:
     # The chart's "default" provider generates the ModelConfig named
