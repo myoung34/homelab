@@ -13,9 +13,11 @@ Rules, in order:
    against the cluster. ArgoCD `selfHeal` reverts it within minutes
    anyway, so a manual change is both a policy break and a lie that
    disappears.
-1. Make the change as a **file edit** in this repo, leave it staged/
-   uncommitted, and then **stop and tell the operator the diff is ready
-   for review**. Do not commit, do not push.
+1. Make the change as a **file edit** in this repo, then ship it as a
+   **pull request** — branch, commit, push, `gh pr create`, and stop
+   there. Never commit or push to `main`, and never merge your own PR:
+   ArgoCD tracks `HEAD` of `main`, so the merge *is* the deploy, and
+   that call belongs to the operator.
 1. Any cluster-mutating action, including one-off ones, needs **explicit
    operator approval first** — ask, show exactly what you intend to run,
    and wait.
