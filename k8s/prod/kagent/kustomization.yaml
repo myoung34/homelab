@@ -50,6 +50,32 @@ patches:
   - target:
       kind: Agent
     patch: |-
+      # Keep the agent container out of `privileged`.
+      #
+      # Setting spec.skills makes kagent's controller set
+      # securityContext.privileged=true on the agent container, so that
+      # srt/bubblewrap can build its sandbox out of kernel namespaces
+      # (manifest_builder.go buildContainerSecurityContext). Talos enforces
+      # PodSecurity `baseline` cluster-wide, which forbids that, so the
+      # ReplicaSet cannot create pods at all and the agents go NotReady.
+      #
+      # An explicit allowPrivilegeEscalation: false suppresses it - the
+      # controller skips privileged rather than emit a combination the API
+      # server would reject. Exempting the namespace instead would be the
+      # wrong trade: these pods run model-driven bash, and it would not even
+      # work, because bwrap here is not setuid and the container runs as uid
+      # 1001, so its only route is an unprivileged user namespace and
+      # privileged does not grant one.
+      #
+      # What this costs until user.max_user_namespaces is raised in
+      # terraform/talos: Talos defaults it to 0, so bwrap cannot unshare and
+      # bash/write_file/edit_file fail per call. Skill discovery and the
+      # instructions themselves are plain file reads and are unaffected, as
+      # are the k8s_* tools, which run in the kagent-tools pod.
+      - op: add
+        path: /spec/declarative/deployment/securityContext
+        value:
+          allowPrivilegeEscalation: false
       - op: add
         path: /spec/skills
         value:
