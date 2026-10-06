@@ -37,9 +37,17 @@ helmCharts:
     repoServer:
       metrics:
         enabled: true
+      # This app is the only one that builds helm charts (argo-cd +
+      # argo-workflows, both with CRDs). At 75m the pod's cpu.shares were low
+      # enough that a busy node starved it, `kustomize build --enable-helm`
+      # blew the 90s ARGOCD_EXEC_TIMEOUT, and the /healthz?full=true liveness
+      # probe timed out too -> crash loop + cached ComparisonError.
+      env:
+        - name: ARGOCD_EXEC_TIMEOUT
+          value: 3m
       resources:
         requests:
-          cpu: 75m
+          cpu: 500m
           memory: 256M
     applicationSet:
       webhook:
