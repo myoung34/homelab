@@ -49,6 +49,18 @@ machine:
     fs.inotify.max_user_instances: "256"
     vm.swappiness: "1"
     net.ipv4.ip_forward: "1"
+    # Talos defaults this to 0, which blocks unprivileged user namespaces
+    # outright - the limit is a ucount, so it applies to every user and no
+    # capability gets around it. Anything that sandboxes itself by calling
+    # unshare(CLONE_NEWUSER) fails: bubblewrap, rootless podman, gVisor,
+    # kubevirt's passt binding, nix builds.
+    #
+    # Raised here for the kagent agents, whose skills run through
+    # srt/bubblewrap. Their bwrap is not setuid and the container runs as
+    # uid 1001, so a user namespace is its only option - which is also why
+    # a privileged container would not have helped.
+    # https://docs.siderolabs.com/kubernetes-guides/security/usernamespace
+    user.max_user_namespaces: "11255"
 ---
 apiVersion: v1alpha1
 kind: HostnameConfig
