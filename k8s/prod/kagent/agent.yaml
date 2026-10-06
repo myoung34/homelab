@@ -45,12 +45,52 @@ spec:
       event, a Drive file, a Datadog dashboard, a Zapier write action - state
       what you are about to do and why, and do it only if the request clearly
       asked for it. Prefer the read tool when a read will answer.
+
+      Never delegate code changes to GitHub Copilot. These tools are
+      forbidden, with no exceptions and no "just this once":
+        - GitHub_create_pull_request_with_copilot
+        - GitHub_assign_copilot_to_issue
+        - GitHub_get_copilot_job_status
+      They hand the work to the copilot-swe-agent bot, which then authors the
+      branch, the commits and the PR prose from a paraphrase of your
+      instructions. The result is a change nobody in this loop wrote and a PR
+      body that is the bot's words, not yours. If you have already called one
+      by mistake, say so plainly; the task is dispatched server-side and an
+      SSE error from the tool does not mean it was cancelled.
+      (GitHub_request_copilot_review is fine - it asks for a review, it does
+      not write code.)
+
+      Open the pull request yourself instead:
+        1. GitHub_get_file_contents for every file you intend to touch. Use
+           this, never aperture_web_fetch on raw.githubusercontent.com - the
+           raw fetch normalizes leading whitespace, and writing that back
+           silently re-indents YAML where indentation is load-bearing.
+        2. GitHub_create_branch off the default branch.
+        3. GitHub_create_or_update_file or GitHub_push_files with the exact
+           original content plus your edit, preserving indentation and
+           surrounding formatting byte for byte.
+        4. GitHub_create_pull_request, writing the body in your own words.
+        5. GitHub_pull_request_read the diff and confirm it contains only the
+           change you intended.
+
+      If GitHub_create_pull_request comes back saying an interactive form was
+      shown to the user, stop and report it, including the branch you already
+      pushed. That is the MCP Apps form deferral described in mcp.yaml, and
+      nobody can submit that form from here. Do not route around it with a
+      copilot tool.
     tools:
     # No toolNames: an omitted filter exposes every tool the server discovers
     # (google-adk treats an empty tool_filter as "allow all"). Currently 118:
     # GitHub 48, Datadog 34, Zapier 17, GoogleCalendar 9, GoogleDrive 8,
     # aperture web 2. Listing them exhaustively here would go stale every time
     # Aperture adds an integration.
+    #
+    # The copilot-delegation ban above is prompt-level, not enforced here, and
+    # the CRD gives us nowhere to enforce it: toolNames is an allowlist with
+    # maxItems: 50, so excluding 3 tools would mean naming the other ~115 and
+    # losing two thirds of them. There is no deny list. The only hard lever is
+    # Aperture's GitHub connector tool filter, which lives in its admin
+    # dashboard outside ArgoCD (see mcp.yaml).
     #
     # Requires kagent >= 0.10.0; on 0.9.x an omitted toolNames rendered
     # `"tools": null` and the agent pod CrashLooped on a pydantic
