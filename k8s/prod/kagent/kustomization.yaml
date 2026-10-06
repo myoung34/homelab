@@ -9,6 +9,123 @@ resources:
   - mcp.yaml
   - agent.yaml
 
+patches:
+  # Agent skills: directories of markdown instructions (SKILL.md plus any
+  # scripts it references) that the agent loads on demand. kagent runs a
+  # skills-init initContainer that clones each entry into /skills/<name>, then
+  # advertises every SKILL.md's frontmatter name+description in the
+  # description of a `skills` tool. The model calls that tool with a skill
+  # name to pull the full instructions into context.
+  #
+  # Side effects of setting spec.skills on an Agent, both of which are the
+  # point but worth knowing:
+  #   - the agent pod moves from golang-adk:<ver> to golang-adk:<ver>-full,
+  #     which carries the sandbox runtime the skills need.
+  #   - the model additionally gets bash/read_file/write_file/edit_file,
+  #     scoped to a per-session scratch dir under /tmp/kagent/<session> with
+  #     /skills mounted read-only. That is a sandbox inside the agent pod, not
+  #     cluster access - the only cluster reach is still the k8s_* tools and
+  #     their read-only RBAC (see kagent-tools below).
+  #
+  # Targeting `kind: Agent` without a name applies this to every Agent here:
+  # homelab-agent (agent.yaml) and k8s-agent (from the k8s-agent subchart).
+  #
+  # One entry per skill, because kagent discovers skills exactly one directory
+  # deep - /skills/<name>/SKILL.md - and a gitRef's `path` becomes that one
+  # directory. Pointing at the repo's skills/ parent would nest them a level
+  # too far and find nothing (kagent-dev/kagent#1422 asks for a wildcard).
+  # Cap is 20 entries, so there is room for four more.
+  #
+  # Pinned to tags rather than tracking main: this is third-party text that
+  # lands directly in the context of an agent holding real tools, and an
+  # unpinned ref means a pod restart can silently change its instructions.
+  # Renovate bumps them via the customManager in renovate.json.
+  #
+  # Skipped on purpose: ponytail-gain and ponytail-help (a benchmark
+  # scoreboard and a command cheatsheet), using-superpowers and
+  # diagnosing-superpowers (they describe the Claude Code plugin layout,
+  # ~/.claude/skills and its session logs, neither of which exists here -
+  # kagent injects its own skill-discovery prompt), and writing-skills
+  # (authoring new skills, not something these agents do).
+  - target:
+      kind: Agent
+    patch: |-
+      - op: add
+        path: /spec/skills
+        value:
+          gitRefs:
+            # Lazy-senior-dev review pass: cut code rather than add it.
+            - url: https://github.com/DietrichGebert/ponytail
+              ref: v4.9.0
+              path: skills/ponytail
+            - url: https://github.com/DietrichGebert/ponytail
+              ref: v4.9.0
+              path: skills/ponytail-audit
+            - url: https://github.com/DietrichGebert/ponytail
+              ref: v4.9.0
+              path: skills/ponytail-debt
+            - url: https://github.com/DietrichGebert/ponytail
+              ref: v4.9.0
+              path: skills/ponytail-review
+            # Workflow discipline: plan, test, debug, verify, review.
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/brainstorming
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/writing-plans
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/executing-plans
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/test-driven-development
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/systematic-debugging
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/verification-before-completion
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/requesting-code-review
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/receiving-code-review
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/finishing-a-development-branch
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/using-git-worktrees
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/subagent-driven-development
+            - url: https://github.com/obra/superpowers
+              ref: v6.4.2
+              path: skills/dispatching-parallel-agents
+  # k8s-agent ships from its subchart wired to kagent-tool-server only, which
+  # leaves it able to inspect the cluster but not to look anything up outside
+  # it. Append Aperture's RemoteMCPServer (mcp.yaml) so it reaches the same
+  # web/GitHub/Datadog tools homelab-agent has - it already shares the model
+  # half of Aperture through default-model-config.
+  #
+  # Appending rather than replacing: the subchart pins an explicit toolNames
+  # list of 18 k8s_* tools, and restating it here would silently rot the next
+  # time the chart changes it.
+  - target:
+      kind: Agent
+      name: k8s-agent
+    patch: |-
+      - op: add
+        path: /spec/declarative/tools/-
+        value:
+          type: McpServer
+          mcpServer:
+            apiGroup: kagent.dev
+            kind: RemoteMCPServer
+            name: aperture
+
 helmCharts:
 - name: kagent-crds
   includeCRDs: true
@@ -151,10 +268,10 @@ helmCharts:
     # an empty namespaces list is how you ask for cluster scope.)
     rbac:
       namespaces: []
-    # k8s-agent's tools all come from the RemoteMCPServer named
+    # k8s-agent's cluster tools all come from the RemoteMCPServer named
     # kagent-tool-server, which only exists when kagent-tools is enabled. The
     # chart does not enforce that pairing, so disabling tools leaves the agent
-    # running and toolless. Keep these two flags in step.
+    # with only what the patches above bolt on. Keep these two flags in step.
     kagent-tools:
       enabled: true
       # THIS is the RBAC the LLM actually wields - the tool server executes
