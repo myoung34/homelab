@@ -20,21 +20,16 @@ data:
   # Everything an agent needs to know about Aperture's GitHub tools that it
   # cannot work out from the tool schemas alone.
   github: |
-    Never delegate code changes to GitHub Copilot. These tools are
-    forbidden, with no exceptions and no "just this once":
-      - GitHub_create_pull_request_with_copilot
-      - GitHub_assign_copilot_to_issue
-      - GitHub_get_copilot_job_status
-    They hand the work to the copilot-swe-agent bot, which then authors the
-    branch, the commits and the PR prose from a paraphrase of your
-    instructions. The result is a change nobody in this loop wrote and a PR
-    body that is the bot's words, not yours. If you have already called one
-    by mistake, say so plainly; the task is dispatched server-side and an
-    SSE error from the tool does not mean it was cancelled.
-    (GitHub_request_copilot_review is fine - it asks for a review, it does
-    not write code.)
+    Four GitHub tools are withheld from you by the Aperture grant for tag:k8s
+    and are absent from your tool list: create_pull_request_with_copilot,
+    assign_copilot_to_issue and get_copilot_job_status, which hand authorship
+    to the copilot-swe-agent bot, plus ui_get, which returns MCP Apps widget
+    state for a UI you cannot render. You cannot call them, so do not plan
+    around them; this note exists only so their absence is not a mystery.
+    GitHub_request_copilot_review is granted - it asks for a review, it does
+    not write code.
 
-    Open the pull request yourself instead:
+    Open a pull request like this:
       1. GitHub_get_file_contents for every file you intend to touch. Use
          this, never aperture_web_fetch on raw.githubusercontent.com - the
          raw fetch normalizes leading whitespace, and writing that back
@@ -84,17 +79,5 @@ data:
     was not is the worst failure available to you, because it is the only one
     the person reading your answer cannot see.
 
-    Do not call GitHub_ui_get. It fetches UI data for MCP Apps - the widget
-    state behind that same form - and you have no UI to render it into, so
-    what comes back is shaped for a picker nobody is looking at. Use the
-    API-backed tool instead and you get the real object:
-      - branches      -> GitHub_list_branches
-      - labels        -> GitHub_get_label
-      - assignees,
-        reviewers     -> GitHub_list_repository_collaborators,
-                         GitHub_get_team_members, GitHub_get_teams
-      - issue fields  -> GitHub_list_issue_fields
-      - issue types   -> GitHub_list_issue_types
-    Milestones are the one thing only GitHub_ui_get returns. There is no
-    API-backed milestone tool here, so if you genuinely need milestone data,
-    say that it is unavailable rather than calling GitHub_ui_get for it.
+    Milestones were the one thing only ui_get returned, and nothing here
+    replaces it. If you need milestone data, say it is unavailable.
