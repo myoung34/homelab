@@ -3,6 +3,9 @@ data "talos_machine_configuration" "controlplane" {
   cluster_endpoint = local.cluster_endpoint
   machine_type     = "controlplane"
   machine_secrets  = local.machine_secrets
+  # See the note in worker.tf - this must track the nodes' Talos version, not
+  # whatever pkg/machinery the provider happens to bundle.
+  talos_version = local.talos_version
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {
