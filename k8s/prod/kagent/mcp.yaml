@@ -13,7 +13,8 @@
 # `kubectl get remotemcpserver aperture -n kagent -o yaml` lists what the
 # controller actually discovered.
 #
-# Gotcha: GitHub's MCP Apps form deferral can silently swallow PR creation.
+# Gotcha: GitHub's MCP Apps form deferral silently swallows GitHub writes.
+# This IS biting us today - see the measurement at the end of this comment.
 #
 # GitHub_create_pull_request, GitHub_update_pull_request and
 # GitHub_issue_write are backed by interactive HTML forms ("MCP Apps") on
@@ -35,12 +36,44 @@
 # deferred run leaves a pushed branch with commits on it and no PR, under
 # an OAuth connector whose scopes are entirely fine.
 #
-# Not currently biting us, and nothing here holds it shut. If it returns,
-# the lever is Aperture's GitHub connector url - append
-# ?features=mcp_apps_disable_form_deferral, GitHub's documented kill switch
-# for exactly this. Aperture is ai.king-gila.ts.net (see tailscale.yaml)
-# and that connector lives in its admin dashboard, outside ArgoCD; editing
-# the url changes the OAuth resource identifier, so expect a reconnect.
+# Measured 2026-10-06, by calling Aperture's /v1/mcp directly:
+#
+#   - A tools/call of GitHub_update_pull_request returns
+#     {"status":"awaiting_user_submission"}, isError: true, and GitHub's
+#     updated_at does not move. The same call against
+#     https://api.githubcopilot.com/mcp/ with a PAT returns the real PR
+#     object. So the deferral is introduced by Aperture, not by GitHub.
+#   - The probe sent capabilities: {} - a fully headless handshake - and was
+#     deferred anyway. Aperture keeps its own connection to GitHub and
+#     advertises the ui capability on it, so nothing a downstream client
+#     (kagent, or anything else behind Aperture) sends can strip it.
+#   - Exactly three tools carry _meta.ui and defer: create_pull_request,
+#     update_pull_request, issue_write. GitHub_get_me also carries _meta.ui
+#     but returns real data - shouldDeferToForm() only fires on writes, so
+#     the marker alone does not mean a tool is broken.
+#
+# Observed damage: a session that reported two GitHub issues filed and two
+# PRs marked ready for review. Neither issue was ever created, and both PRs
+# were still drafts. The stub reads like a well-behaved agent waiting on a
+# human, so nothing downstream looks wrong.
+#
+# Nothing in this repo holds it shut. The lever is Aperture's GitHub
+# connector url - append ?features=mcp_apps_disable_form_deferral, GitHub's
+# documented kill switch for exactly this. Aperture is ai.king-gila.ts.net
+# (see tailscale.yaml) and that connector lives in its admin dashboard,
+# outside ArgoCD; editing the url changes the OAuth resource identifier, so
+# expect a reconnect.
+#
+# To re-test after changing it, repeat the idempotent no-op: call
+# GitHub_update_pull_request with draft set to the value the PR already has.
+# Either it returns the PR object (fixed) or the awaiting_user_submission
+# stub (still deferring), and either way the PR is unchanged.
+#
+# If the kill switch does not take, the fallback is a second RemoteMCPServer
+# pointing straight at https://api.githubcopilot.com/mcp/ with a PAT in
+# `headersFrom` (valueFrom a Vault-backed Secret), bypassing Aperture for
+# GitHub entirely. That costs a credential to rotate and duplicates ~48 tool
+# schemas, so it is the fallback and not the first move.
 #
 # Refs: github/github-mcp-server pkg/github/ui_capability.go and PR #2774 -
 # "the form is shown iff the action is genuinely deferred; headless /

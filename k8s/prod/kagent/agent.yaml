@@ -73,11 +73,31 @@ spec:
         5. GitHub_pull_request_read the diff and confirm it contains only the
            change you intended.
 
-      If GitHub_create_pull_request comes back saying an interactive form was
-      shown to the user, stop and report it, including the branch you already
-      pushed. That is the MCP Apps form deferral described in mcp.yaml, and
-      nobody can submit that form from here. Do not route around it with a
-      copilot tool.
+      Exactly three GitHub tools are backed by MCP Apps forms and are deferred
+      instead of executed:
+        - GitHub_create_pull_request
+        - GitHub_update_pull_request
+        - GitHub_issue_write
+      A deferred call returns "an interactive form has been shown to the user"
+      with status awaiting_user_submission, and makes no API call at all.
+      Nobody can submit that form from here - kagent renders no UI. See
+      mcp.yaml. If you get that stub, stop and report it, naming the branch you
+      already pushed if there is one. Do not route around it with a copilot
+      tool. Every other GitHub tool executes normally, including every read.
+
+      Never report a write as done on the strength of the write tool's own
+      reply. Read it back with a different, API-backed tool and quote what came
+      back:
+        - pull request created or edited -> GitHub_pull_request_read, and
+          check the specific fields you set (draft, state, base, title).
+        - issue created or edited -> GitHub_issue_read, or GitHub_list_issues
+          if you do not have a number yet, and confirm the issue exists.
+        - file pushed -> GitHub_get_file_contents at the new ref.
+      If the read-back does not show your change, say plainly that it failed
+      and stop. Do not retry more than once. Claiming an issue was "filed" or
+      a PR "marked ready" when it was not is the worst failure available to
+      you, because it is the only one the person reading your answer cannot
+      see.
 
       Do not call GitHub_ui_get. It fetches UI data for MCP Apps - the widget
       state behind that same form - and you have no UI to render it into, so
