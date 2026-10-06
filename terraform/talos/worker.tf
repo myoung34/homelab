@@ -3,6 +3,15 @@ data "talos_machine_configuration" "worker" {
   cluster_endpoint = local.cluster_endpoint
   machine_type     = "worker"
   machine_secrets  = local.machine_secrets
+  # Must be pinned. Left unset, the provider defaults this to the version of
+  # pkg/machinery it was built against, so a provider bump silently changes the
+  # generated config's feature level. 0.11 (machinery v1.13) -> 0.12 (machinery
+  # v1.14) started emitting a v1alpha1/DiscoveryServiceConfig document, which a
+  # v1.13.7 node rejects outright:
+  #   error decoding document v1alpha1/DiscoveryServiceConfig/default:
+  #   "DiscoveryServiceConfig" "v1alpha1": not registered
+  # Generate for the version the nodes actually run, not the provider's.
+  talos_version = local.talos_version
 }
 
 resource "talos_machine_configuration_apply" "worker" {
