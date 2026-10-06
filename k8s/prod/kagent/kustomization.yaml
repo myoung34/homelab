@@ -318,6 +318,37 @@ helmCharts:
       rbac:
         readOnly: true
         allowSecrets: false
+        # The upstream readOnly role covers namespaced resources only, so
+        # every cluster-scoped get/list fails - including nodes, which the
+        # agent needs to explain scheduling failures and node pressure, and
+        # the longhorn.io CRDs, which are the only view of volume/replica
+        # health. These stay get/list/watch, so this widens visibility
+        # without granting a single write.
+        #
+        # Rendered inside the readOnly branch of the subchart's
+        # clusterrole.yaml, so readOnly: true above still holds.
+        additionalRules:
+          - apiGroups: [""]
+            resources: ["nodes", "persistentvolumes"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["metrics.k8s.io"]
+            resources: ["nodes", "pods"]
+            verbs: ["get", "list"]
+          - apiGroups: ["storage.k8s.io"]
+            resources: ["storageclasses", "volumeattachments", "csidrivers", "csinodes"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["policy"]
+            resources: ["poddisruptionbudgets"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["apiextensions.k8s.io"]
+            resources: ["customresourcedefinitions"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["longhorn.io"]
+            resources: ["*"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["rbac.authorization.k8s.io"]
+            resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
+            verbs: ["get", "list", "watch"]
       resources:
         requests:
           cpu: 50m
