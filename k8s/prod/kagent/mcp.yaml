@@ -12,6 +12,39 @@
 # name to put in an Agent's toolNames.
 # `kubectl get remotemcpserver aperture -n kagent -o yaml` lists what the
 # controller actually discovered.
+#
+# Gotcha: GitHub's MCP Apps form deferral can silently swallow PR creation.
+#
+# GitHub_create_pull_request, GitHub_update_pull_request and
+# GitHub_issue_write are backed by interactive HTML forms ("MCP Apps") on
+# GitHub's side. github-mcp-server's shouldDeferToForm() hands the call off
+# to that form - returning an "an interactive form has been shown to the
+# user ... the pull request has NOT been created" stub, and making no API
+# call at all - whenever the MCP client advertises the
+# io.modelcontextprotocol/ui capability extension. Headless clients are
+# meant to strip _meta.ui and execute directly.
+#
+# kagent renders no UI, so if a call ever is deferred nobody can submit it:
+# the agent faithfully reports that a form is waiting for someone, and the
+# PR never exists. The stub's text tells the model not to claim success or
+# call another tool, so it reads as a well-behaved agent hitting a wall
+# rather than as a failure.
+#
+# This presents as a permissions problem and is not one. create_branch and
+# create_or_update_file have no form and execute unconditionally, so a
+# deferred run leaves a pushed branch with commits on it and no PR, under
+# an OAuth connector whose scopes are entirely fine.
+#
+# Not currently biting us, and nothing here holds it shut. If it returns,
+# the lever is Aperture's GitHub connector url - append
+# ?features=mcp_apps_disable_form_deferral, GitHub's documented kill switch
+# for exactly this. Aperture is ai.king-gila.ts.net (see tailscale.yaml)
+# and that connector lives in its admin dashboard, outside ArgoCD; editing
+# the url changes the OAuth resource identifier, so expect a reconnect.
+#
+# Refs: github/github-mcp-server pkg/github/ui_capability.go and PR #2774 -
+# "the form is shown iff the action is genuinely deferred; headless /
+# non-UI clients strip _meta.ui and always execute".
 apiVersion: kagent.dev/v1alpha2
 kind: RemoteMCPServer
 metadata:
