@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: radarr
+spec:
+  vaultAuthRef: radarr
+  mount: secret/
+  type: kv-v2
+  path: radarr
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: radarr
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: radarr
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: radarr
+    serviceAccount: default
