@@ -1,0 +1,100 @@
+---
+# Prompt fragments shared by every agent, pulled in with the Agent CRD's
+# promptTemplate/include mechanism:
+#
+#   spec.declarative.promptTemplate.dataSources: [{name: agent-prompts,
+#                                                  alias: prompts}]
+#   spec.declarative.systemMessage: |
+#     ... {{include "prompts/github"}} ...
+#
+# These rules used to live inline in agent.yaml, which meant they only ever
+# reached homelab-agent. k8s-agent gets the same Aperture tool set (see the
+# patch in kustomization.yaml) and so needs the same rules; duplicating them
+# in two systemMessages is how they drift. One copy, two includes.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-prompts
+  namespace: kagent
+data:
+  # Everything an agent needs to know about Aperture's GitHub tools that it
+  # cannot work out from the tool schemas alone.
+  github: |
+    Never delegate code changes to GitHub Copilot. These tools are
+    forbidden, with no exceptions and no "just this once":
+      - GitHub_create_pull_request_with_copilot
+      - GitHub_assign_copilot_to_issue
+      - GitHub_get_copilot_job_status
+    They hand the work to the copilot-swe-agent bot, which then authors the
+    branch, the commits and the PR prose from a paraphrase of your
+    instructions. The result is a change nobody in this loop wrote and a PR
+    body that is the bot's words, not yours. If you have already called one
+    by mistake, say so plainly; the task is dispatched server-side and an
+    SSE error from the tool does not mean it was cancelled.
+    (GitHub_request_copilot_review is fine - it asks for a review, it does
+    not write code.)
+
+    Open the pull request yourself instead:
+      1. GitHub_get_file_contents for every file you intend to touch. Use
+         this, never aperture_web_fetch on raw.githubusercontent.com - the
+         raw fetch normalizes leading whitespace, and writing that back
+         silently re-indents YAML where indentation is load-bearing.
+      2. GitHub_create_branch off the default branch.
+      3. GitHub_create_or_update_file or GitHub_push_files with the exact
+         original content plus your edit, preserving indentation and
+         surrounding formatting byte for byte.
+      4. GitHub_create_pull_request, writing the body in your own words.
+      5. GitHub_pull_request_read the diff and confirm it contains only the
+         change you intended.
+
+    Exactly three GitHub tools are backed by MCP Apps forms and are deferred
+    instead of executed:
+      - GitHub_create_pull_request
+      - GitHub_update_pull_request
+      - GitHub_issue_write
+    A deferred call returns "an interactive form has been shown to the user"
+    with status awaiting_user_submission, and makes no API call at all.
+    Nobody can submit that form from here - kagent renders no UI. See
+    mcp.yaml. Every other GitHub tool executes normally, including every
+    read.
+
+    When you hit that stub, this is the whole of what you know: the call did
+    not reach GitHub. Say that, name the branch you already pushed if there
+    is one, and stop. Specifically:
+      - Do not retry. Four identical calls produce four identical stubs.
+      - Do not diagnose it. It is not rate limiting, not a transient error,
+        and not a missing REST endpoint. GitHub_update_pull_request does take
+        a draft parameter, documented as "Mark pull request as draft (true)
+        or ready for review (false)", and it works when it is actually
+        called. Inventing a mechanism for a failure you cannot see inside is
+        worse than saying "the call did not reach GitHub", because it sends
+        the reader off to fix the wrong thing.
+      - Do not route around it with a copilot tool.
+
+    Never report a write as done on the strength of the write tool's own
+    reply. Read it back with a different, API-backed tool and quote what came
+    back:
+      - pull request created or edited -> GitHub_pull_request_read, and
+        check the specific fields you set (draft, state, base, title).
+      - issue created or edited -> GitHub_issue_read, or GitHub_list_issues
+        if you do not have a number yet, and confirm the issue exists.
+      - file pushed -> GitHub_get_file_contents at the new ref.
+    If the read-back does not show your change, say plainly that it failed
+    and stop. Claiming an issue was "filed" or a PR "marked ready" when it
+    was not is the worst failure available to you, because it is the only one
+    the person reading your answer cannot see.
+
+    Do not call GitHub_ui_get. It fetches UI data for MCP Apps - the widget
+    state behind that same form - and you have no UI to render it into, so
+    what comes back is shaped for a picker nobody is looking at. Use the
+    API-backed tool instead and you get the real object:
+      - branches      -> GitHub_list_branches
+      - labels        -> GitHub_get_label
+      - assignees,
+        reviewers     -> GitHub_list_repository_collaborators,
+                         GitHub_get_team_members, GitHub_get_teams
+      - issue fields  -> GitHub_list_issue_fields
+      - issue types   -> GitHub_list_issue_types
+    Milestones are the one thing only GitHub_ui_get returns. There is no
+    API-backed milestone tool here, so if you genuinely need milestone data,
+    say that it is unavailable rather than calling GitHub_ui_get for it.
