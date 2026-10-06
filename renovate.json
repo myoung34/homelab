@@ -52,6 +52,29 @@
         "patch"
       ],
       "enabled": false
+    },
+    {
+      "description": "A kagent skill bump rewrites instructions an agent will execute with real tools, so it gets read by a human rather than automerged",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "k8s/prod/kagent/**"
+      ],
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Agent skill repos pinned by git tag in spec.skills.gitRefs",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/k8s/prod/kagent/kustomization\\.yaml$/"
+      ],
+      "matchStrings": [
+        "url: https://github\\.com/(?<depName>[^\\s/]+/[^\\s/]+)\\s+ref: (?<currentValue>v\\S+)"
+      ],
+      "datasourceTemplate": "github-tags"
     }
   ],
   "kubernetes": {
