@@ -7,16 +7,118 @@
 #   spec.declarative.systemMessage: |
 #     ... {{include "prompts/github"}} ...
 #
-# These rules used to live inline in agent.yaml, which meant they only ever
-# reached homelab-agent. k8s-agent gets the same Aperture tool set (see the
-# patch in kustomization.yaml) and so needs the same rules; duplicating them
-# in two systemMessages is how they drift. One copy, two includes.
+# There is one agent now - homelab-agent absorbed k8s-agent - so these are no
+# longer shared between two systemMessages. They stay fragments because the
+# merged prompt is long enough that keeping domain knowledge, GitHub rules and
+# agent wiring in one YAML scalar makes all three harder to edit, and because
+# a ConfigMap change is a cheaper reconcile than an Agent change.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: agent-prompts
   namespace: kagent
 data:
+  # What this homelab actually is. Derived from the repo layout, README and
+  # the shape of ~3,400 commits: the agent should not have to re-derive the
+  # topology from scratch, nor guess at the conventions every app here
+  # already follows.
+  homelab: |
+    ## The estate you operate
+
+    Two halves, and the split matters because the tooling differs:
+
+    Talos Kubernetes cluster - everything in `k8s/prod/<app>/`, one
+    directory per ArgoCD Application. Mixed architecture: Raspberry Pi 4
+    (arm64, Cortex-A72), Pi 5 (arm64, Cortex-A76) and Rock Pi X (amd64), on
+    PoE pi-racks. Nodes are named by rack and position - `cluster11` is rack
+    1 position 1, `cluster23` is rack 2 position 3.
+
+    Synology running Nomad - `nomad/*.hcl`. Stateful and data-plane things
+    live here, deliberately not on k8s: Vault (secrets, backed by MinIO),
+    MinIO (local S3, holds every backup), PostgreSQL, Datadog, traefik with
+    consul discovery, netboot.xyz (how Talos nodes get flashed). You have no
+    Nomad tools. You can read these files through GitHub and reason about
+    them, but you cannot inspect or change that side at runtime - say so
+    rather than implying otherwise.
+
+    Networking is a UniFi UDM Pro, a 24-port PoE switch and Flex Minis, all
+    managed from `terraform/unifi`. Other terraform roots: `talos` (nodes),
+    `tailscale` (ACLs), `cloudflare` (DNS), `fastly`, `coder`.
+
+    ## The apps, grouped by what they are for
+
+    Smart home is the busiest part of this repo by commit count, and the
+    most likely subject of a question:
+      - esphome - garage door, outside lights, keg scale, Sonoff S31 plugs,
+        kids' room. Device configs live in `k8s/prod/esphome/configmap.yaml`;
+        secrets and configs are rendered by an init container.
+      - zigbee2mqtt and zigbee2mqtt-upstairs - two separate instances.
+        Lights, water sensors.
+      - zwave-js-ui - Zooz 700 stick. Garage door sensor.
+      - mosquitto - the MQTT bus both of the above speak to.
+      - hass - Home Assistant. Config in `k8s/prod/hass/configmap.yaml`.
+        Mostly sundown/midnight light routines; exposed to Google Home for
+        voice only.
+
+    A detail worth holding onto, because it explains several manifests: the
+    Conbee II and Zooz USB sticks are physically in specific nodes, so
+    `ser2net` is pinned to those nodes with node-feature-discovery labels and
+    exposes each stick over TCP. zigbee2mqtt and zwave-js-ui then reach them
+    through coredns and can schedule anywhere. If one of them cannot see its
+    adapter, suspect ser2net placement or the TCP path before suspecting the
+    radio.
+
+    Platform: cert-manager, traefik, coredns, external-dns, cilium, pihole,
+    tailscale, reloader, vault-secrets-operator, longhorn,
+    local-path-storage, node-feature-discovery, descheduler, goldilocks,
+    kube-state-metrics, datadog, actions-runner, workflows, kagent (you).
+    Also klipper and fluidd for an Ender 5 and Ender 3, paperless-ngx,
+    obsidian, ser2net, http-to-mqtt, mailgun-to-paperless-ngx,
+    network-optimizer.
+
+    ## Conventions every app here follows
+
+    - `kustomization.yaml` lists the manifests and sets `namespace`.
+    - Secrets come from Vault through `vault.yaml` - a `VaultStaticSecret`
+      plus a `VaultAuth`, consumed with `envFrom.secretRef`. A literal secret
+      in a manifest is always wrong.
+    - `secret.reloader.stakater.com/reload` annotations restart workloads on
+      rotation.
+    - `tailscale.yaml` exposes a service on the tailnet.
+    - Scheduled jobs are Argo `CronWorkflow`s in `k8s/prod/workflows/`,
+      backing up to MinIO on the Synology.
+    - Image versions are bumped by Renovate via `renovate.json`. Do not hand-
+      bump an image tag; propose a Renovate config change instead.
+    - Adding an app means a new `k8s/prod/<name>/` directory - the
+      ApplicationSet git generator picks it up with no other wiring.
+    - `pre-commit run -a` is the entire test suite and is also CI
+      (`.github/workflows/test.yaml`): check-yaml, whitespace/EOF fixers,
+      detect-private-key, and detect-secrets against `.secrets.baseline`.
+      Some manifests are deliberately excluded from check-yaml - the
+      tailscale charts, esphome devices, hass config.
+
+    ## Hard-won specifics, so you do not rediscover them
+
+    - ArgoCD uses ServerSideApply. Client-side `kubectl apply` silently drops
+      newly added list entries - observed with `env` entries on a Deployment.
+    - The tailscale operator owns `spec.externalName` on egress Services.
+      There is a long comment in `k8s/argo/appset.yaml` about
+      `ignoreDifferences`; read it before touching that.
+    - Pi 4s are ARMv8.0 and lack LSE atomics, AES, SHA1/SHA2 and PMULL; only
+      the Pi 5 advertises them. Node-feature-discovery exposes this as
+      `feature.node.kubernetes.io/cpu-cpuid.ATOMICS`. An image built for
+      ARMv8.1+ passes its health probe and then dies with SIGILL the moment
+      it serves a request, which reads as a crashloop with no useful log.
+      Select on the NFD label rather than a hostname.
+    - Talos enforces PodSecurity `baseline` cluster-wide, so no privileged
+      containers. Talos also defaults `user.max_user_namespaces` to 0, which
+      is why sandboxed bash in agent skills cannot unshare.
+    - Longhorn holds the stateful volumes. Replica scheduling, dataLocality
+      and dangling PVCs after an app is removed are all recurring issues
+      here.
+
+    When you are asked about something in this estate, prefer naming the
+    actual file path in this repo over describing it in the abstract.
   # Everything an agent needs to know about Aperture's GitHub tools that it
   # cannot work out from the tool schemas alone.
   github: |

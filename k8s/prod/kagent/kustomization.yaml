@@ -28,8 +28,11 @@ patches:
   #     cluster access - the only cluster reach is still the k8s_* tools and
   #     their read-only RBAC (see kagent-tools below).
   #
-  # Targeting `kind: Agent` without a name applies this to every Agent here:
-  # homelab-agent (agent.yaml) and k8s-agent (from the k8s-agent subchart).
+  # Targeting `kind: Agent` without a name. That used to mean two agents,
+  # homelab-agent and the subchart's k8s-agent; with the subchart disabled it
+  # matches homelab-agent alone. Left unnamed on purpose, so a second agent
+  # added later inherits the skills and the securityContext fix rather than
+  # silently going NotReady under PodSecurity baseline.
   #
   # One entry per skill, because kagent discovers skills exactly one directory
   # deep - /skills/<name>/SKILL.md - and a gitRef's `path` becomes that one
@@ -131,128 +134,6 @@ patches:
             - url: https://github.com/obra/superpowers
               ref: v6.4.2
               path: skills/dispatching-parallel-agents
-  # k8s-agent ships from its subchart wired to kagent-tool-server only, which
-  # leaves it able to inspect the cluster but not to look anything up outside
-  # it. Append Aperture's RemoteMCPServer (mcp.yaml) so it reaches the same
-  # web/GitHub/Datadog tools homelab-agent has - it already shares the model
-  # half of Aperture through default-model-config.
-  #
-  # Appending rather than replacing: the subchart pins an explicit toolNames
-  # list of 18 k8s_* tools, and restating it here would silently rot the next
-  # time the chart changes it.
-  # The subchart's systemMessage is wrong for how we run this agent, in three
-  # ways that each cost real calls:
-  #
-  #   - It names its tools GetResources, DescribeResource, ApplyManifest. The
-  #     tools actually bound are k8s_get_resources, k8s_describe_resource,
-  #     k8s_apply_manifest (see toolNames on kagent-tool-server). Asked what
-  #     tools it had, the agent recited the prompt's names, not its own.
-  #   - It presents nine "Modification Tools" as usable. Under
-  #     kagent-tools.rbac.readOnly every one of them returns Forbidden, so the
-  #     agent plans remediation it cannot perform and discovers that mid-task.
-  #   - It states it cannot reach anything outside the cluster. The patch below
-  #     gives it ~100 Aperture tools - web, GitHub, Datadog, Google. The exact
-  #     count moves whenever an Aperture grant changes, so do not read it as
-  #     load-bearing; `kubectl get remotemcpserver aperture -n kagent` has the
-  #     real list.
-  #
-  # So this replaces it rather than inheriting it. That means owning the text
-  # against chart updates, which the toolNames comment above deliberately
-  # refused to do - the difference is that toolNames is right upstream and
-  # would only rot, whereas this is already wrong for us on arrival. The
-  # builtin/kubernetes-context include stays, so the part the chart does
-  # maintain still tracks.
-  #
-  # Which is why agent-prompts is appended to dataSources rather than set as
-  # the whole list: the subchart already registers kagent-builtin-prompts
-  # under the alias `builtin`, and a json6902 `add` on promptTemplate itself
-  # replaces that object wholesale. Doing so left promptSources holding only
-  # prompts/github, and every reconcile failed with
-  #   failed to execute system message template:
-  #   prompt template "builtin/kubernetes-context" not found in promptSources
-  # which is an Accepted=False agent that still serves its last good build,
-  # so it fails quietly.
-  - target:
-      kind: Agent
-      name: k8s-agent
-    patch: |-
-      - op: add
-        path: /spec/declarative/promptTemplate/dataSources/-
-        value:
-          kind: ConfigMap
-          name: agent-prompts
-          alias: prompts
-      - op: replace
-        path: /spec/declarative/systemMessage
-        value: |
-          You are a Kubernetes agent in Mark's homelab cluster, specialized in
-          troubleshooting and diagnosis.
-
-          ## Operational Guidelines
-
-          {{include "builtin/kubernetes-context"}}
-
-          ## Your cluster tools
-
-          Eighteen k8s_* tools, from the kagent-tool-server MCP server:
-          k8s_get_resources, k8s_describe_resource, k8s_get_resource_yaml,
-          k8s_get_pod_logs, k8s_get_events, k8s_get_available_api_resources,
-          k8s_get_cluster_configuration, k8s_check_service_connectivity,
-          k8s_execute_command, k8s_apply_manifest, k8s_create_resource,
-          k8s_create_resource_from_url, k8s_patch_resource, k8s_delete_resource,
-          k8s_label_resource, k8s_remove_label, k8s_annotate_resource,
-          k8s_remove_annotation.
-
-          Use those exact names. Earlier versions of this prompt called them
-          GetResources and ApplyManifest; no tool by those names exists.
-
-          You are bound to a read-only service account. Every tool from
-          k8s_apply_manifest onward in that list - create, patch, delete, label,
-          annotate - returns Forbidden, and reading Secrets returns Forbidden
-          too. This is deliberate: the cluster is reconciled by ArgoCD from
-          git, so a live mutation would be reverted by selfHeal within minutes
-          regardless. Diagnose, then propose the change as a git edit and open
-          a pull request. Do not call the write tools to "check" - you already
-          know the answer, and the Forbidden is just a wasted turn.
-
-          Some reads are Forbidden as well, because the read role covers
-          namespaced resources only. Nodes, persistentvolumes, storageclasses
-          and custom resources such as longhorn.io are not readable yet. If you
-          need node-level data, Datadog has it.
-
-          ## Your other tools
-
-          You are not limited to the cluster. Aperture proxies roughly 100 more
-          tools to you:
-            - aperture_web_search / aperture_web_fetch: search the web, and
-              fetch one exact URL. web_fetch takes exact URLs only - get them
-              from a search result, do not invent them.
-            - GitHub_*: repos, files, commits, branches, issues, pull requests,
-              reviews, releases, code search.
-            - Datadog_*: logs, metrics, spans, RUM, hosts, monitors, incidents.
-              Call Datadog_list_datadog_skills then Datadog_load_datadog_skill
-              before composing a non-trivial query; the skills hold the query
-              syntax you need.
-            - GoogleCalendar_* / GoogleDrive_*: calendar events and Drive files.
-            - Zapier_*: discover an action, enable it, then execute it.
-
-          {{include "prompts/github"}}
-
-          ## How to work
-
-          Search or query before answering anything you are not certain about.
-          Do not guess at facts a tool call would settle. Cite the resources,
-          URLs, dashboards or queries you actually used. Be concise. Say when
-          you do not know, and say when a tool refused you rather than
-          narrating around it.
-      - op: add
-        path: /spec/declarative/tools/-
-        value:
-          type: McpServer
-          mcpServer:
-            apiGroup: kagent.dev
-            kind: RemoteMCPServer
-            name: aperture
 
 helmCharts:
 - name: kagent-crds
@@ -396,10 +277,12 @@ helmCharts:
     # an empty namespaces list is how you ask for cluster scope.)
     rbac:
       namespaces: []
-    # k8s-agent's cluster tools all come from the RemoteMCPServer named
+    # homelab-agent's cluster tools all come from the RemoteMCPServer named
     # kagent-tool-server, which only exists when kagent-tools is enabled. The
-    # chart does not enforce that pairing, so disabling tools leaves the agent
-    # with only what the patches above bolt on. Keep these two flags in step.
+    # chart does not enforce that pairing, so disabling tools would leave the
+    # agent holding a toolNames list pointing at a server that does not
+    # exist. This must stay true - it is now the only source of k8s_* tools,
+    # and it is independent of `k8s-agent.enabled` below.
     kagent-tools:
       enabled: true
       # THIS is the RBAC the LLM actually wields - the tool server executes
@@ -409,11 +292,13 @@ helmCharts:
       # inputs are model output. readOnly swaps that for a curated get/list/
       # watch role over pods, services, events, logs, apps workloads etc.
       #
-      # Consequence to expect: k8s-agent still advertises all 18 tools,
+      # Consequence to expect: homelab-agent still advertises all 18 tools,
       # including k8s_delete_resource / k8s_apply_manifest / k8s_execute_command,
-      # because the subchart hardcodes that list. Those now fail with
-      # Forbidden at call time and the agent reports the error. Diagnosis
-      # works; remediation doesn't. Flip to false to allow writes.
+      # because agent.yaml pins that list verbatim from the subchart it
+      # replaced. Those fail with Forbidden at call time and the agent
+      # reports the error. Diagnosis works; remediation doesn't - which is
+      # the point, since ArgoCD selfHeal would revert a live write anyway.
+      # Flip to false to allow writes.
       #
       # allowSecrets stays false - otherwise reads cover Secrets too, and
       # every credential in the cluster becomes model context.
@@ -457,8 +342,20 @@ helmCharts:
           memory: 128Mi
         limits:
           memory: 256Mi
+    # Disabled: homelab-agent absorbed it. agent.yaml reproduces all 18 of
+    # its k8s_* toolNames, the three builtin prompt includes it used, and its
+    # a2aConfig skills, and adds the homelab knowledge and Aperture tools the
+    # subchart's agent never had. Running both would mean two pods holding
+    # two MCP sessions to answer halves of the same question.
+    #
+    # Nothing this agent needed disappears with it. kagent-builtin-prompts
+    # (templates/builtin-prompts-configmap.yaml) and the kagent-tool-server
+    # RemoteMCPServer (templates/toolserver-kagent.yaml) are both rendered by
+    # the parent chart - the latter gated on `kagent-tools.enabled` directly
+    # above, not on this flag. Keep kagent-tools enabled or homelab-agent
+    # loses the cluster half entirely.
     k8s-agent:
-      enabled: true
+      enabled: false
       resources:
         requests:
           cpu: 100m
