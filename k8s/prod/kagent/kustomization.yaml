@@ -151,23 +151,37 @@ patches:
   #     kagent-tools.rbac.readOnly every one of them returns Forbidden, so the
   #     agent plans remediation it cannot perform and discovers that mid-task.
   #   - It states it cannot reach anything outside the cluster. The patch below
-  #     gives it ~103 Aperture tools - web, GitHub, Datadog, Google.
+  #     gives it ~100 Aperture tools - web, GitHub, Datadog, Google. The exact
+  #     count moves whenever an Aperture grant changes, so do not read it as
+  #     load-bearing; `kubectl get remotemcpserver aperture -n kagent` has the
+  #     real list.
   #
   # So this replaces it rather than inheriting it. That means owning the text
   # against chart updates, which the toolNames comment above deliberately
   # refused to do - the difference is that toolNames is right upstream and
-  # would only rot, whereas this is already wrong for us on arrival. The three
-  # builtin/* includes stay, so the parts the chart does maintain still track.
+  # would only rot, whereas this is already wrong for us on arrival. The
+  # builtin/kubernetes-context include stays, so the part the chart does
+  # maintain still tracks.
+  #
+  # Which is why agent-prompts is appended to dataSources rather than set as
+  # the whole list: the subchart already registers kagent-builtin-prompts
+  # under the alias `builtin`, and a json6902 `add` on promptTemplate itself
+  # replaces that object wholesale. Doing so left promptSources holding only
+  # prompts/github, and every reconcile failed with
+  #   failed to execute system message template:
+  #   prompt template "builtin/kubernetes-context" not found in promptSources
+  # which is an Accepted=False agent that still serves its last good build,
+  # so it fails quietly.
   - target:
       kind: Agent
       name: k8s-agent
     patch: |-
       - op: add
-        path: /spec/declarative/promptTemplate
+        path: /spec/declarative/promptTemplate/dataSources/-
         value:
-          dataSources:
-          - name: agent-prompts
-            alias: prompts
+          kind: ConfigMap
+          name: agent-prompts
+          alias: prompts
       - op: replace
         path: /spec/declarative/systemMessage
         value: |
