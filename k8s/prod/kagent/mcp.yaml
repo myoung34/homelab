@@ -13,8 +13,10 @@
 # `kubectl get remotemcpserver aperture -n kagent -o yaml` lists what the
 # controller actually discovered.
 #
-# Gotcha: GitHub's MCP Apps form deferral silently swallows GitHub writes.
-# This IS biting us today - see the measurement at the end of this comment.
+# Gotcha: GitHub's MCP Apps form deferral can silently swallow GitHub writes.
+# Status as of 2026-10-07: create_pull_request is no longer deferring - see
+# the second measurement below. Treat the deferral as possible but not
+# certain, and verify per call rather than assuming either way.
 #
 # GitHub_create_pull_request, GitHub_update_pull_request and
 # GitHub_issue_write are backed by interactive HTML forms ("MCP Apps") on
@@ -35,6 +37,23 @@
 # create_or_update_file have no form and execute unconditionally, so a
 # deferred run leaves a pushed branch with commits on it and no PR, under
 # an OAuth connector whose scopes are entirely fine.
+#
+# Measured 2026-10-07, via kagent's k8s-agent (session
+# 01a113b8-739c-7b7d-9047-a094ec3adf42):
+#
+#   - GitHub_create_pull_request returned {"id":"4766285329","url":
+#     "https://github.com/myoung34/homelab/pull/2154"} and the PR really
+#     existed - confirmed by GitHub_list_pull_requests and
+#     GitHub_pull_request_read: #2154, open, head 284beef matching the
+#     commit, 1 file / 6 additions. So this tool now executes.
+#   - update_pull_request and issue_write were not exercised in that run, so
+#     the 2026-10-06 result below still stands for them unless re-tested.
+#   - Cost of the stale warning: the agent opened by stating as fact that it
+#     could not open a PR, then misread a perfectly good GitHub_get_me
+#     response as a stub, burned ~8.5k context tokens on a 27,000-result
+#     repo search, and asked the operator for a login the response had
+#     already given it. Over-warning about stubs made it see stubs in valid
+#     data. prompt.yaml now says to verify rather than predict.
 #
 # Measured 2026-10-06, by calling Aperture's /v1/mcp directly:
 #
