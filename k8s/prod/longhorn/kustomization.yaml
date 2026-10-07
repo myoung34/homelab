@@ -59,3 +59,26 @@ helmCharts:
       defaultDataLocality: "best-effort"
     defaultSettings:
       concurrentAutomaticEngineUpgradePerNodeLimit: 1
+      # Longhorn reserves this percentage of every node's CPU as a hard request
+      # on each instance-manager pod. The default is 12, which on a ~4-core Pi
+      # is 474m of 3950m. cluster14 sits at 3703m requested, leaving 247m, so
+      # its instance-manager has been failing to schedule in a ~2 minute
+      # OutOfcpu loop:
+      #
+      #   Node didn't have enough resource: cpu,
+      #   requested: 474, used: 3703, capacity: 3950
+      #
+      # 8% is 316m, which fits. This is a reservation, not a limit - the
+      # instance-managers were not using 12%, it was merely held for them.
+      # Existing instance-manager pods keep the old request until they restart.
+      guaranteedInstanceManagerCpu: 8
+      # Spread replicas off over-loaded nodes instead of leaving them where they
+      # first landed. cluster11 is the probe-failure epicentre (~3100 liveness/
+      # readiness timeouts on 4s `ls /data/longhorn`), which points at disk
+      # contention that replica placement is contributing to.
+      #
+      # least-effort rather than best-effort on purpose: it moves the minimum
+      # number of replicas needed to relieve imbalance, and every move is a
+      # replica rebuild - sustained disk I/O on nodes that are already slow.
+      # best-effort would optimise harder and rebuild more.
+      replicaAutoBalance: least-effort
