@@ -151,7 +151,10 @@ patches:
   #     kagent-tools.rbac.readOnly every one of them returns Forbidden, so the
   #     agent plans remediation it cannot perform and discovers that mid-task.
   #   - It states it cannot reach anything outside the cluster. The patch below
-  #     gives it ~103 Aperture tools - web, GitHub, Datadog, Google.
+  #     gives it ~100 Aperture tools - web, GitHub, Datadog, Google. The exact
+  #     count moves whenever an Aperture grant changes, so do not read it as
+  #     load-bearing; `kubectl get remotemcpserver aperture -n kagent` has the
+  #     real list.
   #
   # So this replaces it rather than inheriting it. That means owning the text
   # against chart updates, which the toolNames comment above deliberately
