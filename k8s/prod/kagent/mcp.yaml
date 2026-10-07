@@ -13,6 +13,34 @@
 # `kubectl get remotemcpserver aperture -n kagent -o yaml` lists what the
 # controller actually discovered.
 #
+# Gotcha: GitHub file *reads* lose their payload. get_file_contents returns
+# two content blocks - {"type":"text","text":"successfully downloaded text
+# file (SHA: ...)"} followed by {"type":"resource","resource":{...,"text":
+# "<the file body>"}} - and kagent's google-adk keeps only the first. The
+# bytes arrive and are discarded before the model sees them, so an agent can
+# confirm a file exists and read its blob SHA but can never read it.
+# Directory listings are plain JSON in the text block and are unaffected,
+# which is why this looks intermittent: listings work, files do not.
+#
+# Not our bug and not fixable here - it is the well-known client-side
+# EmbeddedResource gap. Same symptom in VS Code Copilot Chat
+# (microsoft/vscode#312042), strands-agents/sdk-python#726,
+# open-webui/mcpo#270, and github/github-mcp-server#607, #782, #1383, #3189.
+# Fixing it means EmbeddedResource support in kagent's ADK MCP client, or
+# Aperture flattening resource blocks into text on the way through.
+#
+# Consequence, until then: agents can create new files but cannot safely
+# edit existing ones, because create_or_update_file replaces the whole file
+# and they have no way to obtain the bytes they are not changing. There is
+# no workaround via raw.githubusercontent.com - aperture_web_fetch runs
+# readability extraction and does not round-trip bytes. prompt.yaml tells
+# agents to stop and ask the operator to paste the content instead.
+#
+# Observed 2026-10-07 (session 01a113d0-62d8-781c-bd70-99f58a89b57d):
+# homelab-agent was asked to fix whitespace and typos in README.md, got the
+# SHA-only response on the bare path and again at refs/heads/main, and
+# correctly refused to invent a README rather than write one from memory.
+#
 # Gotcha: GitHub's MCP Apps form deferral can silently swallow GitHub writes.
 # Status as of 2026-10-07: create_pull_request is no longer deferring - see
 # the second measurement below. Treat the deferral as possible but not
