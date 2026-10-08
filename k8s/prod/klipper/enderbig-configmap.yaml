@@ -257,8 +257,8 @@ data:
     tx_pin: PC10
     uart_address: 3
     run_current: 0.750
-    hold_current: 0.500
-    stealthchop_threshold: 999999
+    # hold_current and stealthchop removed: StealthChop at standstill suspected of
+    # causing false s2vsb (ShortToSupply_B) shutdowns. Default 0 = SpreadCycle.
 
     [printer]
     kinematics: cartesian
