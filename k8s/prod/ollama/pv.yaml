@@ -1,0 +1,26 @@
+# Single replica because it's re-pullable and big: 100Gi leaves room for
+# qwen3-coder-next (52GB q4_K_M) alongside qwen3:4b, and only cluster41/klipper
+# have disks large enough to hold it at all. The Longhorn Volume itself is
+# k8s/prod/longhorn/ollama.yaml.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ollama-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Gi
+  csi:
+    driver: driver.longhorn.io
+    fsType: ext4
+    volumeAttributes:
+      dataLocality: best-effort
+      diskSelector: ""
+      nodeSelector: ""
+      numberOfReplicas: "1"
+      staleReplicaTimeout: "30"
+    volumeHandle: ollama-data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: longhorn-static
+  volumeMode: Filesystem

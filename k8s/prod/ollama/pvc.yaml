@@ -1,13 +1,13 @@
-# Dynamically provisioned: the model cache is re-pullable (the pull-model
-# initContainer fetches it on first start), so there's nothing to restore.
+# Statically named (PV + Longhorn Volume in k8s/prod/longhorn/ollama.yaml)
+# so the volume shows up as ollama-data everywhere instead of pvc-<uuid>,
+# matching hass/zwave-js-ui/network-optimizer.
 #
-# Single replica (longhorn-1r) because it's re-pullable and big: 100Gi
-# leaves room for qwen3-coder-next (52GB q4_K_M) alongside qwen3:4b, and
-# only cluster41/klipper have disks large enough to hold it at all.
+# The model cache is re-pullable (the pull-model initContainer fetches it on
+# first start), so there's nothing to restore from backup.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ollama-models
+  name: ollama-data
   namespace: ollama
 spec:
   accessModes:
@@ -15,5 +15,6 @@ spec:
   resources:
     requests:
       storage: 100Gi
-  storageClassName: longhorn-1r
+  storageClassName: longhorn-static
   volumeMode: Filesystem
+  volumeName: ollama-data
