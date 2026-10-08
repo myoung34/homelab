@@ -10,18 +10,13 @@ locals {
   rpi5_overlay_sha   = "0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791" # pragma: allowlist secret
   rpi5_overlay_image = "factory.talos.dev/installer/${local.rpi5_overlay_sha}:${local.talos_version}"
 
-  # Bare-metal AMD (amdgpu) node - already imaged/booted at v1.13.8, independent
-  # of the shared talos_version above. Regenerate via:
+  # Bare-metal amd64 + Radeon (amdgpu) schematic from bare.yaml. No overlay on
+  # amd64; siderolabs/amdgpu ships both the firmware and kernel modules the
+  # Radeon AI PRO R9700 / gfx1201 needs. Regenerate via:
   #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
   # and drop the returned "id" in below.
-  bare_metal_sha   = "REPLACE_ME_WITH_FACTORY_SCHEMATIC_ID" # pragma: allowlist secret
-  bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:v1.13.8"
-
-  # Bare-metal AMD (amdgpu) node on the shared talos_version. Same bare.yaml
-  # schematic as above (no overlay on amd64; siderolabs/amdgpu ships both the
-  # firmware and kernel modules the Radeon AI PRO R9700 / gfx1201 needs).
-  bare_metal_amdgpu_sha   = "acec9e2cd02fa32eaa282bebcb4b1d5c0be65e0fe9b8b6df91bac602d75eac07" # pragma: allowlist secret
-  bare_metal_amdgpu_image = "factory.talos.dev/installer/${local.bare_metal_amdgpu_sha}:${local.talos_version}"
+  bare_metal_sha   = "acec9e2cd02fa32eaa282bebcb4b1d5c0be65e0fe9b8b6df91bac602d75eac07" # pragma: allowlist secret
+  bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:${local.talos_version}"
 
   extensions = {
     tailscale = {
@@ -127,37 +122,21 @@ locals {
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "50GB"
       },
-      "192.168.0.251" = {
-        hostname           = "gpu1"
+      "192.168.1.32" = {
+        hostname           = "cluster41"
         install_disk       = "/dev/nvme0n1"
         image              = local.bare_metal_image
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
-        # nvme0n1/nvme1n1 device names are NOT stable across reboots on this
-        # box (the two NVMe disks have been observed to swap names), so the
-        # disk must be targeted by a selector, never a hardcoded device path
-        # (rules out machine.disks). 1TB NVMe, single-disk: same disk serves
-        # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
-        # (floor of 900GB, grows to fill whatever's left). Longhorn doesn't
-        # see this disk's full size due to an unresolved Talos mount-stacking
-        # bug (siderolabs/talos#13069) masking it behind EPHEMERAL.
-        longhorn_disk_selector = "disk.transport == \"nvme\""
-        ephemeral_max_size     = "64GB"
-        longhorn_min_size      = "900GB"
-      },
-      "192.168.1.32" = {
-        hostname           = "cluster41"
-        install_disk       = "/dev/nvme0n1"
-        image              = local.bare_metal_amdgpu_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
         # cluster{row}{column}: this 4U sits alone on row 4.
-        # Radeon AI PRO R9700 32GB. Same single-NVMe layout as gpu1: EPHEMERAL
-        # capped at 64GB, the rest goes to the "longhorn" UserVolumeConfig.
-        # Disk is targeted by selector, not device path, in case NVMe names
-        # aren't stable across reboots here either.
+        # Radeon AI PRO R9700 32GB. 1TB NVMe, single-disk: same disk serves
+        # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
+        # (floor of 900GB, grows to fill whatever's left). Disk is targeted by
+        # selector, not device path, in case NVMe names aren't stable across
+        # reboots. Longhorn may not see the disk's full size due to an
+        # unresolved Talos mount-stacking bug (siderolabs/talos#13069) masking
+        # it behind EPHEMERAL.
         longhorn_disk_selector = "disk.transport == \"nvme\""
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "900GB"

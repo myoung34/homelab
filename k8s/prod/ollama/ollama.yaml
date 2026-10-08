@@ -48,9 +48,9 @@ spec:
       # the node plus the ROCm/k8s-device-plugin DaemonSet running in the
       # cluster - both are set up outside this manifest. The device plugin
       # injects /dev/kfd + /dev/dri itself; no manual hostPath mount needed.
-      # gpu1 (RX 9060) also carries the amdgpu extension and can advertise
-      # amd.com/gpu, so the resource request alone doesn't pick the node -
-      # pin to cluster41 (the R9700) explicitly.
+      # The resource request alone would already constrain scheduling to
+      # cluster41 (the R9700; the only node that advertises amd.com/gpu), but
+      # pin it explicitly too so intent isn't implicit.
       nodeSelector:
         kubernetes.io/hostname: cluster41
       initContainers:
