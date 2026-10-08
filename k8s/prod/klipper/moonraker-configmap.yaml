@@ -13,9 +13,9 @@ data:
     port: 7125
     klippy_uds_address: /opt/printer_data/run/klipper.sock
 
-    # No systemd/dbus inside the container
+    # No systemd/dbus inside the container; supervisorctl below is a shim.
     [machine]
-    provider: none
+    provider: supervisord_cli
 
     [file_manager]
 
@@ -36,3 +36,38 @@ data:
       100.64.0.0/10
       FE80::/10
       ::1/128
+  # Mounted into the moonraker container at /usr/local/bin/supervisorctl.
+  supervisorctl: |
+    #!/bin/sh
+    # Fake supervisorctl for moonraker's supervisord_cli provider. The pod sets
+    # shareProcessNamespace, so klippy (in the klipper container) is visible here.
+    # "restart" SIGTERMs it; klippy is that container's main process, so kubelet
+    # restarts the container in place. Only "klipper" is managed.
+    pid=
+    for d in /proc/[0-9]*; do
+      case "$(tr '\0' ' ' < "$d/cmdline" 2>/dev/null)" in
+        *klippy/klippy.py*) pid=${d#/proc/}; break ;;
+      esac
+    done
+
+    status() {
+      if [ -n "$pid" ]; then
+        # starttime is field 22 of /proc/<pid>/stat, in clock ticks (100/s).
+        s=$(( $(cut -d. -f1 /proc/uptime) - $(cut -d' ' -f22 "/proc/$pid/stat") / 100 ))
+        printf 'klipper RUNNING pid %s, uptime %d:%02d:%02d\n' \
+          "$pid" $((s / 3600)) $((s % 3600 / 60)) $((s % 60))
+      else
+        echo "klipper STARTING"
+        exit 3
+      fi
+    }
+
+    case "$1" in
+      status) status ;;
+      restart|stop)
+        [ -n "$pid" ] && kill "$pid"
+        echo "klipper: stopped"
+        [ "$1" = restart ] && echo "klipper: started" ;;
+      start) echo "klipper: started" ;;
+      *) echo "unsupported: $*" >&2; exit 2 ;;
+    esac

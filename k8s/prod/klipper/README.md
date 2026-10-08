@@ -45,6 +45,17 @@ the PVC only if absent, because Klipper `SAVE_CONFIG` (bed mesh, PID, bltouch
 z-offset) and fluidd's config editor must write to them. After first boot the
 ConfigMaps are ignored; delete the file on the PVC (or the PVC) to re-seed.
 
+## Restarting Klipper
+
+`RESTART` / `FIRMWARE_RESTART` reload in-process and need nothing special.
+For fluidd's **Services → klipper → Restart**, moonraker uses
+`provider: supervisord_cli` against a fake `supervisorctl` (in
+`moonraker-configmap.yaml`). The pod sets `shareProcessNamespace`, so the shim
+finds klippy in `/proc` and SIGTERMs it; kubelet then restarts only the klipper
+container. Repeated restarts within ~10 minutes hit kubelet's crash backoff
+(10s, 20s, 40s…). The seed init container rewrites `provider: none` to
+`supervisord_cli` on existing PVCs.
+
 enderright's seed came from
 [enderleft.cfg](https://github.com/myoung34/dotfiles/blob/main/home/dot_config/enderleft.cfg)
 including its SAVE_CONFIG calibration block as a starting point — run

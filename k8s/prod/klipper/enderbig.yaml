@@ -33,6 +33,10 @@ spec:
         # Moonraker already logs to stdout; this only tags it.
         ad.datadoghq.com/moonraker.logs: '[{"source": "moonraker", "service": "moonraker"}]'
     spec:
+      # Lets moonraker see klippy's PID, so its "restart klipper" service
+      # button (supervisorctl shim in moonraker-configmap.yaml) can SIGTERM
+      # klippy and have kubelet restart just the klipper container.
+      shareProcessNamespace: true
       initContainers:
         # Seed configs onto the PVC on first boot only; SAVE_CONFIG and fluidd
         # config edits need printer.cfg writable, so it lives on the PVC after.
@@ -47,6 +51,8 @@ spec:
               mkdir -p "$cfg/config" "$cfg/gcodes" "$cfg/logs" "$cfg/run"
               if [ ! -f "$cfg/config/printer.cfg" ]; then cp /seed/printer.cfg "$cfg/config/printer.cfg"; fi
               if [ ! -f "$cfg/config/moonraker.conf" ]; then cp /seed-moonraker/moonraker.conf "$cfg/config/moonraker.conf"; fi
+              # PVCs seeded before the supervisorctl shim still say provider: none.
+              sed -i 's/^provider: none$/provider: supervisord_cli/' "$cfg/config/moonraker.conf"
               ls -la "$cfg/config"
               chown -R 1000:1000 "$cfg"
           volumeMounts:
@@ -130,6 +136,9 @@ spec:
               mountPath: /opt/klipper/config
             - name: klipper-docs-stub
               mountPath: /opt/klipper/docs
+            - name: supervisorctl-shim
+              mountPath: /usr/local/bin/supervisorctl
+              subPath: supervisorctl
       volumes:
         - name: klipper-config-stub
           emptyDir: {}
@@ -144,6 +153,16 @@ spec:
         - name: moonraker-conf-seed
           configMap:
             name: moonraker
+            items:
+              - key: moonraker.conf
+                path: moonraker.conf
+        - name: supervisorctl-shim
+          configMap:
+            name: moonraker
+            defaultMode: 0755
+            items:
+              - key: supervisorctl
+                path: supervisorctl
         - name: usb-mcu
           hostPath:
             path: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_320014000350415339373620-if00
