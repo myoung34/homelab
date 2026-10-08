@@ -17,7 +17,8 @@ spec:
         app.kubernetes.io/instance: amdgpu-device-plugin
         app.kubernetes.io/name: amdgpu-device-plugin
     spec:
-      # Only nodes with an AMD GPU, as labelled by NFD (nodefeaturerule.yaml).
+      # Only nodes with an AMD GPU, as labelled by NFD
+      # (k8s/prod/node-feature-discovery/amd-gpu-nodefeaturerule.yaml).
       nodeSelector:
         feature.node.kubernetes.io/amd-gpu: "true"
       priorityClassName: system-node-critical

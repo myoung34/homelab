@@ -1,9 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: node-feature-discovery
+# No top-level namespace: kustomize doesn't know NodeFeatureRule is
+# cluster-scoped and would stamp one onto it. The chart is namespaced via
+# helmCharts[].namespace below, and namespace.yaml names itself.
 
 resources:
   - namespace.yaml
+  - amd-gpu-nodefeaturerule.yaml
 
 helmCharts:
 - name: node-feature-discovery
@@ -28,7 +31,7 @@ helmCharts:
                 values:
                 - arm64
     # The worker runs on every node (including amd64 cluster41) so its
-    # hardware gets labelled; see k8s/prod/amdgpu-device-plugin/nodefeaturerule.yaml.
+    # hardware gets labelled; see amd-gpu-nodefeaturerule.yaml.
     worker:
       resources:
         requests:
