@@ -305,10 +305,14 @@ spec:
       - name: TALOSCONFIG
         value: /var/run/secrets/talos.dev/config
       volumes:
-      # Written by Talos for the talos.dev ServiceAccount in talos.yaml.
+      # Written by Talos for the talos.dev ServiceAccount in talos.yaml - but
+      # only once kagent is in kubernetesTalosAPIAccess (terraform/talos).
+      # Optional so the agent still starts before then; talosctl just has no
+      # credentials until the Secret appears.
       - name: talos-secrets
         secret:
           secretName: homelab-agent-talos  # pragma: allowlist secret
+          optional: true
       # The talosctl binary straight from the upstream image (image volumes
       # are GA in Kubernetes 1.36). Keep the tag on the cluster's Talos
       # version (terraform/talos/locals.tf).
