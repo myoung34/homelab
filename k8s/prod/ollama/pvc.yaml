@@ -1,15 +1,19 @@
 # Dynamically provisioned: the model cache is re-pullable (the pull-model
 # initContainer fetches it on first start), so there's nothing to restore.
+#
+# Single replica (longhorn-1r) because it's re-pullable and big: 100Gi
+# leaves room for qwen3-coder-next (52GB q4_K_M) alongside qwen3:4b, and
+# only cluster41/klipper have disks large enough to hold it at all.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ollama-data
+  name: ollama-models
   namespace: ollama
 spec:
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 20Gi
-  storageClassName: longhorn
+      storage: 100Gi
+  storageClassName: longhorn-1r
   volumeMode: Filesystem
