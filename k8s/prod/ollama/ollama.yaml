@@ -55,7 +55,7 @@ spec:
         kubernetes.io/hostname: cluster41
       initContainers:
       - name: pull-model
-        image: "ollama/ollama:rocm"
+        image: "ollama/ollama:0.40.2-rocm"
         imagePullPolicy: IfNotPresent
         env:
         # Default splits each blob into many concurrent chunk downloads: fine
@@ -91,7 +91,7 @@ spec:
             amd.com/gpu: 1
       containers:
       - name: ollama
-        image: "ollama/ollama:rocm"
+        image: "ollama/ollama:0.40.2-rocm"
         imagePullPolicy: IfNotPresent
         env:
         - name: OLLAMA_HOST
