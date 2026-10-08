@@ -22,6 +22,21 @@ spec:
         repoURL: https://github.com/myoung34/homelab.git
         targetRevision: HEAD
         path: "k8s/prod/{{ path.basename }}"
+        # Keep at most 4 old ReplicaSets per Deployment instead of the
+        # Kubernetes default of 10. Applied here rather than per app so every
+        # Deployment Argo renders gets it, including the ones helm charts
+        # template. It does not reach Deployments that a controller creates
+        # at runtime, e.g. kagent's per-Agent ones - the Agent CRD has no
+        # field for it.
+        kustomize:
+          patches:
+            - target:
+                group: apps
+                kind: Deployment
+              patch: |-
+                - op: add
+                  path: /spec/revisionHistoryLimit
+                  value: 4
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:

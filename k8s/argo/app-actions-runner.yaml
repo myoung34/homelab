@@ -11,6 +11,16 @@ spec:
     path: k8s/prod/actions-runner
     repoURL: https://github.com/myoung34/homelab.git
     targetRevision: HEAD
+    # See the kustomize.patches comment in appset.yaml.
+    kustomize:
+      patches:
+        - target:
+            group: apps
+            kind: Deployment
+          patch: |-
+            - op: add
+              path: /spec/revisionHistoryLimit
+              value: 4
   syncPolicy:
     automated:
       prune: true
