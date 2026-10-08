@@ -8,6 +8,7 @@ resources:
   - vault.yaml
   - backuptargets.yaml
   - recurringjobs.yaml
+  - storageclass-1r.yaml
   - zigbee2mqtt.yaml
   - zigbee2mqtt-upstairs.yaml
   - zwave-js-ui.yaml

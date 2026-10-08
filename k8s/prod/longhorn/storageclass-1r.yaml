@@ -1,0 +1,22 @@
+# Single-replica Longhorn class for data that can be rebuilt from upstream
+# (e.g. the Ollama model cache). The default `longhorn` class keeps 3
+# replicas, and most worker disks are ~55GiB, so a large volume can't be
+# scheduled or expanded there. One replica only needs room on one node.
+#
+# dataLocality best-effort + WaitForFirstConsumer keeps the replica on the
+# node the pod runs on (local reads) without pinning it there the way
+# strict-local would, so the pod can still move to another GPU node.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-1r
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  numberOfReplicas: "1"
+  dataLocality: best-effort
+  staleReplicaTimeout: "30"
+  fsType: ext4
+  dataEngine: v1
