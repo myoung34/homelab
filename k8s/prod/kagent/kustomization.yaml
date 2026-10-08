@@ -86,16 +86,16 @@ patches:
           gitRefs:
             # Lazy-senior-dev review pass: cut code rather than add it.
             - url: https://github.com/DietrichGebert/ponytail
-              ref: v5.0.0
+              ref: v5.1.0
               path: skills/ponytail
             - url: https://github.com/DietrichGebert/ponytail
-              ref: v5.0.0
+              ref: v5.1.0
               path: skills/ponytail-audit
             - url: https://github.com/DietrichGebert/ponytail
-              ref: v5.0.0
+              ref: v5.1.0
               path: skills/ponytail-debt
             - url: https://github.com/DietrichGebert/ponytail
-              ref: v5.0.0
+              ref: v5.1.0
               path: skills/ponytail-review
             # Workflow discipline: plan, test, debug, verify, review.
             - url: https://github.com/obra/superpowers
