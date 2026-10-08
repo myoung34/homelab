@@ -34,14 +34,15 @@ metadata:
 spec:
   type: Declarative
   # Outbound network for the bash sandbox (skills give this agent bash; see
-  # kustomization.yaml). srt denies everything not listed. Only the in-cluster
-  # Talos API, for talosctl - cluster reads still go through the k8s_* tools.
+  # kustomization.yaml). srt denies everything not listed. Only the Talos API
+  # on the control-plane VIP, for talosctl - cluster reads still go through
+  # the k8s_* tools. Not talos.default: gRPC resolves names locally, which the
+  # sandbox cannot do, and apid's certificate does not cover the ClusterIP.
+  # Must match the homelab-agent-srt ConfigMap below, which is what srt reads.
   sandbox:
     network:
       allowedDomains:
-      - talos.default
-      - talos.default.svc
-      - talos.default.svc.cluster.local
+      - 192.168.1.254
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
@@ -138,18 +139,25 @@ spec:
       ## Your shell and talosctl
 
       You have bash (with read_file/write_file/edit_file) in a sandbox inside
-      your own pod. Its network reaches only the Talos API. talosctl is at
-      /opt/talosctl/talosctl and finds its credentials on its own
-      (/var/run/secrets/talos.dev): `/opt/talosctl/talosctl -n <node-ip>
-      <command>`. Node IPs are in terraform/talos/locals.tf and
-      `k8s_get_resources nodes`.
+      your own pod. Its network reaches only the Talos API on the
+      control-plane VIP. Run talosctl exactly like this:
 
-      The Talos role is os:reader: version, get, logs, dmesg, read, services,
-      health, containers, stats, etcd status work; reboot, upgrade, reset,
-      apply-config and etcd writes are refused by Talos itself. Use it for
-      node-level questions the Kubernetes API cannot answer - kernel logs, USB
-      devices (`talosctl -n 192.168.1.69 read /proc/bus/input/devices`,
-      `dmesg`), sysctls, extensions, machine config as applied.
+        unset NO_PROXY no_proxy
+        /opt/talosctl/talosctl -e 192.168.1.254 -n <node-ip> <command>
+
+      The sandbox only has network through srt's proxy, and srt's default
+      NO_PROXY sends 192.168.x.x around it; `-e 192.168.1.254` avoids the
+      talos.default name in the generated talosconfig, which the sandbox cannot
+      resolve. Credentials are picked up from /var/run/secrets/talos.dev.
+      Node IPs are in terraform/talos/locals.tf and `k8s_get_resources nodes`.
+
+      The Talos role is os:reader. Verified working: version, services,
+      dmesg, logs <service>, get <resource> (members, extensions, ...),
+      containers, ls. Refused: read (file contents) and anything that changes
+      a node (reboot, upgrade, reset, apply-config). `etcd status` only works
+      with -n pointing at a control-plane node. Use it for node-level questions
+      the Kubernetes API cannot answer: kernel logs, USB devices (dmesg),
+      service health, extensions, the applied machine config resources.
 
       Printer questions (Klipper, Moonraker, prints, probes, heaters) go to
       the printer_agent tool - it can query the printers directly.
@@ -320,6 +328,10 @@ spec:
         image:
           reference: ghcr.io/siderolabs/talosctl:v1.13.7
           pullPolicy: IfNotPresent
+      # srt settings override; see the homelab-agent-srt ConfigMap below.
+      - name: srt-settings
+        configMap:
+          name: homelab-agent-srt
       volumeMounts:
       - name: talos-secrets
         mountPath: /var/run/secrets/talos.dev
@@ -327,3 +339,46 @@ spec:
       - name: talosctl
         mountPath: /opt/talosctl
         readOnly: true
+      - name: srt-settings
+        mountPath: /config/srt-settings.json
+        subPath: srt-settings.json
+        readOnly: true
+---
+# srt (the bash sandbox) settings for homelab-agent, mounted over the file kagent
+# generates at /config/srt-settings.json (agent deployment volumes below).
+#
+# Why override: kagent's generated file only carries network/filesystem, and
+# bwrap's fresh /proc mount fails in a container ("Can't mount proc on
+# /proc") because the runtime masks paths under the container's /proc and
+# the kernel refuses a new procfs over masked ones. procMount: Unmasked would
+# fix that but needs hostUsers: false, which kagent 0.10.3 cannot set.
+# enableWeakerNestedSandbox makes srt skip that mount; the sandbox then sees
+# the container's own /proc (same uid 1001 processes). Network and
+# filesystem policy are unchanged.
+#
+# allowedDomains here is what srt enforces; keep spec.sandbox.network on the
+# Agent identical so the two never disagree.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homelab-agent-srt
+  namespace: kagent
+data:
+  srt-settings.json: |
+    {
+      "enableWeakerNestedSandbox": true,
+      "network": {
+        "allowedDomains": [
+          "192.168.1.254"
+        ],
+        "deniedDomains": []
+      },
+      "filesystem": {
+        "denyRead": [],
+        "allowWrite": [
+          ".",
+          "/tmp"
+        ],
+        "denyWrite": []
+      }
+    }
