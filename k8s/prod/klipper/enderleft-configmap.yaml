@@ -296,7 +296,7 @@ data:
     #*# max_y = 217.0
     #*#
     #*# [bltouch]
-    #*# z_offset = 4.455
+    #*# z_offset = 4.420
     #*#
     #*# [extruder]
     #*# control = pid
