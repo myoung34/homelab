@@ -8,6 +8,14 @@
 # and read here through Aperture's Datadog tools.
 #
 # homelab-agent can call this agent as a tool (homelab-agent.yaml).
+#
+# It also opens its own pull requests for k8s/prod/klipper (Deployments,
+# Datadog log annotations, seed configs). Before 2026-10-08 it had no GitHub
+# tools, so asked for a PR it could only hand back a pasteable diff
+# (session 01a11d49-895c-70fa-9520-2fd8c0ee401c). It now has the GitHub
+# tools a PR needs, the shared GitHub rules (prompts/github from
+# homelab-agent-prompt.yaml), and raw.githubusercontent.com in its sandbox
+# for reading file bodies (see mcp.yaml for why get_file_contents cannot).
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
@@ -24,6 +32,7 @@ spec:
     network:
       allowedDomains:
       - "*.klipper.svc.cluster.local"
+      - raw.githubusercontent.com
   declarative:
     modelConfig: default-model-config
     stream: true
@@ -31,8 +40,14 @@ spec:
       dataSources:
       - name: printer-agent-prompts
         alias: printer
+      - name: homelab-agent-prompts
+        alias: prompts
     systemMessage: |
       {{include "printer/printers"}}
+
+      ## GitHub
+
+      {{include "prompts/github"}}
     tools:
     - type: McpServer
       mcpServer:
@@ -59,6 +74,18 @@ spec:
         - Datadog_load_datadog_skill
         - aperture_web_search
         - aperture_web_fetch
+        # Pull requests against myoung34/homelab (k8s/prod/klipper).
+        - GitHub_get_file_contents
+        - GitHub_list_commits
+        - GitHub_get_commit
+        - GitHub_search_code
+        - GitHub_create_branch
+        - GitHub_push_files
+        - GitHub_create_or_update_file
+        - GitHub_create_pull_request
+        - GitHub_update_pull_request
+        - GitHub_list_pull_requests
+        - GitHub_pull_request_read
     a2aConfig:
       skills:
         - id: printer-expert
@@ -126,7 +153,8 @@ data:
       "enableWeakerNestedSandbox": true,
       "network": {
         "allowedDomains": [
-          "*.klipper.svc.cluster.local"
+          "*.klipper.svc.cluster.local",
+          "raw.githubusercontent.com"
         ],
         "deniedDomains": []
       },

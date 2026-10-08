@@ -29,17 +29,25 @@
 # Fixing it means EmbeddedResource support in kagent's ADK MCP client, or
 # Aperture flattening resource blocks into text on the way through.
 #
-# Consequence, until then: agents can create new files but cannot safely
-# edit existing ones, because create_or_update_file replaces the whole file
-# and they have no way to obtain the bytes they are not changing. There is
-# no workaround via raw.githubusercontent.com - aperture_web_fetch runs
-# readability extraction and does not round-trip bytes. homelab-agent-prompt.yaml tells
-# agents to stop and ask the operator to paste the content instead.
+# Workaround, until then: the agents' bash sandboxes allow
+# raw.githubusercontent.com, and the github prompt fragment
+# (homelab-agent-prompt.yaml) has them curl the exact bytes of public repo
+# files, edit locally, push full contents with GitHub_push_files, and curl
+# the result back to cmp it. Verified 2026-10-08 from homelab-agent's
+# sandbox: k8s/prod/ollama/ollama.yaml fetched that way hashes to its blob
+# SHA (b24557a). aperture_web_fetch is still not a substitute - it runs
+# readability extraction and does not round-trip bytes.
 #
 # Observed 2026-10-07 (session 01a113d0-62d8-781c-bd70-99f58a89b57d):
 # homelab-agent was asked to fix whitespace and typos in README.md, got the
 # SHA-only response on the bare path and again at refs/heads/main, and
 # correctly refused to invent a README rather than write one from memory.
+#
+# Observed 2026-10-08 (session 01a11d32-eb4d-751f-a52d-6062c4195cd7): asked
+# twice to open a PR renaming the ollama volume, homelab-agent spent ~180k
+# prompt tokens rebuilding ollama.yaml by replaying 11 commit patches, missed
+# the blob SHA, and asked the operator to paste files instead. That is what
+# the raw.githubusercontent.com allowance fixes.
 #
 # Gotcha: GitHub's MCP Apps form deferral can silently swallow GitHub writes.
 # Status as of 2026-10-07: create_pull_request is no longer deferring - see
