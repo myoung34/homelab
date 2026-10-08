@@ -5,3 +5,7 @@ metadata:
   name: kagent
   labels:
     name: kagent
+    # The agents' bash sandbox (srt/bubblewrap) needs seccomp Unconfined -
+    # see the Agent patch in kustomization.yaml - and PodSecurity baseline,
+    # which Talos enforces cluster-wide, forbids that.
+    pod-security.kubernetes.io/enforce: privileged
