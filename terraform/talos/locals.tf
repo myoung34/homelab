@@ -16,7 +16,7 @@ locals {
   # for the Ryzen 5 5500. Regenerate via:
   #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
   # and drop the returned "id" in below.
-  bare_metal_sha   = "f419fdec1581b711570c699ff9a7801bb546b5403d24c5dab7e6054f956d9065" # pragma: allowlist secret
+  bare_metal_sha   = "13c173c950c52ef495c57dc2017fc310801f8e04f0ca77efb4c8eda33f03a3c2" # pragma: allowlist secret
   bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:${local.talos_version}"
 
   extensions = {
