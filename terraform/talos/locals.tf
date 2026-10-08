@@ -135,9 +135,8 @@ locals {
         # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
         # (floor of 900GB, grows to fill whatever's left). Disk is targeted by
         # selector, not device path, in case NVMe names aren't stable across
-        # reboots. Longhorn may not see the disk's full size due to an
-        # unresolved Talos mount-stacking bug (siderolabs/talos#13069) masking
-        # it behind EPHEMERAL.
+        # reboots. Longhorn uses /var/mnt/longhorn directly as its disk; see
+        # templates/longhorn-dedicated-volume.yaml.tmpl.
         longhorn_disk_selector = "disk.transport == \"nvme\""
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "900GB"

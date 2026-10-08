@@ -59,6 +59,12 @@ helmCharts:
       defaultDataLocality: "best-effort"
     defaultSettings:
       concurrentAutomaticEngineUpgradePerNodeLimit: 1
+      # Only create a default disk on nodes labelled
+      # node.longhorn.io/create-default-disk. Talos sets it on every worker:
+      # "true" (disk at /var/lib/longhorn) or "config" plus a
+      # default-disks-config annotation (disk at /var/mnt/longhorn, the
+      # dedicated user volume). See terraform/talos/templates/longhorn*.tmpl.
+      createDefaultDiskLabeledNodes: true
       # Longhorn reserves this percentage of every node's CPU as a hard request
       # on each instance-manager pod. The default is 12, which on a ~4-core Pi
       # is 474m of 3950m. cluster14 sits at 3703m requested, leaving 247m, so
