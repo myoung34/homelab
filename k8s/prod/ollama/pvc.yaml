@@ -4,11 +4,27 @@
 # Single replica (longhorn-1r) because it's re-pullable and big: 100Gi
 # leaves room for qwen3-coder-next (52GB q4_K_M) alongside qwen3:4b, and
 # only cluster41/klipper have disks large enough to hold it at all.
+#
+# DISABLES Longhorn backups and snapshots for this volume.
+#
+# Without these labels Longhorn puts the volume in the `default`
+# recurring-job group, which runs the nightly `snapshot` and `backup` jobs,
+# i.e. ~50GB of re-pullable models pushed to MinIO every night.
+#
+# The labels below replace that group with an explicit job list:
+#   source: enabled        - take this volume's job list from this PVC
+#   snapshot-cleanup/-delete - only jobs kept; they only DELETE snapshots
+# `snapshot` and `backup` are deliberately absent, which is what turns them
+# off. The list can't be empty or Longhorn re-adds `default`.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: ollama-models
   namespace: ollama
+  labels:
+    recurring-job.longhorn.io/source: enabled
+    recurring-job.longhorn.io/snapshot-cleanup: enabled
+    recurring-job.longhorn.io/snapshot-delete: enabled
 spec:
   accessModes:
   - ReadWriteOnce
