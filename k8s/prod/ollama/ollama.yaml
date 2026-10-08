@@ -50,9 +50,9 @@ spec:
       # injects /dev/kfd + /dev/dri itself; no manual hostPath mount needed.
       # gpu1 (RX 9060) also carries the amdgpu extension and can advertise
       # amd.com/gpu, so the resource request alone doesn't pick the node -
-      # pin to gpu2 (the R9700) explicitly.
+      # pin to cluster41 (the R9700) explicitly.
       nodeSelector:
-        kubernetes.io/hostname: gpu2
+        kubernetes.io/hostname: cluster41
       initContainers:
       - name: pull-model
         image: "ollama/ollama:rocm"

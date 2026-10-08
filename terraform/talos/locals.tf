@@ -147,12 +147,13 @@ locals {
         longhorn_min_size      = "900GB"
       },
       "192.168.1.32" = {
-        hostname           = "gpu2"
+        hostname           = "cluster41"
         install_disk       = "/dev/nvme0n1"
         image              = local.bare_metal_amdgpu_image
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
+        # cluster{row}{column}: this 4U sits alone on row 4.
         # Radeon AI PRO R9700 32GB. Same single-NVMe layout as gpu1: EPHEMERAL
         # capped at 64GB, the rest goes to the "longhorn" UserVolumeConfig.
         # Disk is targeted by selector, not device path, in case NVMe names

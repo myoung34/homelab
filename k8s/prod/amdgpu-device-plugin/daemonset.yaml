@@ -17,7 +17,7 @@ spec:
         app.kubernetes.io/instance: amdgpu-device-plugin
         app.kubernetes.io/name: amdgpu-device-plugin
     spec:
-      # The amd64 nodes (gpu1: RX 9060, gpu2: R9700) are exactly the ones
+      # The amd64 nodes (gpu1: RX 9060, cluster41: R9700) are exactly the ones
       # with the siderolabs/amdgpu extension + real hardware in an otherwise
       # arm64 cluster, so arch is a reasonable proxy selector.
       nodeSelector:
