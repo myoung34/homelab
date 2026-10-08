@@ -312,6 +312,10 @@ spec:
       env:
       - name: TALOSCONFIG
         value: /var/run/secrets/talos.dev/config
+      # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
+      # homelab-agent-srt ConfigMap below. The rest is the image's own PATH.
+      - name: PATH
+        value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
       volumes:
       # Written by Talos for the talos.dev ServiceAccount in talos.yaml - but
       # only once kagent is in kubernetesTalosAPIAccess (terraform/talos).
@@ -328,10 +332,11 @@ spec:
         image:
           reference: ghcr.io/siderolabs/talosctl:v1.13.7
           pullPolicy: IfNotPresent
-      # srt settings override; see the homelab-agent-srt ConfigMap below.
-      - name: srt-settings
+      # srt shim and settings; see the homelab-agent-srt ConfigMap below.
+      - name: srt-shim
         configMap:
           name: homelab-agent-srt
+          defaultMode: 0555
       volumeMounts:
       - name: talos-secrets
         mountPath: /var/run/secrets/talos.dev
@@ -339,13 +344,21 @@ spec:
       - name: talosctl
         mountPath: /opt/talosctl
         readOnly: true
-      - name: srt-settings
-        mountPath: /config/srt-settings.json
-        subPath: srt-settings.json
+      - name: srt-shim
+        mountPath: /opt/srt-shim
         readOnly: true
 ---
-# srt (the bash sandbox) settings for homelab-agent, mounted over the file kagent
-# generates at /config/srt-settings.json (agent deployment volumes below).
+# srt (the bash sandbox) settings for homelab-agent, plus an `srt` shim that
+# makes srt use them instead of the file kagent generates.
+#
+# How: kagent always runs `srt --settings $KAGENT_SRT_SETTINGS_PATH ...` and
+# sets that env var itself, after any of ours, so it cannot be overridden.
+# Mounting over /config/srt-settings.json with subPath does not work either:
+# /config is kagent's Secret volume, where the file is an atomic-writer
+# symlink, and runc refuses to bind-mount onto it ("not a directory"), so the
+# container never starts. Instead this ConfigMap is mounted at /opt/srt-shim,
+# which the Agent puts first on PATH; the shim drops kagent's --settings and
+# execs the real srt with this file.
 #
 # Why override: kagent's generated file only carries network/filesystem, and
 # bwrap's fresh /proc mount fails in a container ("Can't mount proc on
@@ -364,6 +377,12 @@ metadata:
   name: homelab-agent-srt
   namespace: kagent
 data:
+  # kagent calls `srt --settings <its file> <command...>`; drop its
+  # --settings and use the file next to this script.
+  srt: |
+    #!/bin/sh
+    if [ "$1" = "--settings" ]; then shift 2; fi
+    exec /usr/bin/srt --settings /opt/srt-shim/srt-settings.json "$@"
   srt-settings.json: |
     {
       "enableWeakerNestedSandbox": true,
