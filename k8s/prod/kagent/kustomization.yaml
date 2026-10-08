@@ -68,22 +68,26 @@ patches:
       #
       # An explicit allowPrivilegeEscalation: false suppresses it - the
       # controller skips privileged rather than emit a combination the API
-      # server would reject. Exempting the namespace instead would be the
-      # wrong trade: these pods run model-driven bash, and it would not even
-      # work, because bwrap here is not setuid and the container runs as uid
-      # 1001, so its only route is an unprivileged user namespace and
-      # privileged does not grant one.
+      # server would reject. privileged would not help anyway: bwrap here is
+      # not setuid and the container runs as uid 1001, so its only route is
+      # an unprivileged user namespace.
       #
-      # bash needs user.max_user_namespaces > 0, which Talos defaults to 0.
-      # It is raised in terraform/talos/templates/install-disk-and-hostname.
-      # yaml.tmpl, which only takes effect on `terraform apply`; until then
-      # bash/write_file/edit_file fail per call (the k8s_* tools and skill
-      # instructions are unaffected). printer-agent and homelab-agent's
-      # talosctl both depend on it.
+      # That route needs two things:
+      #   - user.max_user_namespaces > 0 (Talos defaults it to 0), raised in
+      #     terraform/talos/templates/install-disk-and-hostname.yaml.tmpl.
+      #   - a seccomp profile that allows unshare(CLONE_NEWUSER), mount and
+      #     pivot_root. The kubelet's RuntimeDefault refuses them without
+      #     CAP_SYS_ADMIN, so the agent container runs Unconfined. That is
+      #     why the kagent namespace is PodSecurity privileged (namespace.yaml)
+      #     - baseline forbids Unconfined. The container is still uid 1001
+      #     with no capabilities and no privilege escalation; srt then confines
+      #     each command (filesystem and allowedDomains network policy).
       - op: add
         path: /spec/declarative/deployment/securityContext
         value:
           allowPrivilegeEscalation: false
+          seccompProfile:
+            type: Unconfined
       - op: add
         path: /spec/skills
         value:
