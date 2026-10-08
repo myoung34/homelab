@@ -7,7 +7,8 @@
 #   spec.declarative.systemMessage: |
 #     ... {{include "prompts/github"}} ...
 #
-# printer-agent has its own ConfigMap (printer-agent-prompt.yaml). These stay
+# printer-agent has its own ConfigMap (printer-agent-prompt.yaml) but also
+# includes `github` from this one, so keep that fragment agent-neutral. These stay
 # fragments rather than one systemMessage because the
 # merged prompt is long enough that keeping domain knowledge, GitHub rules and
 # agent wiring in one YAML scalar makes all three harder to edit, and because
@@ -141,37 +142,52 @@ data:
     object as its arguments; calling it with nothing fails with "arguments
     must be a JSON object". That is a malformed call, not a stub.
 
-    You cannot read the body of an existing file. GitHub_get_file_contents
-    returns the bytes in an MCP EmbeddedResource block alongside its text
-    summary, and kagent drops that block, so all that reaches you is
-    "successfully downloaded text file (SHA: ...)". The SHA is real and the
-    file exists; you simply do not have its contents, at any ref, ever.
-    Directory listings are unaffected - those come back as plain JSON.
+    ## Reading and editing files in a repo
 
-    So treat GitHub_get_file_contents as an existence-and-SHA check, and
-    split the work by whether a file already exists:
+    GitHub_get_file_contents does NOT give you a file's body. It returns the
+    bytes in an MCP EmbeddedResource block that kagent drops, so all that
+    reaches you is "successfully downloaded text file (SHA: ...)". Use it
+    for directory listings (plain JSON, unaffected) and for a file's blob
+    SHA - never as a way to read a file.
 
-      Creating a new file - fully supported:
-        1. GitHub_create_branch off the default branch.
-        2. GitHub_create_or_update_file or GitHub_push_files.
-        3. GitHub_create_pull_request, writing the body in your own words.
-        4. GitHub_pull_request_read the diff and confirm it contains only
-           the change you intended.
+    Read file bodies with curl in your bash sandbox, which can reach
+    raw.githubusercontent.com. myoung34/homelab is public:
 
-      Editing an existing file - say so and stop. create_or_update_file
-      replaces the whole file, so writing one back without its current
-      bytes means reconstructing it from memory and silently destroying
-      every line you did not know about. Do not do that. Tell the operator
-      the body is unreadable, name the file and SHA you did resolve, and
-      ask them to paste the content. Then you have real bytes and the
-      create-a-new-file steps above apply unchanged.
+      mkdir -p work && cd work
+      curl -fsSL -o ollama.yaml \
+        https://raw.githubusercontent.com/myoung34/homelab/<ref>/k8s/prod/ollama/ollama.yaml
 
-    Do not reach for aperture_web_fetch on raw.githubusercontent.com as a
-    way around this. It is not a workaround: web_fetch runs readability
-    extraction, which reflows markdown and normalizes leading whitespace,
-    so writing the result back silently re-indents YAML where indentation
-    is load-bearing and mangles any file you fetched to "preserve". A
-    plausible-looking wrong file is worse than no file.
+    <ref> is a branch name or a commit SHA. Prefer a commit SHA (from
+    GitHub_list_commits): raw.githubusercontent.com caches branch refs for
+    a few minutes, so `main` can briefly be stale after a merge. Fetch
+    every file you will touch into your working directory before editing,
+    and work from those bytes. Use read_file/edit_file on the local copy,
+    or python3 for mechanical edits. Never retype a file from memory, and
+    never rebuild one by replaying commit patches - fetch it.
+
+    Editing an existing file and opening a PR:
+      1. Fetch each file you will change, as above.
+      2. Edit the local copies; leave every line you are not changing
+         byte-for-byte intact. `diff -u` against a pristine copy shows
+         exactly what you changed - that diff is what goes in the PR.
+      3. GitHub_create_branch off main.
+      4. GitHub_push_files with the full content of every changed or new
+         file in one commit (or GitHub_create_or_update_file for one file,
+         which needs the current blob SHA from GitHub_get_file_contents).
+         Pass the content exactly as it is on disk after your edit.
+      5. Verify: curl the pushed files back at the new commit SHA and
+         `cmp` them against your local copies. Any difference means the
+         push mangled something - say so and stop.
+      6. GitHub_create_pull_request, body in your own words.
+      7. GitHub_pull_request_read the diff and confirm it contains only the
+         change you intended.
+
+    curl uses no token, so it reaches public repos only. A 404 on a path
+    GitHub_get_file_contents says exists means the repo is private: say
+    so and ask the operator to paste the file. Do not use
+    aperture_web_fetch to read repo files - it runs readability
+    extraction, which reflows text and strips leading whitespace, so the
+    result is not the file.
 
     Three GitHub tools have historically been deferred to an MCP Apps form
     instead of executed:
@@ -219,7 +235,8 @@ data:
         check the specific fields you set (draft, state, base, title).
       - issue created or edited -> GitHub_issue_read, or GitHub_list_issues
         if you do not have a number yet, and confirm the issue exists.
-      - file pushed -> GitHub_get_file_contents at the new ref.
+      - file pushed -> curl it from raw.githubusercontent.com at the new
+        commit SHA and cmp it against what you meant to push.
     If the read-back does not show your change, say plainly that it failed
     and stop. Claiming an issue was "filed" or a PR "marked ready" when it
     was not is the worst failure available to you, because it is the only one

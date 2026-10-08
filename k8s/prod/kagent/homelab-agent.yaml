@@ -34,15 +34,23 @@ metadata:
 spec:
   type: Declarative
   # Outbound network for the bash sandbox (skills give this agent bash; see
-  # kustomization.yaml). srt denies everything not listed. Only the Talos API
-  # on the control-plane VIP, for talosctl - cluster reads still go through
-  # the k8s_* tools. Not talos.default: gRPC resolves names locally, which the
-  # sandbox cannot do, and apid's certificate does not cover the ClusterIP.
+  # kustomization.yaml). srt denies everything not listed:
+  #   - the Talos API on the control-plane VIP, for talosctl - cluster reads
+  #     still go through the k8s_* tools. Not talos.default: gRPC resolves
+  #     names locally, which the sandbox cannot do, and apid's certificate
+  #     does not cover the ClusterIP.
+  #   - raw.githubusercontent.com, so the agent can read the exact bytes of
+  #     an existing file in a public repo. GitHub_get_file_contents cannot
+  #     (see the EmbeddedResource gotcha in mcp.yaml), which left it unable
+  #     to edit any existing file and therefore unable to open most PRs.
+  #     Read-only and unauthenticated: no token is in the sandbox, so this
+  #     reaches public content only; all writes still go through GitHub_*.
   # Must match the homelab-agent-srt ConfigMap below, which is what srt reads.
   sandbox:
     network:
       allowedDomains:
       - 192.168.1.254
+      - raw.githubusercontent.com
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
@@ -140,7 +148,8 @@ spec:
 
       You have bash (with read_file/write_file/edit_file) in a sandbox inside
       your own pod. Its network reaches only the Talos API on the
-      control-plane VIP. Run talosctl exactly like this:
+      control-plane VIP and raw.githubusercontent.com (how you read files
+      in git; see the GitHub section). Run talosctl exactly like this:
 
         unset NO_PROXY no_proxy
         /opt/talosctl/talosctl -e 192.168.1.254 -n <node-ip> <command>
@@ -388,7 +397,8 @@ data:
       "enableWeakerNestedSandbox": true,
       "network": {
         "allowedDomains": [
-          "192.168.1.254"
+          "192.168.1.254",
+          "raw.githubusercontent.com"
         ],
         "deniedDomains": []
       },
