@@ -1,0 +1,78 @@
+# printer-agent: the resident expert on the Klipper printers.
+#
+# A plain declarative Agent, no custom code. It inherits this app's unnamed
+# `kind: Agent` patch (kustomization.yaml), so it has skills and therefore
+# bash; spec.sandbox below lets that bash reach Moonraker on the printers'
+# in-cluster Services (k8s/prod/klipper) and nothing else. klippy.log and
+# moonraker.log are shipped to Datadog by sidecars in the klipper Deployments,
+# and read here through Aperture's Datadog tools.
+#
+# homelab-agent can call this agent as a tool (homelab-agent.yaml).
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: printer-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: >-
+    Expert on Mark's Klipper 3D printers (enderbig, enderleft, enderright):
+    queries Moonraker directly, reads klippy/moonraker logs in Datadog and the
+    printer configs, and diagnoses from evidence.
+  sandbox:
+    network:
+      allowedDomains:
+      - "*.klipper.svc.cluster.local"
+  declarative:
+    modelConfig: default-model-config
+    stream: true
+    promptTemplate:
+      dataSources:
+      - name: printer-agent-prompts
+        alias: printer
+    systemMessage: |
+      {{include "printer/printers"}}
+    tools:
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: kagent-tool-server
+        # Read-only: pod state/logs/events in klipper, and the seed
+        # ConfigMaps (k8s_get_resource_yaml).
+        toolNames:
+        - k8s_get_resources
+        - k8s_describe_resource
+        - k8s_get_resource_yaml
+        - k8s_get_pod_logs
+        - k8s_get_events
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: aperture
+        toolNames:
+        - Datadog_search_datadog_logs
+        - Datadog_analyze_datadog_logs
+        - Datadog_list_datadog_skills
+        - Datadog_load_datadog_skill
+        - aperture_web_search
+        - aperture_web_fetch
+    a2aConfig:
+      skills:
+        - id: printer-expert
+          name: Printer Expert
+          description: Diagnoses and explains Mark's Klipper printers from live Moonraker data, logs and config.
+          tags: [klipper, moonraker, 3d-printing]
+          examples:
+            - "Why did my Ender 5 stop during the last print?"
+            - "Why does G28 fail intermittently on enderleft?"
+            - "Is enderbig ready to print?"
+            - "What changed in the config since the last good print?"
+    deployment:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 768Mi

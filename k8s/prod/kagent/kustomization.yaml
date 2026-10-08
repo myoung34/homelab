@@ -7,8 +7,11 @@ resources:
   - tailscale.yaml
   - vault.yaml
   - mcp.yaml
-  - prompt.yaml
-  - agent.yaml
+  - homelab-agent-prompt.yaml
+  - homelab-agent.yaml
+  - printer-agent-prompt.yaml
+  - printer-agent.yaml
+  - talos.yaml
 
 patches:
   # Agent skills: directories of markdown instructions (SKILL.md plus any
@@ -71,11 +74,12 @@ patches:
       # 1001, so its only route is an unprivileged user namespace and
       # privileged does not grant one.
       #
-      # What this costs until user.max_user_namespaces is raised in
-      # terraform/talos: Talos defaults it to 0, so bwrap cannot unshare and
-      # bash/write_file/edit_file fail per call. Skill discovery and the
-      # instructions themselves are plain file reads and are unaffected, as
-      # are the k8s_* tools, which run in the kagent-tools pod.
+      # bash needs user.max_user_namespaces > 0, which Talos defaults to 0.
+      # It is raised in terraform/talos/templates/install-disk-and-hostname.
+      # yaml.tmpl, which only takes effect on `terraform apply`; until then
+      # bash/write_file/edit_file fail per call (the k8s_* tools and skill
+      # instructions are unaffected). printer-agent and homelab-agent's
+      # talosctl both depend on it.
       - op: add
         path: /spec/declarative/deployment/securityContext
         value:
@@ -155,7 +159,7 @@ helmCharts:
   repo: oci://ghcr.io/kagent-dev/kagent/helm
   valuesInline:
     # The chart's "default" provider generates the ModelConfig named
-    # default-model-config, which agent.yaml references and which the UI hands
+    # default-model-config, which the Agents reference and which the UI hands
     # to anything created through the wizard.
     #
     # Provider is Anthropic rather than OpenAI because claude-opus-5-5 is served
@@ -294,7 +298,7 @@ helmCharts:
       #
       # Consequence to expect: homelab-agent still advertises all 18 tools,
       # including k8s_delete_resource / k8s_apply_manifest / k8s_execute_command,
-      # because agent.yaml pins that list verbatim from the subchart it
+      # because homelab-agent.yaml pins that list verbatim from the subchart it
       # replaced. Those fail with Forbidden at call time and the agent
       # reports the error. Diagnosis works; remediation doesn't - which is
       # the point, since ArgoCD selfHeal would revert a live write anyway.
@@ -342,7 +346,7 @@ helmCharts:
           memory: 128Mi
         limits:
           memory: 256Mi
-    # Disabled: homelab-agent absorbed it. agent.yaml reproduces all 18 of
+    # Disabled: homelab-agent absorbed it. homelab-agent.yaml reproduces all 18 of
     # its k8s_* toolNames, the three builtin prompt includes it used, and its
     # a2aConfig skills, and adds the homelab knowledge and Aperture tools the
     # subchart's agent never had. Running both would mean two pods holding

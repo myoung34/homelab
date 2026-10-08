@@ -11,8 +11,11 @@ machine:
       enabled: true
       allowedRoles:
         - os:admin
+        # homelab-agent's talosctl (k8s/prod/kagent/talos.yaml): read-only.
+        - os:reader
       allowedKubernetesNamespaces:
         - argocd
+        - kagent
 cluster:
   network:
     dnsDomain: cluster.local

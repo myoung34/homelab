@@ -1,21 +1,21 @@
 ---
-# Prompt fragments shared by every agent, pulled in with the Agent CRD's
-# promptTemplate/include mechanism:
+# homelab-agent's prompt fragments (homelab-agent.yaml), pulled in with the
+# Agent CRD's promptTemplate/include mechanism:
 #
-#   spec.declarative.promptTemplate.dataSources: [{name: agent-prompts,
+#   spec.declarative.promptTemplate.dataSources: [{name: homelab-agent-prompts,
 #                                                  alias: prompts}]
 #   spec.declarative.systemMessage: |
 #     ... {{include "prompts/github"}} ...
 #
-# There is one agent now - homelab-agent absorbed k8s-agent - so these are no
-# longer shared between two systemMessages. They stay fragments because the
+# printer-agent has its own ConfigMap (printer-agent-prompt.yaml). These stay
+# fragments rather than one systemMessage because the
 # merged prompt is long enough that keeping domain knowledge, GitHub rules and
 # agent wiring in one YAML scalar makes all three harder to edit, and because
 # a ConfigMap change is a cheaper reconcile than an Agent change.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: agent-prompts
+  name: homelab-agent-prompts
   namespace: kagent
 data:
   # What this homelab actually is. Derived from the repo layout, README and

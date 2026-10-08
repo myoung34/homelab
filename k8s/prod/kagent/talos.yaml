@@ -1,0 +1,19 @@
+# Talos API credentials for homelab-agent's talosctl.
+#
+# Talos (kubernetesTalosAPIAccess in terraform/talos/templates/
+# controlplane.yaml.tmpl) answers this by writing a Secret of the same name
+# holding a talosconfig scoped to these roles. homelab-agent.yaml mounts it at
+# /var/run/secrets/talos.dev, where talosctl looks by default, and mounts the
+# talosctl binary itself from the upstream image (an image volume) at
+# /opt/talosctl.
+#
+# os:reader only: get/list/logs/dmesg/read/services/health, no reboot,
+# upgrade, reset or apply-config. Raising it is a deliberate edit here, and the
+# role must also be in allowedRoles on the Talos side.
+apiVersion: talos.dev/v1alpha1
+kind: ServiceAccount
+metadata:
+  name: homelab-agent-talos
+spec:
+  roles:
+    - os:reader

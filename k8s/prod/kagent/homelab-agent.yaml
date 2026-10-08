@@ -33,6 +33,15 @@ metadata:
   namespace: kagent
 spec:
   type: Declarative
+  # Outbound network for the bash sandbox (skills give this agent bash; see
+  # kustomization.yaml). srt denies everything not listed. Only the in-cluster
+  # Talos API, for talosctl - cluster reads still go through the k8s_* tools.
+  sandbox:
+    network:
+      allowedDomains:
+      - talos.default
+      - talos.default.svc
+      - talos.default.svc.cluster.local
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
@@ -43,7 +52,7 @@ spec:
     stream: true
     # Two sources. `builtin` is the chart's own ConfigMap and carries the
     # Kubernetes methodology prompts k8s-agent used to include; `prompts` is
-    # ours (prompt.yaml) and carries the homelab topology and the GitHub
+    # ours (homelab-agent-prompt.yaml) and carries the homelab topology and the GitHub
     # rules. Both aliases have to be registered here or the include fails
     # the template render, and a failed render leaves an Accepted=False
     # Agent still serving its last good build - it fails quietly.
@@ -52,7 +61,7 @@ spec:
       - kind: ConfigMap
         name: kagent-builtin-prompts
         alias: builtin
-      - name: agent-prompts
+      - name: homelab-agent-prompts
         alias: prompts
     systemMessage: |
       You are the agent for Mark's homelab: a Kubernetes expert who also
@@ -125,6 +134,25 @@ spec:
         - Zapier_*: discover an action, enable it, then execute it.
 
       {{include "prompts/github"}}
+
+      ## Your shell and talosctl
+
+      You have bash (with read_file/write_file/edit_file) in a sandbox inside
+      your own pod. Its network reaches only the Talos API. talosctl is at
+      /opt/talosctl/talosctl and finds its credentials on its own
+      (/var/run/secrets/talos.dev): `/opt/talosctl/talosctl -n <node-ip>
+      <command>`. Node IPs are in terraform/talos/locals.tf and
+      `k8s_get_resources nodes`.
+
+      The Talos role is os:reader: version, get, logs, dmesg, read, services,
+      health, containers, stats, etcd status work; reboot, upgrade, reset,
+      apply-config and etcd writes are refused by Talos itself. Use it for
+      node-level questions the Kubernetes API cannot answer - kernel logs, USB
+      devices (`talosctl -n 192.168.1.69 read /proc/bus/input/devices`,
+      `dmesg`), sysctls, extensions, machine config as applied.
+
+      Printer questions (Klipper, Moonraker, prints, probes, heaters) go to
+      the printer_agent tool - it can query the printers directly.
 
       ## Tool Usage Best Practices
 
@@ -205,6 +233,10 @@ spec:
         apiGroup: kagent.dev
         kind: RemoteMCPServer
         name: aperture
+    # The printer expert (printer-agent.yaml), called as a tool.
+    - type: Agent
+      agent:
+        name: printer-agent
     # Carried over from the k8s-agent subchart so that anything discovering
     # this agent over A2A still sees the Kubernetes capabilities it used to
     # advertise. These are A2A capability descriptors - unrelated to
@@ -269,3 +301,25 @@ spec:
           memory: 512Mi
         limits:
           memory: 1Gi
+      env:
+      - name: TALOSCONFIG
+        value: /var/run/secrets/talos.dev/config
+      volumes:
+      # Written by Talos for the talos.dev ServiceAccount in talos.yaml.
+      - name: talos-secrets
+        secret:
+          secretName: homelab-agent-talos  # pragma: allowlist secret
+      # The talosctl binary straight from the upstream image (image volumes
+      # are GA in Kubernetes 1.36). Keep the tag on the cluster's Talos
+      # version (terraform/talos/locals.tf).
+      - name: talosctl
+        image:
+          reference: ghcr.io/siderolabs/talosctl:v1.13.7
+          pullPolicy: IfNotPresent
+      volumeMounts:
+      - name: talos-secrets
+        mountPath: /var/run/secrets/talos.dev
+        readOnly: true
+      - name: talosctl
+        mountPath: /opt/talosctl
+        readOnly: true

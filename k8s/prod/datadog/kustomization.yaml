@@ -64,11 +64,23 @@ helmCharts:
         - hostPath:
             path: /sys/kernel/tracing
           name: tracefs
+        # Lets the agent tail log files that apps write to their own volumes
+        # instead of stdout - klippy.log, on each printer's Longhorn PVC (see
+        # the ad.datadoghq.com/klipper.logs annotation in k8s/prod/klipper).
+        # HostToContainer so CSI volumes mounted after the agent started are
+        # visible. Read-only; system-probe already mounts the whole host root.
+        - hostPath:
+            path: /var/lib/kubelet/pods
+          name: kubelet-pods
       volumeMounts:
         - mountPath: /sys/kernel/tracing
           mountPropagation: None
           name: tracefs
           readOnly: false # Need RW for kprobe_events
+        - mountPath: /host/var/lib/kubelet/pods
+          mountPropagation: HostToContainer
+          name: kubelet-pods
+          readOnly: true
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
           effect: "NoSchedule"
