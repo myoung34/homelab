@@ -1,0 +1,59 @@
+[project]
+name = "printer-agent"
+version = "0.1.0"
+description = "MCP server and diagnostics engine for Klipper printers, operated by a kagent agent"
+readme = "README.md"
+authors = [
+    { name = "Mark Young", email = "myoung34@my.apsu.edu" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28",
+    "mcp>=2.3,<3",
+    "prometheus-client>=0.21",
+    "pydantic>=2",
+    "pyyaml>=6",
+]
+
+[project.scripts]
+printer-agent = "printer_agent.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "respx>=0.23.1",
+    "ruff>=0.16.10",
+    "types-pyyaml>=6.0.12.20260906",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "RUF", "ASYNC", "S", "SIM"]
+ignore = ["S101", "S603", "S607", "E501", "ASYNC109"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B011"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["prometheus_client.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
