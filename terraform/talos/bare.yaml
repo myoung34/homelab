@@ -1,7 +1,6 @@
 customization:
   extraKernelArgs:
     - talos.logging.kernel=tcp://192.168.3.2:5046/
-    - reboot=k
     - selinux=0
     # ADATA NVMe (1cc1:5236) drops off the bus via APST/ASPM (D3cold -> D0 fails).
     - nvme_core.default_ps_max_latency_us=0
