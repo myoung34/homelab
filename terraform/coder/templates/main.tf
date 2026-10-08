@@ -26,7 +26,7 @@ variable "namespace" {
   default     = "coder"
 }
 
-# Every node in this cluster except cluster41 is arm64 (Pi 4 / Rock Pi X);
+# Every node in this cluster except cluster41 is arm64 (Pi 4 / Pi 5);
 # common devcontainer images (including the one below) are amd64-only, so this
 # will always land on cluster41 regardless of nodeSelector - making it explicit
 # here rather than relying on that being implicit. Ollama only reserves 3Gi +
