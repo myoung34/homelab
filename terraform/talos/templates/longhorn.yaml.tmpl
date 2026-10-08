@@ -1,4 +1,10 @@
+# create-default-disk=true: Longhorn creates its default disk at the default
+# data path (/var/lib/longhorn) when the node registers. Required since
+# createDefaultDiskLabeledNodes is on (k8s/prod/longhorn), otherwise a fresh
+# node would get no disk.
 machine:
+  nodeLabels:
+    node.longhorn.io/create-default-disk: "true"
   kubelet:
     extraMounts:
       - destination: /var/lib/longhorn

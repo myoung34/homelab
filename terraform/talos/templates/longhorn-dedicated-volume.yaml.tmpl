@@ -16,12 +16,29 @@ provisioning:
   minSize: ${longhorn_min_size}
   grow: true
 ---
+# Longhorn's data disk is the user volume itself, /var/mnt/longhorn. Never
+# bind it into the kubelet with extraMounts: the bind ends up masked by
+# EPHEMERAL, so Longhorn only sees EPHEMERAL's size (siderolabs/talos#13069,
+# "never ever do machine.kubelet.extraMounts with User Volumes"). Longhorn
+# reaches /var/mnt/longhorn through the host mount namespace without it.
+#
+# /var/lib/longhorn stays on EPHEMERAL for Longhorn's own metadata/sockets,
+# bound the same way as on every other node (longhorn.yaml.tmpl).
+#
+# The label + annotation make Longhorn create its default disk at
+# /var/mnt/longhorn instead of /var/lib/longhorn when the node first registers
+# (needs createDefaultDiskLabeledNodes in k8s/prod/longhorn). They don't touch
+# a node Longhorn already knows about.
 machine:
+  nodeLabels:
+    node.longhorn.io/create-default-disk: config
+  nodeAnnotations:
+    node.longhorn.io/default-disks-config: '[{"path":"/var/mnt/longhorn","allowScheduling":true}]'
   kubelet:
     extraMounts:
       - destination: /var/lib/longhorn
         type: bind
-        source: /var/mnt/longhorn
+        source: /var/lib/longhorn
         options:
           - bind
           - rshared

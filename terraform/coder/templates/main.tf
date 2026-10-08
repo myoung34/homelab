@@ -26,12 +26,12 @@ variable "namespace" {
   default     = "coder"
 }
 
-# Every node in this cluster except gpu1 is arm64 (Pi 4 / Rock Pi X); common
-# devcontainer images (including the one below) are amd64-only, so this will
-# always land on gpu1 regardless of nodeSelector - making it explicit here
-# rather than relying on that being implicit. gpu1 has 30GB RAM and Ollama
-# only reserves 3Gi + the GPU itself, so a modest workspace fits alongside
-# it fine, but keep an eye on this if you add several concurrent workspaces.
+# Every node in this cluster except cluster41 is arm64 (Pi 4 / Pi 5);
+# common devcontainer images (including the one below) are amd64-only, so this
+# will always land on cluster41 regardless of nodeSelector - making it explicit
+# here rather than relying on that being implicit. Ollama only reserves 3Gi +
+# the GPU itself there, so a modest workspace fits alongside it, but keep an
+# eye on this if you add several concurrent workspaces.
 variable "node_arch" {
   type    = string
   default = "amd64"

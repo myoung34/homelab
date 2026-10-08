@@ -43,19 +43,19 @@ spec:
       # qwen3:4b needs ~2.5-3GB resident for weights; the requests below are
       # a floor so the scheduler avoids nodes that can't actually fit it.
       #
-      # GPU offload (AMD Radeon RX 9060 / gfx1201 via ROCm): requesting
+      # GPU offload (AMD Radeon AI PRO R9700 32GB / gfx1201 via ROCm): requesting
       # amd.com/gpu below requires the siderolabs/amdgpu Talos extension on
       # the node plus the ROCm/k8s-device-plugin DaemonSet running in the
       # cluster - both are set up outside this manifest. The device plugin
       # injects /dev/kfd + /dev/dri itself; no manual hostPath mount needed.
-      # The resource request alone would already constrain scheduling to
-      # gpu1 (it's the only node that will ever advertise amd.com/gpu), but
-      # pin it explicitly too so intent isn't implicit.
+      # The amd.com/gpu request already limits this to GPU nodes; the NFD label
+      # (k8s/prod/node-feature-discovery/amd-gpu-nodefeaturerule.yaml) makes
+      # that intent explicit without pinning a hostname.
       nodeSelector:
-        kubernetes.io/hostname: gpu1
+        feature.node.kubernetes.io/amd-gpu: "true"
       initContainers:
       - name: pull-model
-        image: "ollama/ollama:rocm"
+        image: "ollama/ollama:0.40.2-rocm"
         imagePullPolicy: IfNotPresent
         env:
         # Default splits each blob into many concurrent chunk downloads: fine
@@ -65,7 +65,7 @@ spec:
         - name: OLLAMA_MAX_TRANSFER_STREAMS
           value: "1"
         # If gfx1201 gets detected but Ollama still falls back to CPU (a
-        # known rough edge for the 9060 as of mid-2026), uncomment and set
+        # known rough edge for RDNA4 as of mid-2026), uncomment and set
         # this to a supported target to force recognition:
         # - name: HSA_OVERRIDE_GFX_VERSION
         #   value: "11.0.0"
@@ -91,7 +91,7 @@ spec:
             amd.com/gpu: 1
       containers:
       - name: ollama
-        image: "ollama/ollama:rocm"
+        image: "ollama/ollama:0.40.2-rocm"
         imagePullPolicy: IfNotPresent
         env:
         - name: OLLAMA_HOST
@@ -101,7 +101,7 @@ spec:
         # Default (5m) unloads the model from VRAM between requests, paying
         # a ~150s reload (mostly reading the blob off the Longhorn-backed
         # PVC) on the next one. This node's dedicated to Ollama and qwen3:4b
-        # only uses ~3GB of the card's 16GB, so just keep it resident.
+        # only uses ~3GB of the card's 32GB, so just keep it resident.
         - name: OLLAMA_KEEP_ALIVE
           value: "-1"
         # See the HSA_OVERRIDE_GFX_VERSION note on the pull-model

@@ -1,0 +1,18 @@
+# Labels any node with an AMD GPU (PCI vendor 1002, class 0300 VGA or 0380
+# display/compute) as feature.node.kubernetes.io/amd-gpu=true, the same label
+# ROCm/k8s-device-plugin's own example rule uses. The device plugin DaemonSet
+# and GPU workloads select on it, so a GPU-less amd64 node doesn't match.
+apiVersion: nfd.k8s-sigs.io/v1alpha1
+kind: NodeFeatureRule
+metadata:
+  name: amd-gpu
+spec:
+  rules:
+    - name: amd-gpu
+      labels:
+        "feature.node.kubernetes.io/amd-gpu": "true"
+      matchFeatures:
+        - feature: pci.device
+          matchExpressions:
+            vendor: {op: In, value: ["1002"]}
+            class: {op: In, value: ["0300", "0380"]}

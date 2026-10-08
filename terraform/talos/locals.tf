@@ -10,12 +10,14 @@ locals {
   rpi5_overlay_sha   = "0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791" # pragma: allowlist secret
   rpi5_overlay_image = "factory.talos.dev/installer/${local.rpi5_overlay_sha}:${local.talos_version}"
 
-  # Bare-metal AMD (amdgpu) node - already imaged/booted at v1.13.8, independent
-  # of the shared talos_version above. Regenerate via:
+  # Bare-metal amd64 + Radeon (amdgpu) schematic from bare.yaml. No overlay on
+  # amd64; siderolabs/amdgpu ships both the firmware and kernel modules the
+  # Radeon AI PRO R9700 / gfx1201 needs; siderolabs/amd-ucode is CPU microcode
+  # for the Ryzen 5 5500. Regenerate via:
   #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
   # and drop the returned "id" in below.
-  bare_metal_sha   = "REPLACE_ME_WITH_FACTORY_SCHEMATIC_ID" # pragma: allowlist secret
-  bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:v1.13.8"
+  bare_metal_sha   = "13c173c950c52ef495c57dc2017fc310801f8e04f0ca77efb4c8eda33f03a3c2" # pragma: allowlist secret
+  bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:${local.talos_version}"
 
   extensions = {
     tailscale = {
@@ -121,21 +123,20 @@ locals {
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "50GB"
       },
-      "192.168.0.251" = {
-        hostname           = "gpu1"
+      "192.168.1.32" = {
+        hostname           = "cluster41"
         install_disk       = "/dev/nvme0n1"
         image              = local.bare_metal_image
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
-        # nvme0n1/nvme1n1 device names are NOT stable across reboots on this
-        # box (the two NVMe disks have been observed to swap names), so the
-        # disk must be targeted by a selector, never a hardcoded device path
-        # (rules out machine.disks). 1TB NVMe, single-disk: same disk serves
+        # cluster{row}{column}: this 4U sits alone on row 4.
+        # Radeon AI PRO R9700 32GB. 1TB NVMe, single-disk: same disk serves
         # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
-        # (floor of 900GB, grows to fill whatever's left). Longhorn doesn't
-        # see this disk's full size due to an unresolved Talos mount-stacking
-        # bug (siderolabs/talos#13069) masking it behind EPHEMERAL.
+        # (floor of 900GB, grows to fill whatever's left). Disk is targeted by
+        # selector, not device path, in case NVMe names aren't stable across
+        # reboots. Longhorn uses /var/mnt/longhorn directly as its disk; see
+        # templates/longhorn-dedicated-volume.yaml.tmpl.
         longhorn_disk_selector = "disk.transport == \"nvme\""
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "900GB"

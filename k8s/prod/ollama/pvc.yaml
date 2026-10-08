@@ -1,3 +1,5 @@
+# Dynamically provisioned: the model cache is re-pullable (the pull-model
+# initContainer fetches it on first start), so there's nothing to restore.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,6 +11,5 @@ spec:
   resources:
     requests:
       storage: 20Gi
-  storageClassName: longhorn-static
+  storageClassName: longhorn
   volumeMode: Filesystem
-  volumeName: ollama-data
