@@ -5,6 +5,7 @@ customization:
     - selinux=0
   systemExtensions:
     officialExtensions:
+      - siderolabs/amd-ucode
       - siderolabs/amdgpu
       - siderolabs/iscsi-tools
       - siderolabs/tailscale

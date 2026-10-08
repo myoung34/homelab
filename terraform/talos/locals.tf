@@ -12,10 +12,11 @@ locals {
 
   # Bare-metal amd64 + Radeon (amdgpu) schematic from bare.yaml. No overlay on
   # amd64; siderolabs/amdgpu ships both the firmware and kernel modules the
-  # Radeon AI PRO R9700 / gfx1201 needs. Regenerate via:
+  # Radeon AI PRO R9700 / gfx1201 needs; siderolabs/amd-ucode is CPU microcode
+  # for the Ryzen 5 5500. Regenerate via:
   #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
   # and drop the returned "id" in below.
-  bare_metal_sha   = "acec9e2cd02fa32eaa282bebcb4b1d5c0be65e0fe9b8b6df91bac602d75eac07" # pragma: allowlist secret
+  bare_metal_sha   = "ebe053f50055a2795457cda9fbe4f0f144a4f2e89121cce65984a6f55411518e" # pragma: allowlist secret
   bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:${local.talos_version}"
 
   extensions = {
