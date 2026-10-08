@@ -29,7 +29,7 @@ spec:
   diskSelector: []
   encrypted: false
   freezeFilesystemForSnapshot: ignored
-  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-30f389c075bb4e9f&volume=hass-data
+  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-030525a638614404&volume=hass-data
   frontend: blockdev
   nodeSelector: []
   numberOfReplicas: 2

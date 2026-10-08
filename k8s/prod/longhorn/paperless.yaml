@@ -29,7 +29,7 @@ spec:
   diskSelector: []
   encrypted: false
   freezeFilesystemForSnapshot: ignored
-  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-eab8cd6ce2184d9e&volume=paperless-ngx-data
+  fromBackup: s3://longhorn@192.168.3.2/backups/?backup=backup-10b5d216f1204497&volume=paperless-ngx-data
   frontend: blockdev
   nodeSelector: []
   numberOfReplicas: 2
