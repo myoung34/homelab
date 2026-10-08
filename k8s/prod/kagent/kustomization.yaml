@@ -158,7 +158,7 @@ helmCharts:
     # default-model-config, which agent.yaml references and which the UI hands
     # to anything created through the wizard.
     #
-    # Provider is Anthropic rather than OpenAI because claude-opus-5 is served
+    # Provider is Anthropic rather than OpenAI because claude-opus-5-5 is served
     # on /v1/messages only. kagent's Anthropic provider speaks that natively,
     # and `baseUrl` redirects it at Aperture. Note the missing /v1 - the
     # Anthropic client appends /v1/messages itself, where the OpenAI client
@@ -172,7 +172,7 @@ helmCharts:
     # On model ids: `curl -s http://ai.king-gila.ts.net/v1/models` splits three
     # ways on metadata.provider.upstream.
     #   - upstream=anthropic / upstream=openai are our own subscriptions, free
-    #     to us. claude-opus-5 is one of these.
+    #     to us. claude-opus-5-5 is one of these.
     #   - upstream=spool (every vendor-prefixed id: anthropic/..., google/...,
     #     deepseek/...) is Aperture-provided and billed. Most answer
     #     402 "payment method required" - anthropic/claude-haiku-4.5 does.
@@ -187,7 +187,7 @@ helmCharts:
       default: anthropic
       anthropic:
         provider: Anthropic
-        model: "claude-opus-5"
+        model: "claude-opus-5-5"
         apiKeySecretRef: aperture-model-key  # pragma: allowlist secret
         apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
         apiKey: "unused-aperture-authenticates-by-tailnet-identity"  # pragma: allowlist secret
