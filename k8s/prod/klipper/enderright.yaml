@@ -133,6 +133,12 @@ spec:
             - name: printer-data
               mountPath: /opt/printer_data/run
               subPath: run
+            # moonraker's image also declares VOLUME on database/; without this
+            # it lands on node-local ephemeral disk and fluidd settings (printer
+            # name, etc.) and print history vanish on every pod restart.
+            - name: printer-data
+              mountPath: /opt/printer_data/database
+              subPath: database
             # mkuf's slim moonraker image lacks klipper's example configs and
             # docs directories; moonraker warns on their absence. Mount empty
             # stubs so the paths exist and validation passes.
