@@ -17,7 +17,9 @@ that printer's MCU plugged in via USB. The UI lives in `k8s/prod/fluidd`.
    `ls /dev/serial/by-id/` (`usb-Klipper_<mcu>_<SERIAL>-if00`).
 2. Uncomment/add its rule in `nodefeaturerule.yaml` with that serial.
 3. Copy `enderright-configmap.yaml` and `enderright.yaml`, s/enderright/<name>/g,
-   swap the by-id path (2 places in the Deployment) and the printer.cfg contents.
+   and swap the printer.cfg contents (its `[mcu] serial` by-id path). The
+   Deployment mounts host `/dev` so the MCU re-enumerating on reset doesn't
+   strand klippy on a dead device node.
 4. Add both files to `kustomization.yaml`.
 5. Remove the generic `usb-02_1d50_614e.present` fallback affinity term from all
    printer Deployments — every Klipper MCU shares VID/PID `1d50:614e`, so with
