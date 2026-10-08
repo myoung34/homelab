@@ -24,6 +24,14 @@ spec:
       labels:
         app.kubernetes.io/name: klipper
         app.kubernetes.io/instance: enderleft
+      annotations:
+        # klippy.log is a file on the PVC (Klipper's -l), not stdout; the
+        # Datadog agent tails it through its kubelet-pods mount (see
+        # k8s/prod/datadog). Stats lines (~1/s, ~40 MB/day) are dropped; they
+        # stay in the file, readable through Moonraker.
+        ad.datadoghq.com/klipper.logs: '[{"type": "file", "path": "/host/var/lib/kubelet/pods/*/volumes/kubernetes.io~csi/klipper-enderleft-data/mount/logs/klippy.log", "source": "klipper", "service": "klippy", "log_processing_rules": [{"type": "exclude_at_match", "name": "drop_stats", "pattern": "^Stats "}]}]'
+        # Moonraker already logs to stdout; this only tags it.
+        ad.datadoghq.com/moonraker.logs: '[{"source": "moonraker", "service": "moonraker"}]'
     spec:
       initContainers:
         # Seed configs onto the PVC on first boot only; SAVE_CONFIG and fluidd

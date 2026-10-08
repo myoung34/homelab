@@ -33,7 +33,7 @@
 # edit existing ones, because create_or_update_file replaces the whole file
 # and they have no way to obtain the bytes they are not changing. There is
 # no workaround via raw.githubusercontent.com - aperture_web_fetch runs
-# readability extraction and does not round-trip bytes. prompt.yaml tells
+# readability extraction and does not round-trip bytes. homelab-agent-prompt.yaml tells
 # agents to stop and ask the operator to paste the content instead.
 #
 # Observed 2026-10-07 (session 01a113d0-62d8-781c-bd70-99f58a89b57d):
@@ -81,7 +81,7 @@
 #     response as a stub, burned ~8.5k context tokens on a 27,000-result
 #     repo search, and asked the operator for a login the response had
 #     already given it. Over-warning about stubs made it see stubs in valid
-#     data. prompt.yaml now says to verify rather than predict.
+#     data. homelab-agent-prompt.yaml now says to verify rather than predict.
 #
 # Measured 2026-10-06, by calling Aperture's /v1/mcp directly:
 #
