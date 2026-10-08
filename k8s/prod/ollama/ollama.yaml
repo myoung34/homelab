@@ -145,4 +145,4 @@ spec:
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: ollama-models
+          claimName: ollama-data
