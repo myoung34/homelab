@@ -1,0 +1,166 @@
+# printer-mcp: the MCP tool server behind the printer-agent kagent Agent
+# (agent.yaml). Source: apps/printer-agent; image built by
+# .github/workflows/printer-agent.yaml.
+#
+# Reaches each printer's Moonraker over its in-cluster Service
+# (<printer>.klipper.svc:7125) - no new networking. Moonraker trusts in-cluster
+# clients (k8s/prod/klipper/moonraker-configmap.yaml), so no credential is
+# needed for it.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: printer-agent
+  namespace: printer-agent
+---
+# Read-only view of the printer pods, so "printer offline" can be told apart:
+# pod Pending because the MCU's USB serial label vanished, node down, or
+# container OOMKilled/crashlooping. pods + events, get/list, klipper only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: printer-agent-read
+  namespace: klipper
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "events"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: printer-agent-read
+  namespace: klipper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: printer-agent-read
+subjects:
+  - kind: ServiceAccount
+    name: printer-agent
+    namespace: printer-agent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: printer-mcp
+  namespace: printer-agent
+  labels:
+    app.kubernetes.io/name: printer-agent
+spec:
+  selector:
+    app.kubernetes.io/name: printer-agent
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: printer-agent
+  namespace: printer-agent
+  labels:
+    app.kubernetes.io/name: printer-agent
+  annotations:
+    secret.reloader.stakater.com/reload: "printer-agent"
+    configmap.reloader.stakater.com/reload: "printer-agent-inventory"
+spec:
+  replicas: 1
+  strategy:
+    # SQLite on an RWO volume: one writer at a time.
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: printer-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: printer-agent
+      annotations:
+        # Scraped by the existing Datadog agent; no Prometheus is run.
+        ad.datadoghq.com/printer-agent.checks: |
+          {"openmetrics": {"instances": [{"openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "printer", "metrics": ["printer_.*"]}]}}
+    spec:
+      serviceAccountName: printer-agent
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: printer-agent
+          image: ghcr.io/myoung34/printer-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # Server-wide ceiling. HIGH_RISK_WRITE allows restart, pause/resume/
+            # cancel, homing, heating, starting prints and ordinary config
+            # applies - each still needs approval in kagent. DANGEROUS (thermal
+            # protection, temperature limits, pins, MCU, kinematic limits) stays
+            # off until this and printers.yaml are raised in a reviewed commit.
+            - name: PRINTER_AGENT_MAX_RISK
+              value: HIGH_RISK_WRITE
+            - name: PRINTER_AGENT_INVENTORY
+              value: /etc/printer-agent/printers.yaml
+            - name: PRINTER_AGENT_DATA_DIR
+              value: /data
+            - name: PRINTER_AGENT_GIT_URL
+              value: https://github.com/myoung34/homelab.git
+            - name: PRINTER_AGENT_GIT_PATHS
+              value: k8s/prod/klipper,k8s/prod/printer-agent
+            - name: PRINTER_AGENT_GITHUB_REPO
+              value: myoung34/homelab
+            - name: PRINTER_AGENT_POLL_INTERVAL
+              value: "30"
+          envFrom:
+            # GITHUB_TOKEN, used only by printer_config_open_pr. Optional: until
+            # the Vault secret exists, that one tool declines and everything
+            # else works.
+            - secretRef:
+                name: printer-agent
+                optional: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+            failureThreshold: 5
+          volumeMounts:
+            - name: inventory
+              mountPath: /etc/printer-agent
+              readOnly: true
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: inventory
+          configMap:
+            name: printer-agent-inventory
+        - name: data
+          persistentVolumeClaim:
+            claimName: printer-agent-data
+        - name: tmp
+          emptyDir: {}

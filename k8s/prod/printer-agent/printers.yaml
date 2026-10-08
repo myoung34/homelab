@@ -1,0 +1,75 @@
+# Printer inventory for printer-agent. Adding a printer is an entry here - no
+# code change. Facts below come from k8s/prod/klipper (Deployments, NFD rules,
+# printer.cfg seeds); keep them in step when a printer changes.
+#
+# policy.max_risk is the per-printer ceiling; the server-wide ceiling is
+# PRINTER_AGENT_MAX_RISK in deployment.yaml. The lower of the two wins, and
+# kagent's requireApproval applies on top for every write tool.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: printer-agent-inventory
+  namespace: printer-agent
+data:
+  printers.yaml: |
+    printers:
+      - id: enderbig
+        name: enderbig
+        manufacturer: Creality
+        model: Ender 5
+        klipper:
+          host: klipper
+          moonraker_url: http://enderbig.klipper.svc.cluster.local:7125
+          fluidd_url: https://fluidd
+        hardware:
+          mcu: {serial: "320014000350415339373620", chip: stm32g0b1xx}
+          board: BTT SKR mini e3 v3
+          extruder: MicroSwiss NG direct drive
+          bed: heated, 4-screw
+          probe: BLTouch (virtual Z endstop, safe_z_home)
+          endstops: X/Y microswitch, Z via probe
+          motors: TMC2209 UART
+        capabilities: {camera: false, bed_mesh: true, input_shaper: false, filament_sensor: true,
+                       accelerometer: false}
+        git: {path: k8s/prod/klipper/enderbig-configmap.yaml}
+        kubernetes: {namespace: klipper, selector: app.kubernetes.io/instance=enderbig}
+        policy: {max_risk: HIGH_RISK_WRITE, max_extruder_temp: 260, max_bed_temp: 100}
+
+      - id: enderleft
+        name: enderleft
+        manufacturer: Creality
+        model: Ender 3
+        klipper:
+          host: klipper
+          moonraker_url: http://enderleft.klipper.svc.cluster.local:7125
+          fluidd_url: https://fluidd
+        hardware:
+          mcu: {serial: "4800420008504E5238363120", chip: stm32g0b1xx}
+          board: BTT SKR mini e3 v3
+          probe: BLTouch (virtual Z endstop, safe_z_home)
+          endstops: X/Y microswitch, Z via probe
+          motors: TMC2209 UART
+        capabilities: {camera: false, bed_mesh: true, input_shaper: false, filament_sensor: false,
+                       accelerometer: false}
+        git: {path: k8s/prod/klipper/enderleft-configmap.yaml}
+        kubernetes: {namespace: klipper, selector: app.kubernetes.io/instance=enderleft}
+        policy: {max_risk: HIGH_RISK_WRITE, max_extruder_temp: 250, max_bed_temp: 100}
+
+      # Commented out in k8s/prod/klipper/kustomization.yaml, so not deployed.
+      - id: enderright
+        name: enderright
+        enabled: false
+        manufacturer: Creality
+        model: Ender 3
+        klipper:
+          host: klipper
+          moonraker_url: http://enderright.klipper.svc.cluster.local:7125
+          fluidd_url: https://fluidd
+        hardware:
+          mcu: {serial: "43002E000C50564837383420", chip: stm32g0b1xx}
+          board: BTT SKR mini e3 v3
+          probe: BLTouch
+        capabilities: {camera: false, bed_mesh: true}
+        git: {path: k8s/prod/klipper/enderright-configmap.yaml}
+        kubernetes: {namespace: klipper, selector: app.kubernetes.io/instance=enderright}
+        policy: {max_risk: HIGH_RISK_WRITE}

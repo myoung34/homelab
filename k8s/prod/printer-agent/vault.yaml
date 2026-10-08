@@ -1,0 +1,31 @@
+---
+# secret/printer-agent holds GITHUB_TOKEN: a fine-grained token scoped to
+# myoung34/homelab with contents:write + pull-requests:write, used only by
+# printer_config_open_pr (which refuses the default branch and never merges).
+# Optional - see envFrom in deployment.yaml.
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: printer-agent
+  namespace: printer-agent
+spec:
+  vaultAuthRef: printer-agent
+  mount: secret/
+  type: kv-v2
+  path: printer-agent
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: printer-agent
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: printer-agent
+  namespace: printer-agent
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: printer-agent
+    serviceAccount: printer-agent

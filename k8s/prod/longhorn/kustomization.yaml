@@ -17,6 +17,7 @@ resources:
   #- klipper-enderright.yaml
   - klipper-enderleft.yaml
   - klipper-enderbig.yaml
+  - printer-agent.yaml
 
 patches:
   - target:

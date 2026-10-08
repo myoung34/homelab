@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# No kustomization-level namespace: resources span printer-agent (the MCP
+# server), klipper (a read-only Role) and kagent (the Agent, its
+# RemoteMCPServer and prompts), plus a cluster-scoped PV. Each carries an
+# explicit metadata.namespace instead, as in k8s/prod/klipper.
+resources:
+  - namespace.yaml
+  - vault.yaml
+  - storage.yaml
+  - printers.yaml
+  - deployment.yaml
+  - prompt.yaml
+  - agent.yaml

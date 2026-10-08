@@ -1,0 +1,40 @@
+# SQLite for what nothing else keeps: config versions over time, which config
+# each print ran with (known-good/known-bad), proposals and the audit log. Plus
+# the read-only homelab clone. Longhorn volume in k8s/prod/longhorn/printer-agent.yaml
+# so the existing recurring backup jobs cover it.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: printer-agent-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  csi:
+    driver: driver.longhorn.io
+    fsType: ext4
+    volumeAttributes:
+      diskSelector: ""
+      nodeSelector: ""
+      numberOfReplicas: "2"
+      staleReplicaTimeout: "20"
+    volumeHandle: printer-agent-data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: longhorn-static
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: printer-agent-data
+  namespace: printer-agent
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: longhorn-static
+  volumeMode: Filesystem
+  volumeName: printer-agent-data

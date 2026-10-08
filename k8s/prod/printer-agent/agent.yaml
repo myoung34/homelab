@@ -1,0 +1,161 @@
+# The printer-agent kagent Agent and the RemoteMCPServer it uses.
+#
+# Both live in the kagent namespace (next to default-model-config and the
+# kagent-tool-server/aperture servers they reference) but are owned by this
+# Argo CD app, not k8s/prod/kagent. That keeps them out of the kagent app's
+# unnamed `kind: Agent` patch, which adds 16 general-purpose dev skills and the
+# -full sandbox image - neither is wanted for an agent that can move hardware.
+#
+# Least privilege, per tool source:
+#   printer-mcp         - printer tools; every write tool is in requireApproval
+#   kagent-tool-server  - four read-only k8s tools (its SA is read-only anyway)
+#   aperture            - web search/fetch only, for Klipper documentation
+# No GitHub, Zapier, Drive or Datadog tools: config PRs go through
+# printer_config_open_pr, which refuses main and never merges.
+---
+apiVersion: kagent.dev/v1alpha2
+kind: RemoteMCPServer
+metadata:
+  name: printer-mcp
+  namespace: kagent
+spec:
+  description: "printer-agent: Klipper/Moonraker diagnostics and gated printer operations"
+  protocol: STREAMABLE_HTTP
+  url: http://printer-mcp.printer-agent.svc.cluster.local:8080/mcp
+  # printer_what_happened reads several logs and can take a while on a Pi.
+  timeout: 120s
+  sseReadTimeout: 5m0s
+---
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: printer-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: >-
+    Klipper engineer for the homelab's 3D printers: diagnoses failures from
+    Moonraker state, klippy.log, config and Git history with explicit evidence
+    levels; operates printers and applies config fixes only with approval.
+  declarative:
+    modelConfig: default-model-config
+    stream: true
+    promptTemplate:
+      dataSources:
+      - name: printer-agent-prompts
+        alias: printer
+    systemMessage: |
+      {{include "printer/role"}}
+
+      {{include "printer/evidence"}}
+
+      {{include "printer/environment"}}
+
+      {{include "printer/workflows"}}
+
+      {{include "printer/safety"}}
+    tools:
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: printer-mcp
+        # Pinned allowlist (an omitted list would pick up any future tool
+        # automatically). Generated from the server's tool surface; the
+        # server's test suite fails if its tools change without this list.
+        toolNames:
+        - printer_list
+        - printer_status
+        - printer_readiness
+        - printer_temperatures
+        - printer_logs
+        - printer_gcode_console
+        - printer_print_history
+        - printer_classify_failures
+        - printer_what_happened
+        - printer_diagnose
+        - printer_config_get
+        - printer_config_explain
+        - printer_config_validate
+        - printer_config_diff
+        - printer_config_drift
+        - printer_config_history
+        - printer_compare
+        - printer_gcode_inspect
+        - printer_git_log
+        - printer_git_show
+        - printer_git_diff
+        - printer_git_blame
+        - printer_calibration
+        - printer_taxonomy
+        - printer_endstops
+        - printer_camera_snapshot
+        - printer_audit_log
+        - printer_probe_query
+        - printer_config_propose
+        - printer_restart
+        - printer_print_pause
+        - printer_print_resume
+        - printer_print_cancel
+        - printer_print_start
+        - printer_home
+        - printer_set_temperature
+        - printer_emergency_stop
+        - printer_config_apply
+        - printer_config_open_pr
+        # Human-in-the-loop: kagent pauses and asks before each of these. The
+        # server enforces its own risk ceiling and preconditions on top.
+        requireApproval:
+        - printer_restart
+        - printer_print_pause
+        - printer_print_resume
+        - printer_print_cancel
+        - printer_print_start
+        - printer_home
+        - printer_set_temperature
+        - printer_emergency_stop
+        - printer_config_apply
+        - printer_config_open_pr
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: kagent-tool-server
+        toolNames:
+        - k8s_get_resources
+        - k8s_describe_resource
+        - k8s_get_pod_logs
+        - k8s_get_events
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: aperture
+        toolNames:
+        - aperture_web_search
+        - aperture_web_fetch
+    a2aConfig:
+      skills:
+        - id: printer-diagnostics
+          name: Printer Diagnostics
+          description: Evidence-based diagnosis of Klipper printer failures, homing/probe, thermal and MCU problems.
+          tags: [klipper, 3d-printing, diagnostics]
+          examples:
+            - "Why did my Ender 5 stop during the last print?"
+            - "Why does G28 fail intermittently on enderleft?"
+            - "Is enderbig ready to print?"
+        - id: printer-configuration
+          name: Printer Configuration
+          description: Explain, validate, diff and (with approval) change Klipper configuration, synced to Git.
+          tags: [klipper, gitops]
+          examples:
+            - "What changed in enderbig's config since the last successful print?"
+            - "Compare enderleft and enderbig."
+            - "What should I calibrate next?"
+    deployment:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 768Mi
