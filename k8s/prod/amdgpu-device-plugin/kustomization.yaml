@@ -5,3 +5,4 @@ namespace: amdgpu-device-plugin
 resources:
   - namespace.yaml
   - daemonset.yaml
+  - nodefeaturerule.yaml

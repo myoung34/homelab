@@ -27,20 +27,13 @@ helmCharts:
                 operator: In
                 values:
                 - arm64
+    # The worker runs on every node (including amd64 cluster41) so its
+    # hardware gets labelled; see k8s/prod/amdgpu-device-plugin/nodefeaturerule.yaml.
     worker:
       resources:
         requests:
           cpu: 5m
           memory: 105M
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values:
-                - arm64
     gc:
       resources:
         requests:

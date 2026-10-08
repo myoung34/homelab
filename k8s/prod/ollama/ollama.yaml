@@ -48,11 +48,11 @@ spec:
       # the node plus the ROCm/k8s-device-plugin DaemonSet running in the
       # cluster - both are set up outside this manifest. The device plugin
       # injects /dev/kfd + /dev/dri itself; no manual hostPath mount needed.
-      # The resource request alone would already constrain scheduling to
-      # cluster41 (the R9700; the only node that advertises amd.com/gpu), but
-      # pin it explicitly too so intent isn't implicit.
+      # The amd.com/gpu request already limits this to GPU nodes; the NFD
+      # label (k8s/prod/amdgpu-device-plugin/nodefeaturerule.yaml) makes that
+      # intent explicit without pinning a hostname.
       nodeSelector:
-        kubernetes.io/hostname: cluster41
+        feature.node.kubernetes.io/amd-gpu: "true"
       initContainers:
       - name: pull-model
         image: "ollama/ollama:0.40.2-rocm"
