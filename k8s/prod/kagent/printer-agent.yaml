@@ -19,6 +19,7 @@ spec:
     Expert on Mark's Klipper 3D printers (enderbig, enderleft, enderright):
     queries Moonraker directly, reads klippy/moonraker logs in Datadog and the
     printer configs, and diagnoses from evidence.
+  # Must match the printer-agent-srt ConfigMap below, which is what srt reads.
   sandbox:
     network:
       allowedDomains:
@@ -76,3 +77,52 @@ spec:
           memory: 256Mi
         limits:
           memory: 768Mi
+      volumes:
+      # srt settings override; see the printer-agent-srt ConfigMap below.
+      - name: srt-settings
+        configMap:
+          name: printer-agent-srt
+      volumeMounts:
+      - name: srt-settings
+        mountPath: /config/srt-settings.json
+        subPath: srt-settings.json
+        readOnly: true
+---
+# srt (the bash sandbox) settings for printer-agent, mounted over the file kagent
+# generates at /config/srt-settings.json (agent deployment volumes below).
+#
+# Why override: kagent's generated file only carries network/filesystem, and
+# bwrap's fresh /proc mount fails in a container ("Can't mount proc on
+# /proc") because the runtime masks paths under the container's /proc and
+# the kernel refuses a new procfs over masked ones. procMount: Unmasked would
+# fix that but needs hostUsers: false, which kagent 0.10.3 cannot set.
+# enableWeakerNestedSandbox makes srt skip that mount; the sandbox then sees
+# the container's own /proc (same uid 1001 processes). Network and
+# filesystem policy are unchanged.
+#
+# allowedDomains here is what srt enforces; keep spec.sandbox.network on the
+# Agent identical so the two never disagree.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: printer-agent-srt
+  namespace: kagent
+data:
+  srt-settings.json: |
+    {
+      "enableWeakerNestedSandbox": true,
+      "network": {
+        "allowedDomains": [
+          "*.klipper.svc.cluster.local"
+        ],
+        "deniedDomains": []
+      },
+      "filesystem": {
+        "denyRead": [],
+        "allowWrite": [
+          ".",
+          "/tmp"
+        ],
+        "denyWrite": []
+      }
+    }

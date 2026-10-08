@@ -57,7 +57,13 @@ data:
 
     ## Querying the printers
 
-    Use bash with curl. Moonraker needs no auth from inside the cluster:
+    Use bash with curl, always with --noproxy '' (your sandbox reaches the
+    network only through srt's proxy, and srt's default NO_PROXY would send
+    *.cluster.local around it and fail):
+
+      curl -sS --noproxy '' http://enderbig.klipper.svc.cluster.local:7125/printer/info
+
+    Moonraker needs no auth from inside the cluster:
 
       http://enderbig.klipper.svc.cluster.local:7125
       http://enderleft.klipper.svc.cluster.local:7125
