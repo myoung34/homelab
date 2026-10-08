@@ -99,8 +99,12 @@ spec:
             - name: printer-data
               mountPath: /opt/printer_data/run
               subPath: run
-            - name: usb-mcu
-              mountPath: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_4800420008504E5238363120-if00
+            # Host /dev, not just the by-id file: a hostPath file mount pins the
+            # ttyACM inode at container start, and the MCU re-enumerates (often
+            # as a new ttyACMn) on every reset/FIRMWARE_RESTART, leaving klippy
+            # with a dead node (ENXIO) until the container restarts.
+            - name: host-dev
+              mountPath: /dev
         - name: moonraker
           image: mkuf/moonraker:latest
           args:
@@ -163,9 +167,9 @@ spec:
             items:
               - key: supervisorctl
                 path: supervisorctl
-        - name: usb-mcu
+        - name: host-dev
           hostPath:
-            path: /dev/serial/by-id/usb-Klipper_stm32g0b1xx_4800420008504E5238363120-if00
+            path: /dev
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
