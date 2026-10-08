@@ -40,8 +40,13 @@ spec:
         app.kubernetes.io/name: ollama
     spec:
       automountServiceAccountToken: true
-      # qwen3:4b needs ~2.5-3GB resident for weights; the requests below are
-      # a floor so the scheduler avoids nodes that can't actually fit it.
+      # Serves qwen3-coder-next (80B MoE, ~3B active, 51GB Q4_K_M) for async
+      # coding agents. It doesn't fit in the 32GB card: llama-server keeps
+      # attention/shared weights plus ~26GB of experts on the GPU and the
+      # remaining ~23GB of expert tensors in host RAM (it does the
+      # --n-cpu-moe style split itself; no knob needed). Clients should use
+      # the tuned `qwen3-coder-next:agent` tag built by pull-model below,
+      # not the bare library tag.
       #
       # GPU offload (AMD Radeon AI PRO R9700 32GB / gfx1201 via ROCm): requesting
       # amd.com/gpu below requires the siderolabs/amdgpu Talos extension on
@@ -69,15 +74,50 @@ spec:
         # this to a supported target to force recognition:
         # - name: HSA_OVERRIDE_GFX_VERSION
         #   value: "11.0.0"
+        # Builds qwen3-coder-next:agent: the library model (which already
+        # carries Qwen's recommended sampling: temperature 1.0, top_p 0.95,
+        # top_k 40) plus load/runtime params that can only be set per
+        # model or per request, never server-wide:
+        #
+        # use_mmap false - the model is 51GB and the node has 32GB of RAM.
+        #   With mmap the CPU-side experts live in page cache and get evicted
+        #   while the GPU half streams in, so the load re-reads from Longhorn
+        #   until it stalls out (observed: >10min, then "timed out waiting
+        #   for llama-server to start"). With it off: ~90-220s load.
+        # num_ctx 131072 - agent sessions run long. KV is cheap on this
+        #   arch (only 12 of 48 layers are full attention): 3GB f16 at 128k.
+        #   Clients sending a different num_ctx force a ~90s+ reload.
+        # num_batch 4096 - sets llama-server -b/-ub. The CPU-resident
+        #   experts make prefill batch-bound; measured on a 24k-token
+        #   prompt (Ollama 0.40.2, R9700):
+        #     512 (default) 333 tok/s prefill, 29.3 tok/s gen
+        #     1024          543              29.1
+        #     2048          857              29.0
+        #     4096         1205              28.3
+        #   Agents read far more than they write (~45:1 input:output in a
+        #   goose bench run), so 3.6x prefill beats -3% gen. Bigger batches
+        #   eat more VRAM (pushing experts to CPU) and host RAM, which is
+        #   already ~24.5GB of 32GB at 4096.
+        #
+        # qwen3:4b was a GPU smoke test with no consumers; it's removed so a
+        # stray request can't evict the coder model (MAX_LOADED_MODELS=1).
         command:
         - /bin/sh
         - -c
         - |
+          set -e
           ollama serve &
           pid=$!
           until ollama list >/dev/null 2>&1; do sleep 1; done
-          ollama pull qwen3:4b
-          ollama rm qwen3:8b || true
+          ollama pull qwen3-coder-next
+          cat > /tmp/Modelfile <<'EOF'
+          FROM qwen3-coder-next
+          PARAMETER use_mmap false
+          PARAMETER num_ctx 131072
+          PARAMETER num_batch 4096
+          EOF
+          ollama create qwen3-coder-next:agent -f /tmp/Modelfile
+          ollama rm qwen3:4b qwen3:8b 2>/dev/null || true
           kill $pid
         volumeMounts:
         - name: data
@@ -93,17 +133,57 @@ spec:
       - name: ollama
         image: "ollama/ollama:0.40.2-rocm"
         imagePullPolicy: IfNotPresent
+        # Serve, then preload qwen3-coder-next:agent in the background so the
+        # ~90-220s load happens at pod start instead of on the first agent
+        # request. `ollama run <model> ""` is Ollama's documented preload;
+        # with KEEP_ALIVE=-1 it then stays resident. The trap forwards
+        # SIGTERM, since sh as PID 1 would otherwise ignore it.
+        command:
+        - /bin/sh
+        - -c
+        - |
+          ollama serve &
+          pid=$!
+          trap 'kill -TERM $pid' TERM INT
+          (
+            until ollama list >/dev/null 2>&1; do sleep 1; done
+            ollama run qwen3-coder-next:agent "" >/dev/null 2>&1 || true
+          ) &
+          wait $pid
         env:
         - name: OLLAMA_HOST
           value: "0.0.0.0:11434"
         - name: OLLAMA_MAX_TRANSFER_STREAMS
           value: "1"
-        # Default (5m) unloads the model from VRAM between requests, paying
-        # a ~150s reload (mostly reading the blob off the Longhorn-backed
-        # PVC) on the next one. This node's dedicated to Ollama and qwen3:4b
-        # only uses ~3GB of the card's 32GB, so just keep it resident.
+        # Default (5m) unloads the model between requests, paying a ~90-220s
+        # reload on the next one. This node's dedicated to Ollama, so keep
+        # the coder model resident.
         - name: OLLAMA_KEEP_ALIVE
           value: "-1"
+        # The coder model needs the whole card plus most of host RAM; a
+        # second loaded model could only fit by evicting it.
+        - name: OLLAMA_MAX_LOADED_MODELS
+          value: "1"
+        # One request at a time. Each extra slot adds its own context (and
+        # Ollama sizes KV per slot), and there's no VRAM/RAM headroom left;
+        # concurrent agents queue instead (OLLAMA_MAX_QUEUE, default 512).
+        - name: OLLAMA_NUM_PARALLEL
+          value: "1"
+        # Default context for requests that don't set num_ctx (e.g. clients
+        # hitting the bare tag); matches the :agent tag so they don't force a
+        # reload at a different size.
+        - name: OLLAMA_CONTEXT_LENGTH
+          value: "131072"
+        # Load-stall timeout (default 5m). A cold load reads 51GB off the
+        # PVC; give a slow disk or busy node headroom rather than failing.
+        - name: OLLAMA_LOAD_TIMEOUT
+          value: "15m"
+        # Deliberately not set, per testing/research:
+        # - OLLAMA_FLASH_ATTENTION: the default (auto) already resolves to
+        #   enabled on this card ("Flash Attention enabled" in load logs).
+        # - OLLAMA_KV_CACHE_TYPE=q8_0: would save ~1.5GB VRAM at 128k, but
+        #   KV is already small here, and quantized KV has quality and speed
+        #   regressions reported on some MoE models. Not worth it untested.
         # See the HSA_OVERRIDE_GFX_VERSION note on the pull-model
         # initContainer above if the GPU isn't actually getting used.
         ports:
@@ -113,10 +193,15 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /root/.ollama
+        # ~23.5GB of host-side expert weights + ~1GB compute buffer at
+        # num_batch 4096, all anonymous memory (no mmap). Requesting it keeps
+        # the scheduler from packing other pods onto the node's last 32GB.
+        # No memory limit: an OOM kill would cost a multi-minute reload.
+        # CPU does real work here too (the CPU-side experts run there).
         resources:
           requests:
-            cpu: 1000m
-            memory: 3Gi
+            cpu: 4000m
+            memory: 26Gi
             amd.com/gpu: 1
           limits:
             amd.com/gpu: 1
