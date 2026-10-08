@@ -71,7 +71,15 @@ spec:
             - "-a"
             - "/opt/printer_data/run/klipper.sock"
             - "/opt/printer_data/config/printer.cfg"
-          resources: {}
+          resources:
+            # Klippy must hit MCU timing deadlines; BestEffort (resources: {})
+            # gets the minimum CFS weight and loses ~100ms slices to
+            # neighbours like the datadog agent (1.4 CPU request), which
+            # shuts the MCU down with "Timer too close". Request only, no CPU
+            # limit: a limit would add CFS throttling, the same failure.
+            requests:
+              cpu: 300m
+              memory: 128Mi
           securityContext:
             # Run as root so klipper can open the USB serial (0600 root:root).
             # Container is already privileged for USB access, so this is not
@@ -110,7 +118,10 @@ spec:
           args:
             - "-d"
             - "/opt/printer_data"
-          resources: {}
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
           securityContext:
             # Klipper's unix socket is created as root:root; moonraker needs
             # to connect to it, so run as the same UID.
