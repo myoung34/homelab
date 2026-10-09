@@ -178,6 +178,27 @@ spec:
         # PVC; give a slow disk or busy node headroom rather than failing.
         - name: OLLAMA_LOAD_TIMEOUT
           value: "15m"
+        # Cap llama-server's host-RAM prompt state. Ollama has no knob for
+        # these, but the llama-server it spawns inherits this env and reads
+        # LLAMA_ARG_* for any flag Ollama doesn't pass itself.
+        #
+        # Defaults are an 8GiB prompt cache plus up to 32 context checkpoints
+        # per slot (~75MiB each; qwen3next is hybrid/recurrent, so rolling
+        # back needs a saved state). Both live in host RAM, and this node has
+        # ~3.5GB free once the CPU-side experts are loaded. A long session
+        # grows them until the kernel OOM-kills Ollama (seen twice on
+        # 2026-10-09: a 60k-token prompt took MemAvailable from 3.3GB to 0;
+        # the cache logged a 67k-token prompt at 1.8GiB). Every kill costs a
+        # 90s+ reload and the in-flight agent turn.
+        #
+        # 1GiB still holds a printer-agent-sized prompt so switching between
+        # agents doesn't always re-read it; homelab-agent's ~64k prompt won't
+        # fit and gets re-read (~55s) after another agent has run. 8
+        # checkpoints (~600MiB) is plenty for append-only agent turns.
+        - name: LLAMA_ARG_CACHE_RAM
+          value: "1024"
+        - name: LLAMA_ARG_CTX_CHECKPOINTS
+          value: "8"
         # Deliberately not set, per testing/research:
         # - OLLAMA_FLASH_ATTENTION: the default (auto) already resolves to
         #   enabled on this card ("Flash Attention enabled" in load logs).
