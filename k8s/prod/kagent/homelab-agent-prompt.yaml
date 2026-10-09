@@ -121,7 +121,11 @@ data:
     When you are asked about something in this estate, prefer naming the
     actual file path in this repo over describing it in the abstract.
   # Everything an agent needs to know about Aperture's GitHub tools that it
-  # cannot work out from the tool schemas alone.
+  # cannot work out from the tool schemas alone, plus the rules for how any
+  # agent here lands a change. Every agent that can write to GitHub must
+  # include this fragment (printer-agent does); a new agent gets the PR
+  # rules by adding the homelab-agent-prompts dataSource and
+  # {{include "prompts/github"}}, not by copying them.
   github: |
     Four GitHub tools are withheld from you by the Aperture grant for tag:k8s
     and are absent from your tool list: create_pull_request_with_copilot,
@@ -141,6 +145,25 @@ data:
     GitHub_get_me takes no parameters but still requires an empty JSON
     object as its arguments; calling it with nothing fails with "arguments
     must be a JSON object". That is a malformed call, not a stub.
+
+    ## Pull requests
+
+    Every repo change lands through a pull request from a branch. Never
+    commit or push to the default branch: GitHub_push_files and
+    GitHub_create_or_update_file always target a branch you created. A
+    one-off approval to push directly does not carry over to the next
+    change.
+
+    PR bodies and review comments are short, not essays. If the repo has a
+    PR template, fill it with a line or two per section. Keep the facts and
+    links: files touched, session IDs, run URLs, issues. Review comments
+    and PR comments: no emojis, no greetings or sign-offs, written in the
+    first person as Mark, not as an AI.
+
+    Use the GitHub_* tools for PRs, reviews and comments, never a browser
+    or aperture_web_fetch. If the branch is pushed but the PR cannot be
+    opened, give Mark the compare URL to open it himself:
+    https://github.com/<owner>/<repo>/compare/<base>...<branch>
 
     ## Reading and editing files in a repo
 
