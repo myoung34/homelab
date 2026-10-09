@@ -90,19 +90,7 @@ resource "tailscale_acl" "acl" {
 			"attr":   ["funnel"],
 		},
 		{
-			"target": ["100.125.107.125"],
-			"attr":   ["mullvad"],
-		},
-		{
-			"target": ["100.69.116.77"],
-			"attr":   ["mullvad"],
-		},
-		{
-			"target": ["100.119.170.123"],
-			"attr":   ["mullvad"],
-		},
-		{
-			"target": ["100.112.88.4"],
+			"target": ["100.69.116.76"],
 			"attr":   ["mullvad"],
 		},
 		{
@@ -120,6 +108,5 @@ resource "tailscale_acl" "acl" {
 	//   },
 	// ],
 }
-
   EOF
 }
