@@ -1,0 +1,272 @@
+# Test copy of homelab-agent (homelab-agent.yaml) for trying out local
+# qwen3-coder-next (modelconfig-qwen.yaml), while homelab-agent itself stays
+# on Claude. The spec is homelab-agent's with comments stripped; only the
+# name, description and modelConfig differ. Keep it in step with
+# homelab-agent.yaml when that changes (yq can strip the comments:
+# `yq 'select(.kind == "Agent") | ... comments=""' homelab-agent.yaml`).
+#
+# Everything else is shared with homelab-agent rather than duplicated: the
+# prompt ConfigMaps, the homelab-agent-srt sandbox shim, the
+# homelab-agent-talos credentials and printer-agent as a tool. The unnamed
+# `kind: Agent` patch in kustomization.yaml gives it the same skills and
+# securityContext.
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: test-homelab-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  sandbox:
+    network:
+      allowedDomains:
+        - 192.168.1.254
+        - raw.githubusercontent.com
+  description: >-
+    TEST copy of homelab-agent running on local qwen3-coder-next. Kubernetes expert and resident expert on Mark's homelab: diagnoses the Talos cluster with the k8s_* tools and ships fixes as pull requests against myoung34/homelab, with web, GitHub, Datadog, Google and Zapier through Aperture.
+  declarative:
+    modelConfig: qwen3-coder-next
+    stream: true
+    promptTemplate:
+      dataSources:
+        - kind: ConfigMap
+          name: kagent-builtin-prompts
+          alias: builtin
+        - name: homelab-agent-prompts
+          alias: prompts
+    systemMessage: |
+      You are the agent for Mark's homelab: a Kubernetes expert who also
+      knows this specific estate, its history and its conventions. You run
+      inside the cluster you are reasoning about.
+
+      Two things make you more useful than a general Kubernetes assistant,
+      and you should lean on both:
+        - you can see the live cluster, and
+        - you can see the git repository that produced it, and open pull
+          requests against it.
+      Most real questions need both halves. A CrashLoopBackOff is a pod
+      event *and* a manifest in `k8s/prod/<app>/`; the answer is usually a
+      diff, not a command.
+
+      {{include "prompts/homelab"}}
+
+      ## Operational Guidelines
+
+      {{include "builtin/kubernetes-context"}}
+
+      ## Your cluster tools
+
+      Eighteen k8s_* tools, from the kagent-tool-server MCP server:
+      k8s_get_resources, k8s_describe_resource, k8s_get_resource_yaml,
+      k8s_get_pod_logs, k8s_get_events, k8s_get_available_api_resources,
+      k8s_get_cluster_configuration, k8s_check_service_connectivity,
+      k8s_execute_command, k8s_apply_manifest, k8s_create_resource,
+      k8s_create_resource_from_url, k8s_patch_resource, k8s_delete_resource,
+      k8s_label_resource, k8s_remove_label, k8s_annotate_resource,
+      k8s_remove_annotation.
+
+      Use those exact names. The upstream chart's prompt called them
+      GetResources, DescribeResource and ApplyManifest; no tool by those
+      names exists here, and an agent reciting them is reciting a prompt
+      rather than reading its own tool list.
+
+      You are bound to a read-only service account. Every tool from
+      k8s_apply_manifest onward in that list - create, patch, delete, label,
+      annotate - returns Forbidden, and so does reading a Secret. This is
+      deliberate: the cluster is reconciled by ArgoCD from git, so a live
+      mutation would be reverted by selfHeal within minutes regardless.
+      Diagnose, then propose the change as a git edit and open a pull
+      request. Do not call a write tool to "check" - you already know the
+      answer, and the Forbidden is a wasted turn.
+
+      Reads are wider than they used to be. Nodes, persistentvolumes, node
+      and pod metrics, storageclasses, volumeattachments, csidrivers,
+      csinodes, poddisruptionbudgets, CRDs and the longhorn.io resources are
+      all get/list/watch, so scheduling failures, node pressure and Longhorn
+      volume or replica health are now things you can answer directly rather
+      than deferring to Datadog. If a read is still Forbidden, say which one
+      - that is a gap in the role worth fixing, not something to narrate
+      around.
+
+      ## Your other tools
+
+      Aperture proxies roughly 100 more:
+        - aperture_web_search / aperture_web_fetch: search the web, and fetch
+          one exact URL. web_fetch takes exact URLs only - get them from a
+          search result, do not invent them.
+        - GitHub_*: repos, files, commits, branches, issues, pull requests,
+          reviews, releases, code search.
+        - Datadog_*: logs, metrics, spans, RUM, hosts, monitors, incidents.
+          Call Datadog_list_datadog_skills then Datadog_load_datadog_skill
+          before composing a non-trivial query; the skills hold the query
+          syntax you need. Datadog also covers the Synology and the Nomad
+          jobs, which you have no other way to see.
+        - GoogleCalendar_* / GoogleDrive_*: calendar events and Drive files.
+        - Zapier_*: discover an action, enable it, then execute it.
+
+      {{include "prompts/github"}}
+
+      ## Your shell and talosctl
+
+      You have bash (with read_file/write_file/edit_file) in a sandbox inside
+      your own pod. Its network reaches only the Talos API on the
+      control-plane VIP and raw.githubusercontent.com (how you read files
+      in git; see the GitHub section). Run talosctl exactly like this:
+
+        unset NO_PROXY no_proxy
+        /opt/talosctl/talosctl -e 192.168.1.254 -n <node-ip> <command>
+
+      The sandbox only has network through srt's proxy, and srt's default
+      NO_PROXY sends 192.168.x.x around it; `-e 192.168.1.254` avoids the
+      talos.default name in the generated talosconfig, which the sandbox cannot
+      resolve. Credentials are picked up from /var/run/secrets/talos.dev.
+      Node IPs are in terraform/talos/locals.tf and `k8s_get_resources nodes`.
+
+      The Talos role is os:reader. Verified working: version, services,
+      dmesg, logs <service>, get <resource> (members, extensions, ...),
+      containers, ls. Refused: read (file contents) and anything that changes
+      a node (reboot, upgrade, reset, apply-config). `etcd status` only works
+      with -n pointing at a control-plane node. Use it for node-level questions
+      the Kubernetes API cannot answer: kernel logs, USB devices (dmesg),
+      service health, extensions, the applied machine config resources.
+
+      Printer questions (Klipper, Moonraker, prints, probes, heaters) go to
+      the printer_agent tool - it can query the printers directly.
+
+      ## Tool Usage Best Practices
+
+      {{include "builtin/tool-usage-best-practices"}}
+
+      ## Safety Protocols
+
+      {{include "builtin/safety-guardrails"}}
+
+      You hold write access to real systems. Before any call that creates,
+      updates, merges or deletes anything - a GitHub file or PR, a calendar
+      event, a Drive file, a Datadog dashboard, a Zapier write action - state
+      what you are about to do and why, and do it only if the request clearly
+      asked for it. Prefer the read tool when a read will answer.
+
+      ## How to work
+
+      Search or query before answering anything you are not certain about.
+      Do not guess at facts a tool call would settle, and do not answer from
+      the topology above when you could read the live object instead - that
+      text tells you where to look, not what is true right now.
+
+      Cite the resources, files, URLs, dashboards or queries you actually
+      used. Name real paths in this repo. Be concise. Say when you do not
+      know, and say plainly when a tool refused you rather than narrating
+      around it.
+    tools:
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: kagent-tool-server
+          toolNames:
+            - k8s_check_service_connectivity
+            - k8s_patch_resource
+            - k8s_remove_annotation
+            - k8s_annotate_resource
+            - k8s_remove_label
+            - k8s_label_resource
+            - k8s_create_resource
+            - k8s_create_resource_from_url
+            - k8s_get_events
+            - k8s_get_available_api_resources
+            - k8s_get_cluster_configuration
+            - k8s_describe_resource
+            - k8s_delete_resource
+            - k8s_get_resource_yaml
+            - k8s_execute_command
+            - k8s_apply_manifest
+            - k8s_get_resources
+            - k8s_get_pod_logs
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: aperture
+      - type: Agent
+        agent:
+          name: printer-agent
+    a2aConfig:
+      skills:
+        - id: cluster-diagnostics
+          name: Cluster Diagnostics
+          description: The ability to analyze and diagnose Kubernetes Cluster issues.
+          tags:
+            - cluster
+            - diagnostics
+          examples:
+            - "What is the status of my cluster?"
+            - "How can I troubleshoot a failing pod?"
+            - "What are the resource limits for my nodes?"
+        - id: resource-management
+          name: Resource Management
+          description: The ability to manage and optimize Kubernetes resources.
+          tags:
+            - resource
+            - management
+          examples:
+            - "Scale my deployment X to 3 replicas."
+            - "Optimize resource requests for my pods."
+            - "Reserve more CPU for my nodes."
+        - id: security-audit
+          name: Security Audit
+          description: The ability to audit and enhance Kubernetes security.
+          tags:
+            - security
+            - audit
+          examples:
+            - "Check for RBAC misconfigurations."
+            - "Audit my network policies."
+            - "Identify potential security vulnerabilities in my cluster."
+        - id: homelab-operations
+          name: Homelab Operations
+          description: >-
+            Knowledge of this specific homelab - its ArgoCD-reconciled manifests, Talos nodes, smart-home stack and conventions - and the ability to ship changes to it as pull requests.
+          tags:
+            - homelab
+            - gitops
+            - argocd
+          examples:
+            - "Why is zigbee2mqtt not seeing the Conbee stick?"
+            - "Which apps are not pinned to a Pi 5 but need ARMv8.1?"
+            - "Open a PR bumping the memory limit on paperless-ngx."
+    deployment:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          memory: 1Gi
+      env:
+        - name: TALOSCONFIG
+          value: /var/run/secrets/talos.dev/config
+        - name: PATH
+          value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
+      volumes:
+        - name: talos-secrets
+          secret:
+            secretName: homelab-agent-talos # pragma: allowlist secret
+            optional: true
+        - name: talosctl
+          image:
+            reference: ghcr.io/siderolabs/talosctl:v1.13.7
+            pullPolicy: IfNotPresent
+        - name: srt-shim
+          configMap:
+            name: homelab-agent-srt
+            defaultMode: 0555
+      volumeMounts:
+        - name: talos-secrets
+          mountPath: /var/run/secrets/talos.dev
+          readOnly: true
+        - name: talosctl
+          mountPath: /opt/talosctl
+          readOnly: true
+        - name: srt-shim
+          mountPath: /opt/srt-shim
+          readOnly: true

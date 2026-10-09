@@ -10,6 +10,7 @@ resources:
   - modelconfig-qwen.yaml
   - homelab-agent-prompt.yaml
   - homelab-agent.yaml
+  - test-homelab-agent.yaml
   - printer-agent-prompt.yaml
   - printer-agent.yaml
   - talos.yaml
@@ -34,7 +35,7 @@ patches:
   #
   # Targeting `kind: Agent` without a name. That used to mean two agents,
   # homelab-agent and the subchart's k8s-agent; with the subchart disabled it
-  # matches homelab-agent alone. Left unnamed on purpose, so a second agent
+  # matches homelab-agent, test-homelab-agent and printer-agent. Left unnamed on purpose, so a second agent
   # added later inherits the skills and the securityContext fix rather than
   # silently going NotReady under PodSecurity baseline.
   #

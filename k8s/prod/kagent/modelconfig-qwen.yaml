@@ -22,7 +22,7 @@
 # Sampling comes from the model (Qwen's recommended temperature 1.0,
 # top_p 0.95, top_k 40), so none is set here.
 #
-# Context budget: homelab-agent's tool schemas alone are ~64k tokens
+# Context budget: test-homelab-agent's tool schemas alone are ~64k tokens
 # (Aperture's ~106 tools measured at 59k, plus the k8s_* tools) and its
 # prompts ~8k, so ~55k of the 128k is left for the conversation. The first
 # turn of a session spends ~50s reading the tools; later turns reuse

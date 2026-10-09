@@ -57,10 +57,11 @@ spec:
     against myoung34/homelab, with web, GitHub, Datadog, Google and Zapier
     through Aperture.
   declarative:
-    # Local qwen3-coder-next (modelconfig-qwen.yaml). This agent's tools eat
-    # ~64k of the 128k context; back to default-model-config (Claude) if
-    # sessions start running out of room.
-    modelConfig: qwen3-coder-next
+    # Claude via Aperture (the chart's default-model-config). Local
+    # qwen3-coder-next is being trialled on test-homelab-agent
+    # (test-homelab-agent.yaml) first; this agent's tools eat ~64k of its
+    # 128k context.
+    modelConfig: default-model-config
     stream: true
     # Two sources. `builtin` is the chart's own ConfigMap and carries the
     # Kubernetes methodology prompts k8s-agent used to include; `prompts` is
