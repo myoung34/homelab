@@ -1,0 +1,41 @@
+# Local qwen3-coder-next on cluster41's R9700 (k8s/prod/ollama), reached
+# through Aperture like every other model so usage shows up in one place.
+# The chart-generated default-model-config (Claude via Aperture) stays as
+# is: the UI wizard hands it out, and switching an agent back is a one-line
+# modelConfig change.
+#
+# Path: kagent -> aperture.kagent.svc (tailscale.yaml) -> Aperture's
+# "ollama" provider -> https://ollama.king-gila.ts.net (tailscale Ingress)
+# -> Ollama. Aperture (tag:ai) needs the tag:ai -> tag:k8s:443 grant in
+# terraform/tailscale/acl.tf to reach that Ingress; without it Aperture
+# answers 502 after a 10s connect timeout.
+#
+# OpenAI provider because Aperture exposes this model on
+# /v1/chat/completions only (openai_chat). Unlike the Anthropic client,
+# the OpenAI client wants /v1 in baseUrl. Aperture authenticates by tailnet
+# identity and ignores the key, but the client insists on one, so this
+# reuses the chart's placeholder Secret (its key name is ANTHROPIC_API_KEY;
+# the value is a dummy either way).
+#
+# Model is the :agent tag, which carries use_mmap=false, num_ctx=131072
+# and num_batch=4096. The bare tag would load with mmap and time out.
+# Sampling comes from the model (Qwen's recommended temperature 1.0,
+# top_p 0.95, top_k 40), so none is set here.
+#
+# Context budget: homelab-agent's tool schemas alone are ~64k tokens
+# (Aperture's ~106 tools measured at 59k, plus the k8s_* tools) and its
+# prompts ~8k, so ~55k of the 128k is left for the conversation. The first
+# turn of a session spends ~50s reading the tools; later turns reuse
+# Ollama's prompt cache as long as only one agent is talking to it.
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: qwen3-coder-next
+  namespace: kagent
+spec:
+  provider: OpenAI
+  model: "qwen3-coder-next:agent"
+  apiKeySecret: aperture-model-key  # pragma: allowlist secret
+  apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
+  openAI:
+    baseUrl: "http://aperture.kagent.svc.cluster.local/v1"

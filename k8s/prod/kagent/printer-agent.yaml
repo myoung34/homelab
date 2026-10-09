@@ -34,7 +34,8 @@ spec:
       - "*.klipper.svc.cluster.local"
       - raw.githubusercontent.com
   declarative:
-    modelConfig: default-model-config
+    # Local qwen3-coder-next (modelconfig-qwen.yaml).
+    modelConfig: qwen3-coder-next
     stream: true
     promptTemplate:
       dataSources:

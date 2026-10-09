@@ -50,6 +50,16 @@ resource "tailscale_acl" "acl" {
 			"dst": ["tag:ai"],
 			"ip":  ["tcp:80", "tcp:443", "icmp:*"],
 		},
+		{
+			// Aperture (tag:ai) -> self-hosted model providers behind the
+			// tailscale operator's Ingresses (tag:k8s), today just
+			// https://ollama.king-gila.ts.net. tag:ai has no other outbound
+			// rule, so without this Aperture times out connecting and answers
+			// 502. 443 only: Ingress proxies serve TLS there.
+			"src": ["tag:ai"],
+			"dst": ["tag:k8s"],
+			"ip":  ["tcp:443"],
+		},
 	],
 
 	// Define users and devices that can use Tailscale SSH.
