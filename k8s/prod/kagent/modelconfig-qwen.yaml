@@ -17,8 +17,11 @@
 # reuses the chart's placeholder Secret (its key name is ANTHROPIC_API_KEY;
 # the value is a dummy either way).
 #
-# Model is the :agent tag, which carries use_mmap=false, num_ctx=131072
-# and num_batch=4096. The bare tag would load with mmap and time out.
+# Model is the Heretic-abliterated build (see k8s/prod/ollama/ollama.yaml):
+# same model and speed, with the refusal behaviour ablated out. Its :agent
+# tag carries the qwen3-coder tool-call renderer/parser, use_mmap=false,
+# num_ctx=131072 and num_batch=4096. The bare hf.co tag would load with mmap
+# and time out, and has no tool-call parser.
 # Sampling comes from the model (Qwen's recommended temperature 1.0,
 # top_p 0.95, top_k 40), so none is set here.
 #
@@ -34,7 +37,7 @@ metadata:
   namespace: kagent
 spec:
   provider: OpenAI
-  model: "qwen3-coder-next:agent"
+  model: "qwen3-coder-next-heretic:agent"
   apiKeySecret: aperture-model-key  # pragma: allowlist secret
   apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
   openAI:

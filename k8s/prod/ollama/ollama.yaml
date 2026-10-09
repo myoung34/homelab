@@ -40,13 +40,13 @@ spec:
         app.kubernetes.io/name: ollama
     spec:
       automountServiceAccountToken: true
-      # Serves qwen3-coder-next (80B MoE, ~3B active, 51GB Q4_K_M) for async
-      # coding agents. It doesn't fit in the 32GB card: llama-server keeps
-      # attention/shared weights plus ~26GB of experts on the GPU and the
-      # remaining ~23GB of expert tensors in host RAM (it does the
-      # --n-cpu-moe style split itself; no knob needed). Clients should use
-      # the tuned `qwen3-coder-next:agent` tag built by pull-model below,
-      # not the bare library tag.
+      # Serves a Heretic-abliterated qwen3-coder-next (80B MoE, ~3B active,
+      # 48.5GB i1-Q4_K_M) for async coding agents. It doesn't fit in the 32GB
+      # card: llama-server keeps attention/shared weights plus ~26GB of
+      # experts on the GPU and the rest of the expert tensors in host RAM (it
+      # does the --n-cpu-moe style split itself; no knob needed). Clients
+      # should use the tuned `qwen3-coder-next-heretic:agent` tag built by
+      # pull-model below, not the bare hf.co tag.
       #
       # GPU offload (AMD Radeon AI PRO R9700 32GB / gfx1201 via ROCm): requesting
       # amd.com/gpu below requires the siderolabs/amdgpu Talos extension on
@@ -74,12 +74,28 @@ spec:
         # this to a supported target to force recognition:
         # - name: HSA_OVERRIDE_GFX_VERSION
         #   value: "11.0.0"
-        # Builds qwen3-coder-next:agent: the library model (which already
-        # carries Qwen's recommended sampling: temperature 1.0, top_p 0.95,
-        # top_k 40) plus load/runtime params that can only be set per
-        # model or per request, never server-wide:
+        # Builds qwen3-coder-next-heretic:agent.
         #
-        # use_mmap false - the model is 51GB and the node has 32GB of RAM.
+        # Weights: trohrbaugh/Qwen3-Coder-Next-heretic, Qwen3-Coder-Next with
+        # its refusal direction ablated out of attn.o_proj and mlp.down_proj
+        # by Heretic (github.com/p-e-w/heretic). Same architecture and size,
+        # so inference speed and memory are unchanged; only the weight values
+        # differ. Its card reports 14/100 refusals (stock: 99/100) at KL
+        # divergence 0.071 from stock on harmless prompts - the lowest-KL
+        # Heretic run of this model on Hugging Face. Heretic itself can't run
+        # here: it optimizes in PyTorch on the bf16 checkpoint (~160GB), and
+        # Ollama only serves GGUF. mradermacher's i1-Q4_K_M quant of that
+        # checkpoint is the GGUF pulled below.
+        #
+        # Pulled from hf.co, so the Modelfile restates what the Ollama
+        # library tag carried (from `ollama show qwen3-coder-next
+        # --modelfile`): the qwen3-coder RENDERER/PARSER, which do tool-call
+        # formatting and parsing (the GGUF's own chat template does not), and
+        # Qwen's recommended sampling (temperature 1.0, top_p 0.95, top_k 40).
+        # Then load/runtime params that can only be set per model or per
+        # request, never server-wide:
+        #
+        # use_mmap false - the model is 48.5GB and the node has 32GB of RAM.
         #   With mmap the CPU-side experts live in page cache and get evicted
         #   while the GPU half streams in, so the load re-reads from Longhorn
         #   until it stalls out (observed: >10min, then "timed out waiting
@@ -101,6 +117,9 @@ spec:
         #
         # qwen3:4b was a GPU smoke test with no consumers; it's removed so a
         # stray request can't evict the coder model (MAX_LOADED_MODELS=1).
+        # The stock qwen3-coder-next is removed *before* the pull: the 100Gi
+        # PVC can't hold both 51GB and 48.5GB. Rolling back means re-pulling
+        # it.
         command:
         - /bin/sh
         - -c
@@ -109,14 +128,21 @@ spec:
           ollama serve &
           pid=$!
           until ollama list >/dev/null 2>&1; do sleep 1; done
-          ollama pull qwen3-coder-next
+          ollama rm qwen3-coder-next:agent qwen3-coder-next 2>/dev/null || true
+          ollama pull hf.co/mradermacher/Qwen3-Coder-Next-heretic-i1-GGUF:i1-Q4_K_M
           cat > /tmp/Modelfile <<'EOF'
-          FROM qwen3-coder-next
+          FROM hf.co/mradermacher/Qwen3-Coder-Next-heretic-i1-GGUF:i1-Q4_K_M
+          TEMPLATE {{ .Prompt }}
+          RENDERER qwen3-coder
+          PARSER qwen3-coder
+          PARAMETER temperature 1
+          PARAMETER top_k 40
+          PARAMETER top_p 0.95
           PARAMETER use_mmap false
           PARAMETER num_ctx 131072
           PARAMETER num_batch 4096
           EOF
-          ollama create qwen3-coder-next:agent -f /tmp/Modelfile
+          ollama create qwen3-coder-next-heretic:agent -f /tmp/Modelfile
           ollama rm qwen3:4b qwen3:8b 2>/dev/null || true
           kill $pid
         volumeMounts:
@@ -133,9 +159,9 @@ spec:
       - name: ollama
         image: "ollama/ollama:0.40.2-rocm"
         imagePullPolicy: IfNotPresent
-        # Serve, then preload qwen3-coder-next:agent in the background so the
-        # ~90-220s load happens at pod start instead of on the first agent
-        # request. `ollama run <model> ""` is Ollama's documented preload;
+        # Serve, then preload qwen3-coder-next-heretic:agent in the background
+        # so the ~90-220s load happens at pod start instead of on the first
+        # agent request. `ollama run <model> ""` is Ollama's documented preload;
         # with KEEP_ALIVE=-1 it then stays resident. The trap forwards
         # SIGTERM, since sh as PID 1 would otherwise ignore it.
         command:
@@ -147,7 +173,7 @@ spec:
           trap 'kill -TERM $pid' TERM INT
           (
             until ollama list >/dev/null 2>&1; do sleep 1; done
-            ollama run qwen3-coder-next:agent "" >/dev/null 2>&1 || true
+            ollama run qwen3-coder-next-heretic:agent "" >/dev/null 2>&1 || true
           ) &
           wait $pid
         env:
