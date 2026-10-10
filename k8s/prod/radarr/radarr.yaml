@@ -1,0 +1,159 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: radarr
+    app.kubernetes.io/name: radarr
+  name: radarr
+spec:
+  ports:
+  - name: http
+    port: 7878
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: radarr
+    app.kubernetes.io/name: radarr
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    secret.reloader.stakater.com/reload: radarr
+  labels:
+    app.kubernetes.io/instance: radarr
+    app.kubernetes.io/name: radarr
+  name: radarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: radarr
+      app.kubernetes.io/name: radarr
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: radarr
+        app.kubernetes.io/name: radarr
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: default
+      containers:
+      # The seedbox runs rtorrent with SCGI on a unix socket, so the only
+      # XMLRPC-over-HTTP surface is ruTorrent's httprpc plugin, served by the
+      # per-user lighttpd on :10050 behind htpasswd. This sidecar forwards that
+      # port into the pod's network namespace, so radarr talks to
+      # http://localhost:10050/user-vilpengu/rutorrent/plugins/httprpc/action.php
+      # and the seedbox never has to expose anything beyond sshd.
+      - name: seedbox-tunnel
+        image: alpine:3.24.2
+        command:
+        - sh
+        - '-c'
+        - |
+          set -eu
+          apk add --no-cache openssh-client autossh >/dev/null
+
+          install -d -m 0700 /run/ssh
+          install -m 0600 /vault/SEEDBOX_SSH_KEY /run/ssh/id_ed25519
+
+          # Pinned so a hijacked DNS answer can't silently become our seedbox.
+          # Read off the host itself over an already-trusted session, not keyscan.
+          cat > /run/ssh/known_hosts <<'EOF'
+          lt5-1-87vecchio.pulsedmedia.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkMoxFptrdr+HNzOtfNQP8GakBqEwd57uXt8fMXLpmj
+          EOF
+
+          # -M 0 disables autossh's own echo port; ServerAliveInterval is the
+          # liveness check instead. ExitOnForwardFailure makes a refused bind
+          # kill the ssh process so autossh rebuilds it rather than sitting on
+          # a tunnel that forwards nothing.
+          exec autossh -M 0 -N -T \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=3 \
+            -o ExitOnForwardFailure=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=/run/ssh/known_hosts \
+            -o IdentitiesOnly=yes \
+            -i /run/ssh/id_ed25519 \
+            -L 127.0.0.1:10050:127.0.0.1:10050 \
+            vilpengu@lt5-1-87vecchio.pulsedmedia.com
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - mountPath: /vault
+          name: vault
+          readOnly: true
+      - name: radarr
+        image: lscr.io/linuxserver/radarr:6.4.4
+        imagePullPolicy: IfNotPresent
+        env:
+        # Matches myoung:users on the Synology, so files radarr creates on the
+        # NFS export look like everything else in /volume1/Movies.
+        - name: PUID
+          value: "1026"
+        - name: PGID
+          value: "100"
+        - name: UMASK
+          value: "002"
+        - name: TZ
+          value: "America/Chicago"
+        ports:
+        - containerPort: 7878
+          name: http
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        startupProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 512Mi
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /movies
+          name: movies
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: radarr-config
+      # Library and download landing dir live on the same NFS export on purpose:
+      # /movies/.downloads is the rsync target, so an import is a hardlink
+      # instead of a multi-gigabyte copy across filesystems. Radarr skips
+      # dot-directories when scanning, so .downloads stays out of the library.
+      - name: movies
+        nfs:
+          server: 192.168.3.2
+          path: /volume1/Movies
+      - name: vault
+        secret:
+          secretName: radarr # pragma: allowlist secret
+          defaultMode: 0400
