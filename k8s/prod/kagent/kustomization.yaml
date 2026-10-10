@@ -108,40 +108,40 @@ patches:
               path: skills/ponytail-review
             # Workflow discipline: plan, test, debug, verify, review.
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/brainstorming
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/writing-plans
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/executing-plans
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/test-driven-development
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/systematic-debugging
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/verification-before-completion
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/requesting-code-review
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/receiving-code-review
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/finishing-a-development-branch
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/using-git-worktrees
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/subagent-driven-development
             - url: https://github.com/obra/superpowers
-              ref: v6.4.2
+              ref: v7.0.0
               path: skills/dispatching-parallel-agents
 
 helmCharts:
