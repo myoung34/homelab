@@ -1,0 +1,58 @@
+# Advertises nvidia.com/gpu on nodes with an NVIDIA card. Based on upstream's
+# deployments/static/nvidia-device-plugin.yml. The NVIDIA driver and container
+# toolkit come from Talos extensions (terraform/talos/bare.yaml), so this is
+# all that's needed in-cluster; the GPU operator would only add components we
+# don't use.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin
+  namespace: nvidia-device-plugin
+  labels:
+    app.kubernetes.io/instance: nvidia-device-plugin
+    app.kubernetes.io/name: nvidia-device-plugin
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: nvidia-device-plugin
+      app.kubernetes.io/name: nvidia-device-plugin
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: nvidia-device-plugin
+        app.kubernetes.io/name: nvidia-device-plugin
+    spec:
+      # Only nodes with an NVIDIA GPU, as labelled by NFD
+      # (k8s/prod/node-feature-discovery/nvidia-gpu-nodefeaturerule.yaml).
+      nodeSelector:
+        feature.node.kubernetes.io/nvidia-gpu: "true"
+      runtimeClassName: nvidia
+      priorityClassName: system-node-critical
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      - key: CriticalAddonsOnly
+        operator: Exists
+      containers:
+      - name: nvidia-device-plugin
+        image: "nvcr.io/nvidia/k8s-device-plugin:v0.20.1"
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 15m
+            memory: 64M
+        volumeMounts:
+        - name: device-plugin
+          mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+      - name: device-plugin
+        hostPath:
+          path: /var/lib/kubelet/device-plugins
+          type: Directory

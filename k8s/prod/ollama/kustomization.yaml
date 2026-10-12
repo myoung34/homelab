@@ -5,5 +5,7 @@ namespace: ollama
 resources:
   - namespace.yaml
   - ollama.yaml
+  - bonsai.yaml
+  - pv.yaml
   - pvc.yaml
   - tailscale.yaml

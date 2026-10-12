@@ -1,0 +1,9 @@
+# The nvidia-container-toolkit Talos extension registers a containerd runtime
+# handler named "nvidia"; this exposes it to pods. NVIDIA workloads (and the
+# device plugin itself, which needs NVML) must set runtimeClassName: nvidia,
+# or the driver libraries and /dev/nvidia* never get injected.
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: nvidia
+handler: nvidia

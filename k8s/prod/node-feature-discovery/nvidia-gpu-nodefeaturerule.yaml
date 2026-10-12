@@ -1,0 +1,18 @@
+# Labels any node with an NVIDIA GPU (PCI vendor 10de, class 0300 VGA or 0302
+# 3D controller) as feature.node.kubernetes.io/nvidia-gpu=true. The NVIDIA
+# device plugin DaemonSet selects on it; see amd-gpu-nodefeaturerule.yaml for
+# the AMD equivalent.
+apiVersion: nfd.k8s-sigs.io/v1alpha1
+kind: NodeFeatureRule
+metadata:
+  name: nvidia-gpu
+spec:
+  rules:
+    - name: nvidia-gpu
+      labels:
+        "feature.node.kubernetes.io/nvidia-gpu": "true"
+      matchFeatures:
+        - feature: pci.device
+          matchExpressions:
+            vendor: {op: In, value: ["10de"]}
+            class: {op: In, value: ["0300", "0302"]}
