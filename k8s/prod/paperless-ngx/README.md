@@ -52,7 +52,19 @@ The current lazy way:
 * `document_exporter /opt/paperless/backup/${_date}`
 * `kubectl cp paperless-ngx/{podname}:/opt/paperless/backup .`
 * `tar czf $(date '+%Y%m%d%H%M%S').tgz {backup}`
-* upload that to s3
+* upload that to s3 (minio creds are in `argocd/argowf`):
+
+```bash
+# aws cli v2 sends checksums minio rejects ("invalid/unknown checksum sent")
+export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
+export AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
+export AWS_DEFAULT_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=$(kubectl -n argocd get secret argowf -o jsonpath='{.data.MINIO_ACCESS_KEY_ID}' | base64 -d)
+export AWS_SECRET_ACCESS_KEY=$(kubectl -n argocd get secret argowf -o jsonpath='{.data.MINIO_SECRET_ACCESS_KEY}' | base64 -d)
+aws --endpoint-url http://192.168.3.2:9000 s3 cp {date}.tgz s3://backups/paperless/
+```
+
+* `rm -rf /opt/paperless/backup/${_date}` in the pod
 
 To restore:
 
