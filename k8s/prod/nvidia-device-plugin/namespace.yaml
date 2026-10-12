@@ -1,0 +1,10 @@
+---
+# privileged: the plugin mounts the kubelet device-plugins dir via hostPath,
+# which the cluster-wide baseline PodSecurity default rejects.
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: nvidia-device-plugin
+  labels:
+    name: nvidia-device-plugin
+    pod-security.kubernetes.io/enforce: privileged

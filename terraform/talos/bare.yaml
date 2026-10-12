@@ -11,4 +11,6 @@ customization:
       - siderolabs/amd-ucode
       - siderolabs/amdgpu
       - siderolabs/iscsi-tools
+      - siderolabs/nvidia-container-toolkit-production
+      - siderolabs/nvidia-open-gpu-kernel-modules-production
       - siderolabs/tailscale

@@ -1,0 +1,42 @@
+# Static PVs onto the named Longhorn volumes in k8s/prod/longhorn/ollama.yaml.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ollama-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Gi
+  csi:
+    driver: driver.longhorn.io
+    fsType: ext4
+    volumeAttributes:
+      dataLocality: best-effort
+      numberOfReplicas: "1"
+      staleReplicaTimeout: "30"
+    volumeHandle: ollama-data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: longhorn-static
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ollama-bonsai-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  csi:
+    driver: driver.longhorn.io
+    fsType: ext4
+    volumeAttributes:
+      dataLocality: best-effort
+      numberOfReplicas: "1"
+      staleReplicaTimeout: "30"
+    volumeHandle: ollama-bonsai-data
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: longhorn-static
+  volumeMode: Filesystem

@@ -15,6 +15,7 @@ resources:
   - hass.yaml
   - paperless.yaml
   - network-optimizer.yaml
+  - ollama.yaml
   #- klipper-enderright.yaml
   - klipper-enderleft.yaml
   - klipper-enderbig.yaml

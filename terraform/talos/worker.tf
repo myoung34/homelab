@@ -36,6 +36,7 @@ resource "talos_machine_configuration_apply" "worker" {
       ephemeral_max_size = each.value.ephemeral_max_size
       longhorn_min_size  = each.value.longhorn_min_size
     })],
+    each.value.image == local.bare_metal_image ? [templatefile("${path.module}/templates/nvidia.yaml.tmpl", {})] : [],
     length(each.value.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
       mount_point  = each.value.mount_point
       extra_device = each.value.extra_device

@@ -1,0 +1,11 @@
+# Loads the NVIDIA modules shipped by the nvidia-open-gpu-kernel-modules
+# extension in the bare-metal schematic (bare.yaml). Applied only to nodes on
+# that image (worker.tf), since the modules don't exist anywhere else.
+# https://docs.siderolabs.com/talos/v1.13/configure-your-talos-cluster/hardware-and-drivers/nvidia-gpu-proprietary
+machine:
+  kernel:
+    modules:
+      - name: nvidia
+      - name: nvidia_uvm
+      - name: nvidia_drm
+      - name: nvidia_modeset

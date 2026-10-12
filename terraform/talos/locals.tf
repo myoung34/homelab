@@ -13,10 +13,14 @@ locals {
   # Bare-metal amd64 + Radeon (amdgpu) schematic from bare.yaml. No overlay on
   # amd64; siderolabs/amdgpu ships both the firmware and kernel modules the
   # Radeon AI PRO R9700 / gfx1201 needs; siderolabs/amd-ucode is CPU microcode
-  # for the Ryzen 5 5500. Regenerate via:
+  # for the Ryzen 5 5500. The nvidia-* pair drives the RTX 2070 SUPER next to
+  # it (open kernel modules: Turing is the oldest arch they support, and NVIDIA
+  # recommends them from Turing on); both must stay on the same driver branch
+  # (-production). Their modules are loaded by templates/nvidia.yaml.tmpl.
+  # Regenerate via:
   #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
   # and drop the returned "id" in below.
-  bare_metal_sha   = "13c173c950c52ef495c57dc2017fc310801f8e04f0ca77efb4c8eda33f03a3c2" # pragma: allowlist secret
+  bare_metal_sha   = "c74594ca0d5f8b6fe7e6a73c1258da7dd48cf8278684f4d40b996a248635fb95" # pragma: allowlist secret
   bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:${local.talos_version}"
 
   extensions = {
@@ -131,7 +135,7 @@ locals {
         extra_device       = ""
         mount_point        = ""
         # cluster{row}{column}: this 4U sits alone on row 4.
-        # Radeon AI PRO R9700 32GB. 1TB NVMe, single-disk: same disk serves
+        # Radeon AI PRO R9700 32GB + RTX 2070 SUPER 8GB. 1TB NVMe, single-disk: same disk serves
         # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
         # (floor of 900GB, grows to fill whatever's left). Disk is targeted by
         # selector, not device path, in case NVMe names aren't stable across

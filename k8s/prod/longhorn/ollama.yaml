@@ -1,0 +1,51 @@
+# Named Longhorn volumes for the Ollama model caches, bound by the static PVs
+# in k8s/prod/ollama/pv.yaml. Declared here so the volume name is stable
+# (ollama-data, not pvc-<uid>) and actually exists: the old static PV pointed
+# at an ollama-data volume nobody created, so the pod never attached.
+#
+# Both caches are re-pullable (each Deployment's pull-model initContainer
+# fetches its model), so:
+#   - one replica, like the longhorn-1r class: only cluster41/klipper have
+#     disks big enough anyway, and dataLocality best-effort keeps the replica
+#     on the node the pod runs on.
+#   - no snapshot/backup recurring jobs. The labels below are the explicit
+#     job list; snapshot-cleanup/-delete only delete. Leaving the list empty
+#     would put the volume back in the `default` group (nightly backup of
+#     ~50GB of models to MinIO).
+apiVersion: longhorn.io/v1beta2
+kind: Volume
+metadata:
+  labels:
+    longhornvolume: ollama-data
+    recurring-job.longhorn.io/snapshot-cleanup: enabled
+    recurring-job.longhorn.io/snapshot-delete: enabled
+  name: ollama-data
+  namespace: longhorn-system
+spec:
+  accessMode: rwo
+  dataEngine: v1
+  dataLocality: best-effort
+  frontend: blockdev
+  numberOfReplicas: 1
+  # 100Gi: qwen3-coder-next (52GB q4_K_M) plus headroom for a re-pull.
+  size: "107374182400"
+  staleReplicaTimeout: 30
+---
+apiVersion: longhorn.io/v1beta2
+kind: Volume
+metadata:
+  labels:
+    longhornvolume: ollama-bonsai-data
+    recurring-job.longhorn.io/snapshot-cleanup: enabled
+    recurring-job.longhorn.io/snapshot-delete: enabled
+  name: ollama-bonsai-data
+  namespace: longhorn-system
+spec:
+  accessMode: rwo
+  dataEngine: v1
+  dataLocality: best-effort
+  frontend: blockdev
+  numberOfReplicas: 1
+  # 20Gi: bonsai-27b Q1_0 is 4.4GB; room for a second small model or re-pull.
+  size: "21474836480"
+  staleReplicaTimeout: 30
