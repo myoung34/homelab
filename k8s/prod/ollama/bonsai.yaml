@@ -49,9 +49,9 @@ spec:
       # (terraform/talos/bare.yaml) and k8s/prod/nvidia-device-plugin.
       #
       # Serves MichelRosselli/bonsai-27b:Q1_0 (4.4GB): PrismML's 1-bit
-      # Bonsai 27B (Qwen3.6-27B hybrid attention, GGUF Q1_0_g128) with its
-      # Q8_0 vision projector. Q1_0 needs Ollama >= 0.32.5 (the model's
-      # `requires`); stock Ollama crashed on it before the llama.cpp sync.
+      # Bonsai 27B (Qwen3.6-27B hybrid attention, GGUF Q1_0_g128). Q1_0
+      # needs Ollama >= 0.32.5 (the model's `requires`); stock Ollama
+      # crashed on it before the llama.cpp sync.
       runtimeClassName: nvidia
       initContainers:
       - name: pull-model
@@ -60,15 +60,22 @@ spec:
         env:
         - name: OLLAMA_MAX_TRANSFER_STREAMS
           value: "1"
-        # Builds bonsai-27b:agent: the library tag (which already carries
-        # PrismML's sampling: temperature 0.7, top_p 0.95, top_k 20) with a
-        # context that fits the 8GB card. The tag defaults to 262144, whose
-        # KV cache alone is several GB. Back-of-envelope from the model
-        # card (full attention on 16 of 64 layers, ~65KB/token at f16):
-        #   3.8GB weights + 0.6GB projector + ~1.3GB runtime buffers
-        #   + 32k tokens * ~35KB/token (q8_0 KV, below) ~= 1.1GB
-        #   ~= 6.8GB of 8GB. 64k would land at ~7.9GB and spill to CPU.
-        # Unmeasured on this card; `ollama ps` should show 100% GPU.
+        # Builds bonsai-27b:agent, text-only, at a context that fits the 8GB
+        # card fully on GPU. The library tag bundles a vision projector
+        # (~0.6GB VRAM, loaded even for text) and defaults to 262144 ctx, so
+        # :agent is rebuilt from the tag's language-model blob only (its
+        # first FROM line), keeping the tag's renderer, parser, stops and
+        # PrismML's sampling (temperature 0.7, top_p 0.95, top_k 20).
+        #
+        # Measured on the 2070 (Ollama 0.40.3, 2026-10-12), 8k / 22k-token
+        # prompts, tok/s reading / generating:
+        #   with projector, q8_0 KV:  32k ctx 530/31, 480/26 (100% GPU)
+        #                             64k spills 11% to CPU: gen 16.7
+        #   text-only, q4_0 KV:      112k ctx 525/30.5     (100% GPU)
+        #                            128k spills 10% to CPU: gen 15-20
+        # So 112k costs nothing over 32k. A 56k-token prompt reads at
+        # 384 tok/s (146s), generates at 20.7, and still recalls a fact
+        # planted near its start. Vision is gone; no client sends images.
         command:
         - /bin/sh
         - -c
@@ -78,10 +85,13 @@ spec:
           pid=$!
           until ollama list >/dev/null 2>&1; do sleep 1; done
           ollama pull MichelRosselli/bonsai-27b:Q1_0
-          cat > /tmp/Modelfile <<'EOF'
-          FROM MichelRosselli/bonsai-27b:Q1_0
-          PARAMETER num_ctx 32768
-          EOF
+          # Everything from the tag's Modelfile except the projector FROM,
+          # the LICENSE blocks and its 262144 num_ctx.
+          ollama show --modelfile MichelRosselli/bonsai-27b:Q1_0 \
+            | awk '/^FROM /{if(f++)next} /^LICENSE/{skip=1}
+                   !skip && !/^PARAMETER num_ctx/ && !/^#/' > /tmp/Modelfile
+          echo 'PARAMETER num_ctx 114688' >> /tmp/Modelfile
+          cat /tmp/Modelfile
           ollama create bonsai-27b:agent -f /tmp/Modelfile
           kill $pid
         volumeMounts:
@@ -125,14 +135,15 @@ spec:
           value: "1"
         # Matches the :agent tag so bare-tag requests don't reload at 256k.
         - name: OLLAMA_CONTEXT_LENGTH
-          value: "32768"
-        # Halves the KV cache vs f16 so 32k fits on the card. Server-wide,
-        # which is fine here: this instance only serves bonsai. PrismML
-        # ships it with a 4-bit KV cache and reports it near-lossless, so
-        # q8_0 is conservative. Needs flash attention, which Ollama enables
-        # by default where supported (Turing is).
+          value: "114688"
+        # 4-bit KV: a quarter of f16, which is what lets 112k fit (numbers
+        # on the pull-model initContainer). PrismML ships bonsai with a
+        # 4-bit KV cache and reports it near-lossless; the 56k-token recall
+        # check passed with it. Server-wide, which is fine: this instance
+        # only serves bonsai. Needs flash attention, which Ollama enables by
+        # default where supported (Turing is).
         - name: OLLAMA_KV_CACHE_TYPE
-          value: "q8_0"
+          value: "q4_0"
         # Cap llama-server's host-RAM prompt state, same as ollama.yaml.
         # Defaults are an 8GiB prompt cache plus 32 context checkpoints per
         # slot; bonsai is hybrid/recurrent (qwen35), so each checkpoint
