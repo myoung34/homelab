@@ -133,6 +133,21 @@ spec:
         # by default where supported (Turing is).
         - name: OLLAMA_KV_CACHE_TYPE
           value: "q8_0"
+        # Cap llama-server's host-RAM prompt state, same as ollama.yaml.
+        # Defaults are an 8GiB prompt cache plus 32 context checkpoints per
+        # slot; bonsai is hybrid/recurrent (qwen35), so each checkpoint
+        # saves the ~150MiB recurrent state (RS buffer in load logs), up to
+        # ~4.8GB. qwen leaves ~1.7GB free on the node, so the first Aperture
+        # chat grew llama-server to 2.6GB RSS and the kernel OOM-killed it
+        # (2026-10-12 17:34).
+        #
+        # Prompt cache off: one slot, so the previous turn's KV already
+        # sits on the GPU and is reused without it. 4 checkpoints
+        # (~600MiB) cover rollback for append-only chat/agent turns.
+        - name: LLAMA_ARG_CACHE_RAM
+          value: "0"
+        - name: LLAMA_ARG_CTX_CHECKPOINTS
+          value: "4"
         ports:
         - containerPort: 11434
           name: http
@@ -143,12 +158,19 @@ spec:
         # The model lives on the GPU; host RAM is mostly page cache from
         # the load. Kept small: qwen3-coder-next requests 26Gi of the
         # node's 32GB.
+        #
+        # The memory limit is a fence, not a budget: ~1.3GiB steady state
+        # plus ~600MiB of checkpoints fits well under it. If bonsai still
+        # runs away, its own cgroup OOMs and only it restarts (seconds: the
+        # model is local) instead of a node-wide OOM that can take out
+        # qwen (a 90s+ reload) or other pods.
         resources:
           requests:
             cpu: 1000m
             memory: 2Gi
             nvidia.com/gpu: 1
           limits:
+            memory: 3Gi
             nvidia.com/gpu: 1
         livenessProbe:
           failureThreshold: 3
