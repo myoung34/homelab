@@ -62,6 +62,19 @@
         "k8s/prod/kagent/**"
       ],
       "automerge": false
+    },
+    {
+      "description": "Skip patch-level skill bumps (e.g. ponytail v1.2.3 -> v1.2.4); minors and majors still open a PR for review",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "k8s/prod/kagent/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "enabled": false
     }
   ],
   "customManagers": [
