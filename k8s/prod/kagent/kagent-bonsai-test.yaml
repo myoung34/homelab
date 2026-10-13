@@ -1,0 +1,159 @@
+# kagent-bonsai-test: a scratch agent for kicking the tyres on bonsai
+# (modelconfig-bonsai.yaml) with everyday questions - look something up,
+# read a page, check or book something on the calendar, run a Zapier action.
+#
+# Deliberately small: no cluster or GitHub tools, so whatever it gets wrong
+# can't touch the homelab. Its Aperture tools are web search/fetch, Google
+# Calendar and Zapier (~20k tokens of schemas, well inside bonsai's 112k).
+# Like every agent here it inherits skills, and therefore a sandboxed bash,
+# from the unnamed Agent patch in kustomization.yaml; the srt shim below is
+# what makes that bash run at all (see homelab-agent-srt for why). The
+# sandbox has no network: web access goes through aperture_web_*.
+#
+# Safe to delete once bonsai has been judged.
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: kagent-bonsai-test
+  namespace: kagent
+spec:
+  type: Declarative
+  description: >-
+    Test agent for the local 1-bit Bonsai 27B model: answers general
+    questions with web search and page fetches, and can read and manage
+    Mark's Google Calendar and run Zapier actions.
+  declarative:
+    modelConfig: bonsai-27b
+    stream: true
+    systemMessage: |
+      You are a general-purpose assistant for Mark. You run on a small local
+      model, so be direct: short answers, no filler, and use a tool instead
+      of guessing whenever a tool can settle the question.
+
+      ## Tools
+
+      - aperture_web_search: search the web. Use it for anything current
+        (news, prices, releases, weather, sports, opening hours) and for any
+        fact you are not sure of.
+      - aperture_web_fetch: read one page. Only fetch exact URLs you got from
+        a search result or from Mark; never make up a URL.
+      - GoogleCalendar_*: Mark's calendars. list_calendars tells you each
+        calendar's id and time zone; list_events / search_events find
+        events; suggest_time finds free slots.
+      - Zapier_*: actions in other apps. Call Zapier_inspect_zapier_actions
+        first to see what is enabled. If what you need is missing, find it
+        with Zapier_discover_zapier_actions and enable it with
+        Zapier_enable_zapier_action, then run it with
+        Zapier_execute_zapier_read_action or
+        Zapier_execute_zapier_write_action.
+      - bash: a scratch shell with no network. Good for arithmetic, date
+        math and quick text processing. Run `date` when you need today's
+        date or time; never assume it.
+
+      ## How to answer
+
+      1. Work out what is being asked. If it is ambiguous in a way that
+         changes the answer, ask one short question instead of guessing.
+      2. For facts: search, then fetch the one or two most relevant
+         results, then answer from what you read. Do not answer from memory
+         when the question depends on anything that could have changed.
+      3. Cite the URLs you actually used, at the end, as a short list.
+      4. If the tools do not give you an answer, say so plainly. Do not
+         invent numbers, dates, names or quotes.
+
+      ## Calendar and Zapier rules
+
+      - Reading is always fine. Before anything that creates, changes,
+        deletes or sends - a calendar event, an RSVP, a Zapier write action -
+        say exactly what you are about to do and wait for Mark to confirm.
+      - Use the calendar's own time zone for dates and times, and state the
+        time zone in your answer.
+    tools:
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: aperture
+        toolNames:
+        - aperture_web_search
+        - aperture_web_fetch
+        - GoogleCalendar_list_calendars
+        - GoogleCalendar_list_events
+        - GoogleCalendar_search_events
+        - GoogleCalendar_get_event
+        - GoogleCalendar_suggest_time
+        - GoogleCalendar_create_event
+        - GoogleCalendar_update_event
+        - GoogleCalendar_delete_event
+        - GoogleCalendar_respond_to_event
+        - Zapier_inspect_zapier_actions
+        - Zapier_discover_zapier_actions
+        - Zapier_enable_zapier_action
+        - Zapier_disable_zapier_action
+        - Zapier_execute_zapier_read_action
+        - Zapier_execute_zapier_write_action
+        - Zapier_list_zapier_connections
+        - Zapier_manage_zapier_connections
+        - Zapier_get_configuration_url
+        - Zapier_auto_provision_mcp
+        - Zapier_list_zapier_skills
+        - Zapier_get_zapier_skill
+        - Zapier_create_zapier_skill
+        - Zapier_update_zapier_skill
+        - Zapier_delete_zapier_skill
+        - Zapier_write_code_action
+        - Zapier_send_feedback
+    deployment:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 768Mi
+      env:
+      # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
+      # kagent-bonsai-test-srt ConfigMap below. The rest is the image's PATH.
+      - name: PATH
+        value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
+      volumes:
+      - name: srt-shim
+        configMap:
+          name: kagent-bonsai-test-srt
+          defaultMode: 0555
+      volumeMounts:
+      - name: srt-shim
+        mountPath: /opt/srt-shim
+        readOnly: true
+---
+# srt settings + shim for kagent-bonsai-test's bash. Same mechanism as
+# printer-agent-srt / homelab-agent-srt (see homelab-agent.yaml for why it
+# is a PATH shim). No allowedDomains: the sandbox gets no network, and the
+# Agent above sets no spec.sandbox, so the two agree.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kagent-bonsai-test-srt
+  namespace: kagent
+data:
+  # kagent calls `srt --settings <its file> <command...>`; drop its
+  # --settings and use the file next to this script.
+  srt: |
+    #!/bin/sh
+    if [ "$1" = "--settings" ]; then shift 2; fi
+    exec /usr/bin/srt --settings /opt/srt-shim/srt-settings.json "$@"
+  srt-settings.json: |
+    {
+      "enableWeakerNestedSandbox": true,
+      "network": {
+        "allowedDomains": [],
+        "deniedDomains": []
+      },
+      "filesystem": {
+        "denyRead": [],
+        "allowWrite": [
+          ".",
+          "/tmp"
+        ],
+        "denyWrite": []
+      }
+    }
