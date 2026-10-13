@@ -1,0 +1,8 @@
+apiVersion: v1alpha1
+kind: KubeExternalManifestConfig
+name: external-manifests
+manifests:
+  # Pinned: these are re-fetched on every node boot, so floating refs let
+  # upstream changes land unreviewed and let nodes disagree.
+  - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.11.0/deploy/standalone-install.yaml
+  - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.9.0/components.yaml
