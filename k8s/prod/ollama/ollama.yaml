@@ -64,7 +64,12 @@ spec:
         feature.node.kubernetes.io/amd-gpu: "true"
       initContainers:
       - name: pull-model
-        image: "ollama/ollama:0.40.3-rocm"
+        # Patched Ollama (images/ollama): stock 0.40.3-rocm + ollama/ollama#18433.
+        # Stock 0.40.3 rendered kagent's tool list in a different order on
+        # every request, so qwen's prompt cache never hit and every agent
+        # turn re-read ~128k tokens (~130s). Back to the official image once
+        # a release includes the fix; see images/ollama/Dockerfile.
+        image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433"
         imagePullPolicy: IfNotPresent
         env:
         # Default splits each blob into many concurrent chunk downloads: fine
@@ -135,7 +140,8 @@ spec:
             amd.com/gpu: 1
       containers:
       - name: ollama
-        image: "ollama/ollama:0.40.3-rocm"
+        # Same patched image as pull-model above.
+        image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433"
         imagePullPolicy: IfNotPresent
         # Serve, then preload qwen3-coder-next:agent in the background so the
         # ~90-220s load happens at pod start instead of on the first agent
