@@ -22,11 +22,13 @@
 # Sampling comes from the model (Qwen's recommended temperature 1.0,
 # top_p 0.95, top_k 40), so none is set here.
 #
-# Context budget: homelab-agent's tool schemas alone are ~64k tokens
-# (Aperture's ~106 tools measured at 59k, plus the k8s_* tools) and its
-# prompts ~8k, so ~55k of the 128k is left for the conversation. The first
-# turn of a session spends ~50s reading the tools; later turns reuse
-# Ollama's prompt cache as long as only one agent is talking to it.
+# Context budget: homelab-agent's tool schemas are ~23k tokens since its
+# Aperture tools were allowlisted (homelab-agent.yaml; ~82k before, which
+# pinned sessions at the 128k limit) and its prompts ~4k, so ~100k is left
+# for the conversation. The first turn reads everything (~25-30s at
+# ~1000 tok/s); later turns should reuse llama-server's prompt cache, which
+# needs the patched Ollama in images/ollama (stock 0.40.3 renders tools in
+# a random order and never hits) and only one agent talking to qwen.
 apiVersion: kagent.dev/v1alpha2
 kind: ModelConfig
 metadata:
