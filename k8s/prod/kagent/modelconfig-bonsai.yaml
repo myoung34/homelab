@@ -1,3 +1,8 @@
+# ROLLBACK ONLY since 2026-10-13: the 2070 now preloads LFM2.5-24B
+# (modelconfig-lfm.yaml) and no agent uses this. bonsai-27b:agent is still
+# built on the card, so pointing an agent back here works (one model fits
+# at a time; the first request swaps it in).
+#
 # Local 1-bit Bonsai 27B on cluster41's RTX 2070 SUPER (k8s/prod/ollama/
 # bonsai.yaml), reached through Aperture's "ollama-bonsai" provider the same
 # way modelconfig-qwen.yaml reaches qwen. Same placeholder key Secret: Aperture
