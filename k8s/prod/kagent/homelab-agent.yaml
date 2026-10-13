@@ -54,8 +54,7 @@ spec:
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
-    against myoung34/homelab, with web, GitHub, Datadog, Google and Zapier
-    through Aperture.
+    against myoung34/homelab, with web, GitHub and Datadog through Aperture.
   declarative:
     # Local qwen3-coder-next (modelconfig-qwen.yaml). This agent's tools eat
     # ~64k of the 128k context; back to default-model-config (Claude) if
@@ -131,19 +130,18 @@ spec:
 
       ## Your other tools
 
-      Aperture proxies roughly 100 more:
+      Aperture proxies 31 more:
         - aperture_web_search / aperture_web_fetch: search the web, and fetch
           one exact URL. web_fetch takes exact URLs only - get them from a
           search result, do not invent them.
-        - GitHub_*: repos, files, commits, branches, issues, pull requests,
-          reviews, releases, code search.
-        - Datadog_*: logs, metrics, spans, RUM, hosts, monitors, incidents.
+        - GitHub_*: files, commits, branches, code search, and pull
+          requests (create, update, read, comment, request a Copilot
+          review). No issue, release or merge tools.
+        - Datadog_*: logs, metrics, hosts, monitors, events.
           Call Datadog_list_datadog_skills then Datadog_load_datadog_skill
           before composing a non-trivial query; the skills hold the query
           syntax you need. Datadog also covers the Synology and the Nomad
           jobs, which you have no other way to see.
-        - GoogleCalendar_* / GoogleDrive_*: calendar events and Drive files.
-        - Zapier_*: discover an action, enable it, then execute it.
 
       {{include "prompts/github"}}
 
@@ -183,8 +181,8 @@ spec:
       {{include "builtin/safety-guardrails"}}
 
       You hold write access to real systems. Before any call that creates,
-      updates, merges or deletes anything - a GitHub file or PR, a calendar
-      event, a Drive file, a Datadog dashboard, a Zapier write action - state
+      updates or deletes anything - a GitHub file, branch, PR or comment -
+      state
       what you are about to do and why, and do it only if the request clearly
       asked for it. Prefer the read tool when a read will answer.
 
@@ -229,22 +227,33 @@ spec:
         - k8s_apply_manifest
         - k8s_get_resources
         - k8s_get_pod_logs
-    # Everything else. No toolNames: an omitted filter exposes every tool the
-    # server discovers (google-adk treats an empty tool_filter as "allow
-    # all"). Currently ~118: GitHub, Datadog, Zapier, GoogleCalendar,
-    # GoogleDrive, aperture web. Listing them exhaustively would go stale
-    # every time Aperture adds an integration, and toolNames is an allowlist
-    # capped at maxItems: 50, so it could not hold them anyway.
+    # Aperture, allowlisted to the tools this agent actually uses.
+    #
+    # This used to omit toolNames, which exposes everything Aperture serves
+    # (google-adk treats an empty tool_filter as "allow all"): 143 tools,
+    # ~82k tokens of schemas on every request. With the prompts that left
+    # qwen's 128k context almost no room, so sessions hit the limit within a
+    # few turns and Ollama truncated the prompt every turn (each truncation
+    # is a full ~130s re-read). Trimmed 2026-10-13 to 56 tools / ~23k tokens.
+    #
+    # Dropped entirely: Zapier_* (17 tools, ~10k tokens), GoogleCalendar_*
+    # (9, ~9k), GoogleDrive_* (8, ~4.5k). Dropped from Datadog_* (34 -> 9,
+    # ~41k -> ~10k): notebooks, dashboards, spans/RUM/traces, incidents,
+    # execute_code, entities, sdk search, feedback. Dropped from GitHub_*
+    # (45 -> 17): issues, sub-issues, releases/tags, teams, collaborators,
+    # repo create/fork, file delete, merge, reviews, secret scanning, search
+    # beyond code/PRs.
+    #
+    # To undo: delete the toolNames list below (back to "allow all"; also
+    # restore the Google/Zapier lines in "Your other tools" in the system
+    # message), or add individual names back. toolNames is capped at
+    # maxItems: 50, so "all" can only be had by omitting it. Live names:
+    # Aperture MCP tools/list, or the `tools` array of any request capture
+    # at https://ai.king-gila.ts.net/api/sessions/<id>/captures.
     #
     # The copilot-delegation and GitHub_ui_get bans in prompts/github are
-    # prompt-level, not enforced here, and the CRD gives us nowhere to
-    # enforce them - there is no deny list. The only hard lever is Aperture's
-    # GitHub connector tool filter, which lives in its admin dashboard
-    # outside ArgoCD (see mcp.yaml).
-    #
-    # Requires kagent >= 0.10.0; on 0.9.x an omitted toolNames rendered
-    # `"tools": null` and the agent pod CrashLooped on a pydantic
-    # ValidationError (kagent-dev/kagent#1797, fixed by #1960).
+    # prompt-level; Aperture's GitHub connector tool filter (admin
+    # dashboard, outside ArgoCD, see mcp.yaml) is the only other lever.
     #
     # Aperture's 142 MCP *resources* (the Datadog skill markdown) are not
     # tools and do not cross over; Datadog_load_datadog_skill reads them.
@@ -253,6 +262,38 @@ spec:
         apiGroup: kagent.dev
         kind: RemoteMCPServer
         name: aperture
+        toolNames:
+          - aperture_web_search
+          - aperture_web_fetch
+          - aperture_list_sessions
+          - aperture_get_session
+          - aperture_get_session_request
+          - Datadog_list_datadog_skills
+          - Datadog_load_datadog_skill
+          - Datadog_search_datadog_logs
+          - Datadog_analyze_datadog_logs
+          - Datadog_get_datadog_metric
+          - Datadog_search_datadog_metrics
+          - Datadog_search_datadog_monitors
+          - Datadog_search_datadog_events
+          - Datadog_search_datadog_hosts
+          - GitHub_get_me
+          - GitHub_get_file_contents
+          - GitHub_create_or_update_file
+          - GitHub_push_files
+          - GitHub_create_branch
+          - GitHub_list_branches
+          - GitHub_get_commit
+          - GitHub_list_commits
+          - GitHub_search_code
+          - GitHub_create_pull_request
+          - GitHub_update_pull_request
+          - GitHub_pull_request_read
+          - GitHub_list_pull_requests
+          - GitHub_search_pull_requests
+          - GitHub_add_issue_comment
+          - GitHub_add_reply_to_pull_request_comment
+          - GitHub_request_copilot_review
     # The printer expert (printer-agent.yaml), called as a tool.
     - type: Agent
       agent:
