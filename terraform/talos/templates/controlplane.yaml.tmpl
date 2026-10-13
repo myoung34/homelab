@@ -6,16 +6,6 @@ machine:
         dhcp: true
         vip:
           ip: 192.168.1.254
-  features:
-    kubernetesTalosAPIAccess:
-      enabled: true
-      allowedRoles:
-        - os:admin
-        # homelab-agent's talosctl (k8s/prod/kagent/talos.yaml): read-only.
-        - os:reader
-      allowedKubernetesNamespaces:
-        - argocd
-        - kagent
 cluster:
   network:
     dnsDomain: cluster.local
@@ -84,14 +74,3 @@ cluster:
       kind: Policy
       rules:
         - level: Metadata
-  discovery:
-    enabled: true
-    registries:
-      kubernetes:
-        disabled: true
-  extraManifests:
-    # Pinned: these are re-fetched on every node boot, so floating refs (main /
-    # latest) let upstream changes land unreviewed and let nodes disagree.
-    - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.11.0/deploy/standalone-install.yaml
-    - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.9.0/components.yaml
-  inlineManifests: []
