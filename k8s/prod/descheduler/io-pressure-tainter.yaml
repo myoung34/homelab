@@ -1,0 +1,104 @@
+# Taints nodes whose IO is stalled so the descheduler (RemovePodsViolatingNodeTaints)
+# moves pods off them. Hysteresis: taint above HIGH% full IO stall, untaint below LOW%,
+# so pods drift back once the node recovers.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: io-pressure-tainter
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: io-pressure-tainter
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "patch"]
+- apiGroups: [""]
+  resources: ["nodes/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: io-pressure-tainter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: io-pressure-tainter
+subjects:
+- kind: ServiceAccount
+  name: io-pressure-tainter
+  namespace: descheduler
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: io-pressure-tainter
+spec:
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 110
+      template:
+        spec:
+          serviceAccountName: io-pressure-tainter
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - name: tainter
+            image: alpine/k8s:1.36.5
+            imagePullPolicy: IfNotPresent
+            env:
+            - {name: HOME, value: /tmp}
+            - {name: KEY, value: homelab/io-pressure}
+            - {name: HIGH, value: "50"}
+            - {name: LOW, value: "10"}
+            - {name: WINDOW, value: "60"}
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32M
+            command: ["bash", "-c"]
+            args:
+            - |
+              set -euo pipefail
+              TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              # cumulative seconds the whole node had all tasks stalled on IO
+              stall() {
+                curl -sfk -m 10 -H "Authorization: Bearer $TOKEN" "https://$1:10250/metrics/cadvisor" \
+                  | awk '/^container_pressure_io_stalled_seconds_total\{.*id="\/"/ {print $2; exit}'
+              }
+              declare -A ip before
+              while read -r n addr _; do
+                ip[$n]=$addr
+                before[$n]=$(stall "$addr" || true)
+              done < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name} {.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}')
+              sleep "$WINDOW"
+              for n in "${!ip[@]}"; do
+                after=$(stall "${ip[$n]}" || true)
+                if [ -z "${before[$n]}" ] || [ -z "$after" ]; then
+                  echo "$n: no metrics, leaving as is"
+                  continue
+                fi
+                pct=$(awk -v a="${before[$n]}" -v b="$after" -v w="$WINDOW" 'BEGIN {printf "%d", (b - a) / w * 100}')
+                tainted=$(kubectl get node "$n" -o jsonpath="{.spec.taints[?(@.key==\"$KEY\")].key}")
+                if [ -z "$tainted" ] && [ "$pct" -ge "$HIGH" ]; then
+                  kubectl taint node "$n" "$KEY=true:NoSchedule"
+                elif [ -n "$tainted" ] && [ "$pct" -lt "$LOW" ]; then
+                  kubectl taint node "$n" "$KEY:NoSchedule-"
+                fi
+                echo "$n: io stall ${pct}%"
+              done
