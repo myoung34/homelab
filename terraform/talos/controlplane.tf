@@ -32,6 +32,10 @@ resource "talos_machine_configuration_apply" "controlplane" {
       cert_sans             = local.cert_sans
     }),
 
+    templatefile("${path.module}/templates/KubeTalosAPIAccessConfig.yaml.tmpl", {}),
+    templatefile("${path.module}/templates/DiscoveryServiceConfig.yaml.tmpl", {}),
+    templatefile("${path.module}/templates/KubeExternalManifestConfig.yaml.tmpl", {}),
+    templatefile("${path.module}/templates/KubeInlineManifestConfig.yaml.tmpl", {}),
     templatefile("${path.module}/templates/extensionserviceconfig.yaml.tmpl", {
       name = "tailscale"
       env  = local.extensions.tailscale.env
