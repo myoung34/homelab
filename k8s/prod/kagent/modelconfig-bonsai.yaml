@@ -1,0 +1,25 @@
+# Local 1-bit Bonsai 27B on cluster41's RTX 2070 SUPER (k8s/prod/ollama/
+# bonsai.yaml), reached through Aperture's "ollama-bonsai" provider the same
+# way modelconfig-qwen.yaml reaches qwen. Same placeholder key Secret: Aperture
+# authenticates by tailnet identity (tag:k8s) and ignores it.
+#
+# :agent is text-only (no vision projector) at 112k context with a q4_0 KV
+# cache, fully on the GPU: ~525 tok/s prompt reading and ~30 tok/s
+# generation on an 8k prompt, 2026-10-12.
+#
+# No maxTokens on purpose: bonsai thinks by default, and a tight cap gets
+# spent entirely on reasoning and comes back as an empty reply (a 400-token
+# cap did exactly that on a 19k-token prompt). Sampling comes from the model
+# (PrismML's temperature 0.7, top_p 0.95, top_k 20).
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: bonsai-27b
+  namespace: kagent
+spec:
+  provider: OpenAI
+  model: "bonsai-27b:agent"
+  apiKeySecret: aperture-model-key  # pragma: allowlist secret
+  apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
+  openAI:
+    baseUrl: "http://aperture.kagent.svc.cluster.local/v1"
