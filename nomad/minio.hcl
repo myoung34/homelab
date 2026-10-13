@@ -42,7 +42,7 @@ EOH
       }
 
       config {
-        image      = "minio/minio:RELEASE.2024-10-13T13-34-11Z"
+        image      = "pgsty/silo:RELEASE.2026-09-16T00-00-00Z"
         force_pull = true
 
         command = "server"
