@@ -16,7 +16,7 @@ locals {
   # for the Ryzen 5 5500. The nvidia-* pair drives the RTX 2070 SUPER next to
   # it (open kernel modules: Turing is the oldest arch they support, and NVIDIA
   # recommends them from Turing on); both must stay on the same driver branch
-  # (-production). Their modules are loaded by templates/nvidia.yaml.tmpl.
+  # (-production). Their modules are loaded by templates/bare-metal.yaml.tmpl.
   # Regenerate via:
   #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
   # and drop the returned "id" in below.
