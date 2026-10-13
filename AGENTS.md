@@ -47,6 +47,10 @@ nomad         Jobs that run on the Synology
 misc          No rule here
 ```
 
+Before changing anything under `terraform/talos/`, read
+`terraform/talos/AGENTS.md`. It covers the upgrade order, the config-format
+rules and `validate.sh`.
+
 Key conventions in `k8s/prod/<app>/`:
 
 - `kustomization.yaml` lists the manifests and sets `namespace`.
