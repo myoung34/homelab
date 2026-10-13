@@ -9,6 +9,7 @@ resources:
   - mcp.yaml
   - modelconfig-qwen.yaml
   - modelconfig-bonsai.yaml
+  - modelconfig-lfm.yaml
   - homelab-agent-prompt.yaml
   - homelab-agent.yaml
   - printer-agent-prompt.yaml

@@ -1,16 +1,19 @@
-# kagent-bonsai-test: a scratch agent for kicking the tyres on bonsai
-# (modelconfig-bonsai.yaml) with everyday questions - look something up,
+# kagent-bonsai-test: a scratch agent for kicking the tyres on the 2070's
+# local model with everyday questions - look something up,
 # read a page, check or book something on the calendar, run a Zapier action.
 #
 # Deliberately small: no cluster or GitHub tools, so whatever it gets wrong
 # can't touch the homelab. Its Aperture tools are web search/fetch, Google
-# Calendar and Zapier (~20k tokens of schemas, well inside bonsai's 112k).
+# Calendar and Zapier (~20k tokens of schemas, well inside the 64k context).
 # Like every agent here it inherits skills, and therefore a sandboxed bash,
 # from the unnamed Agent patch in kustomization.yaml; the srt shim below is
 # what makes that bash run at all (see homelab-agent-srt for why). The
 # sandbox has no network: web access goes through aperture_web_*.
 #
-# Safe to delete once bonsai has been judged.
+# Name kept from when the 2070 served Bonsai 27B; it now runs LFM2.5-24B
+# (modelconfig-lfm.yaml). Rollback: modelConfig: bonsai-27b.
+#
+# Safe to delete once the 2070's model has been judged.
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
@@ -19,11 +22,11 @@ metadata:
 spec:
   type: Declarative
   description: >-
-    Test agent for the local 1-bit Bonsai 27B model: answers general
+    Test agent for the 2070's local model (LFM2.5-24B-A2B): answers general
     questions with web search and page fetches, and can read and manage
     Mark's Google Calendar and run Zapier actions.
   declarative:
-    modelConfig: bonsai-27b
+    modelConfig: lfm2.5-24b
     stream: true
     systemMessage: |
       You are a general-purpose assistant for Mark. You run on a small local

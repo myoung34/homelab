@@ -1,0 +1,25 @@
+# Local LFM2.5-24B-A2B on cluster41's RTX 2070 SUPER (k8s/prod/ollama/
+# bonsai.yaml - the file and Aperture provider kept their bonsai names),
+# reached through Aperture's "ollama-bonsai" provider like the bonsai
+# ModelConfig it replaced. Same placeholder key Secret: Aperture
+# authenticates by tailnet identity (tag:k8s) and ignores it.
+#
+# :agent is unsloth's UD-IQ2_XXS quant of the Preview checkpoint at 64k
+# context: ~550 tok/s prompt reading, ~72 tok/s generation, 86% on GPU.
+#
+# No maxTokens: LFM2.5 always thinks before answering (up to ~7k tokens on
+# a hard puzzle in testing), and a cap gets spent on reasoning and comes
+# back as an empty reply. Sampling comes from the model tag (Liquid's
+# temperature 0.1, top_k 50, repetition penalty 1.05).
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: lfm2.5-24b
+  namespace: kagent
+spec:
+  provider: OpenAI
+  model: "lfm2.5-24b:agent"
+  apiKeySecret: aperture-model-key  # pragma: allowlist secret
+  apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
+  openAI:
+    baseUrl: "http://aperture.kagent.svc.cluster.local/v1"
