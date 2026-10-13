@@ -19,7 +19,7 @@
 ARG OLLAMA_VERSION=0.40.3
 ARG BASE=ollama/ollama:${OLLAMA_VERSION}-rocm
 
-FROM golang:1.26-bookworm AS build
+FROM golang:1.27-bookworm AS build
 ARG OLLAMA_VERSION
 WORKDIR /src
 RUN git clone --depth 1 --branch v${OLLAMA_VERSION} https://github.com/ollama/ollama.git .
