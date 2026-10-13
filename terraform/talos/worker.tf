@@ -14,32 +14,38 @@ data "talos_machine_configuration" "worker" {
   talos_version = local.talos_version
 }
 
-resource "talos_machine_configuration_apply" "worker" {
-  client_configuration        = local.client_configuration
-  machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
-  for_each                    = local.node_data.workers
-  node                        = each.key
-  config_patches = flatten([
+# Per-node patches, keyed by node IP. A local rather than inline in the
+# resource so validate.sh can render exactly what terraform applies.
+locals {
+  worker_patches = { for ip, node in local.node_data.workers : ip => flatten([
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-      hostname           = each.value.hostname
-      install_disk       = each.value.install_disk
-      image              = each.value.image
+      hostname           = node.hostname
+      install_disk       = node.install_disk
+      image              = node.image
       machine_token      = local.machine_secrets.secrets.machine_token
-      kubernetes_version = length(each.value.kubernetes_version) == 0 ? local.kubernetes_version : each.value.kubernetes_version
+      kubernetes_version = length(node.kubernetes_version) == 0 ? local.kubernetes_version : node.kubernetes_version
     }),
     templatefile("${path.module}/templates/extensionserviceconfig.yaml.tmpl", {
       name = "tailscale"
       env  = local.extensions.tailscale.env
     }),
-    length(each.value.longhorn_disk_selector) == 0 ? [templatefile("${path.module}/templates/longhorn.yaml.tmpl", {})] : [templatefile("${path.module}/templates/longhorn-dedicated-volume.yaml.tmpl", {
-      disk_selector      = each.value.longhorn_disk_selector
-      ephemeral_max_size = each.value.ephemeral_max_size
-      longhorn_min_size  = each.value.longhorn_min_size
+    length(node.longhorn_disk_selector) == 0 ? [templatefile("${path.module}/templates/longhorn.yaml.tmpl", {})] : [templatefile("${path.module}/templates/longhorn-dedicated-volume.yaml.tmpl", {
+      disk_selector      = node.longhorn_disk_selector
+      ephemeral_max_size = node.ephemeral_max_size
+      longhorn_min_size  = node.longhorn_min_size
     })],
-    each.value.image == local.bare_metal_image ? [templatefile("${path.module}/templates/bare-metal.yaml.tmpl", {})] : [],
-    length(each.value.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
-      mount_point  = each.value.mount_point
-      extra_device = each.value.extra_device
+    node.image == local.bare_metal_image ? [templatefile("${path.module}/templates/bare-metal.yaml.tmpl", {})] : [],
+    length(node.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
+      mount_point  = node.mount_point
+      extra_device = node.extra_device
     })]
-  ])
+  ]) }
+}
+
+resource "talos_machine_configuration_apply" "worker" {
+  client_configuration        = local.client_configuration
+  machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
+  for_each                    = local.node_data.workers
+  node                        = each.key
+  config_patches              = local.worker_patches[each.key]
 }
