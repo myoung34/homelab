@@ -1,0 +1,9 @@
+apiVersion: v1alpha1
+kind: KubeTalosAPIAccessConfig
+allowedRoles:
+  - os:admin
+  # homelab-agent's talosctl (k8s/prod/kagent/talos.yaml): read-only
+  - os:reader
+allowedKubernetesNamespaces:
+  - argocd
+  - kagent
