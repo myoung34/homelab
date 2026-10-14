@@ -8,6 +8,7 @@ resources:
   - namespace.yaml
   - amd-gpu-nodefeaturerule.yaml
   - nvidia-gpu-nodefeaturerule.yaml
+  - zwave-usb-nodefeaturerule.yaml
 
 helmCharts:
 - name: node-feature-discovery
@@ -18,6 +19,8 @@ helmCharts:
   repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
   valuesInline:
     master:
+      # For zwave-usb-nodefeaturerule.yaml.
+      enableTaints: true
       resources:
         requests:
           cpu: 15m
@@ -38,6 +41,11 @@ helmCharts:
         requests:
           cpu: 5m
           memory: 105M
+      # Keep labelling the Z-Wave node, or ser2net's affinity label disappears.
+      tolerations:
+        - key: homelab/zwave-usb
+          operator: Exists
+          effect: NoSchedule
     gc:
       resources:
         requests:

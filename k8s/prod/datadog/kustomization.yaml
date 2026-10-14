@@ -84,6 +84,9 @@ helmCharts:
       tolerations:
         - key: "node-role.kubernetes.io/control-plane"
           effect: "NoSchedule"
+        - key: "homelab/zwave-usb"
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         agent:
           resources:
