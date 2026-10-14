@@ -25,8 +25,8 @@
 # Context budget: homelab-agent's tool schemas are ~23k tokens since its
 # Aperture tools were allowlisted (homelab-agent.yaml; ~82k before, which
 # pinned sessions at the 128k limit) and its prompts ~4k, so ~100k is left
-# for the conversation. The first turn reads everything (~25-30s at
-# ~1000 tok/s); later turns should reuse llama-server's prompt cache, which
+# for the conversation. The first turn reads everything (~11s at
+# ~2500 tok/s); later turns should reuse llama-server's prompt cache, which
 # needs the patched Ollama in images/ollama (stock 0.40.3 renders tools in
 # a random order and never hits) and only one agent talking to qwen.
 apiVersion: kagent.dev/v1alpha2

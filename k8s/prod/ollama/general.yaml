@@ -76,16 +76,26 @@ spec:
         # Builds lfm2.5-24b:agent: the hf.co model (its chat template and
         # stops passed tool-calling and thinking tests as-is) plus Liquid's
         # recommended sampling (temperature 0.1, top_k 50, repetition
-        # penalty 1.05) and 64k context. Measured on this card (q4_0 KV,
-        # 8k / 22k-token prompts, tok/s reading / generating):
-        #   32k ctx: 711 (21k prompt) / ~90   89% GPU
-        #   48k ctx: 602 / 82, 629 / 79       87% GPU
-        #   64k ctx: 543 / 72, 574 / 71       86% GPU   <- chosen
-        #  112k ctx: 367 / 38, 413 / 42       81% GPU
-        # It never fits 100% on the card; the rest of the experts run from
-        # host RAM (~1GiB RSS, inside the 3Gi limit below). 64k leaves room
-        # for an agent's ~20k tokens of tools plus a real conversation and
-        # still beats bonsai at 112k (~500 / ~30) on both.
+        # penalty 1.05), 48k context, num_batch 2048 and use_mmap false.
+        # Measured on this card (q4_0 KV, 7k / 18k-token prompts, tok/s
+        # reading / generating, 2026-10-14):
+        #   64k, batch  512, mmap:     586 / 81, 581 / 77   84% GPU (was)
+        #   64k, batch 1024, no mmap:  945 / 79, 912 / 74   82% GPU
+        #   64k, batch 2048, no mmap: 1200 / 71, 1237 / 70  78% GPU
+        #   48k, batch 1024, no mmap: 1028 / 81, 992 / 77   84% GPU
+        #   48k, batch 2048, no mmap: 1312 / 78, 1346 / 73  80% GPU <- chosen
+        # It never fits 100% on the card; the rest of the experts run on
+        # the CPU. Bigger batches cut the number of passes over those
+        # CPU-side experts during prompt reading (2.3x at 2048) for a few
+        # percent of generation. 48k still fits an agent's ~20k tokens of
+        # tools plus a conversation.
+        #
+        # use_mmap false: with mmap the CPU-side experts sit in page cache,
+        # and when the node is short on RAM the kernel evicts them and
+        # llama-server re-reads them from Longhorn on every token. Seen
+        # 2026-10-14 with ~1GB free on the node: generation fell from ~75
+        # to 3 tok/s at 35% node IO pressure. Off, they're ~1.4GiB of
+        # anonymous memory instead (CUDA_Host model buffer in load logs).
         command:
         - /bin/sh
         - -c
@@ -97,7 +107,9 @@ spec:
           ollama pull hf.co/unsloth/LFM2.5-24B-A2B-Preview-GGUF:UD-IQ2_XXS
           cat > /tmp/Modelfile.lfm <<'EOF'
           FROM hf.co/unsloth/LFM2.5-24B-A2B-Preview-GGUF:UD-IQ2_XXS
-          PARAMETER num_ctx 65536
+          PARAMETER num_ctx 49152
+          PARAMETER num_batch 2048
+          PARAMETER use_mmap false
           PARAMETER temperature 0.1
           PARAMETER top_k 50
           PARAMETER repeat_penalty 1.05
@@ -144,9 +156,9 @@ spec:
         - name: OLLAMA_NUM_PARALLEL
           value: "1"
         # Matches lfm2.5-24b:agent so bare-tag requests don't force a reload
-        # at a different size. (Was 114688 for bonsai.)
+        # at a different size.
         - name: OLLAMA_CONTEXT_LENGTH
-          value: "65536"
+          value: "49152"
         # 4-bit KV, server-wide. Set for bonsai (PrismML ships it with a
         # 4-bit cache); the LFM numbers above were measured with it too, and
         # LFM's cache is small anyway (10 attention layers: 180MiB at 32k)
@@ -177,23 +189,22 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /root/.ollama
-        # Most of the model lives on the GPU; LFM's CPU-side experts
-        # (~14% at 64k) are read from page cache. Measured ~0.8-1.1GiB pod
-        # memory under load at 32k-112k. Kept small: qwen3-coder-next
-        # requests 26Gi of the node's 32GB.
+        # Most of the model lives on the GPU; the CPU-side experts (~1.4GiB,
+        # no mmap) plus buffers measured 2.25GiB pod memory loaded at 48k /
+        # batch 2048.
         #
-        # The memory limit is a fence, not a budget: ~1GiB steady state
-        # plus checkpoints fits well under it. If llama-server still
+        # The memory limit is a fence, not a budget: ~2.3GiB steady state
+        # plus checkpoints fits under it. If llama-server still
         # runs away, its own cgroup OOMs and only it restarts (seconds: the
         # model is local) instead of a node-wide OOM that can take out
         # qwen (a 90s+ reload) or other pods.
         resources:
           requests:
             cpu: 1000m
-            memory: 2Gi
+            memory: 3Gi
             nvidia.com/gpu: 1
           limits:
-            memory: 3Gi
+            memory: 4Gi
             nvidia.com/gpu: 1
         livenessProbe:
           failureThreshold: 3
