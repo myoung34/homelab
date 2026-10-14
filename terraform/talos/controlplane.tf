@@ -11,7 +11,7 @@ data "talos_machine_configuration" "controlplane" {
 # Per-node patches, keyed by node IP. A local rather than inline in the
 # resource so validate.sh can render exactly what terraform applies.
 locals {
-  controlplane_patches = { for ip, node in local.node_data.controlplanes : ip => [
+  controlplane_patches = { for ip, node in local.node_data.controlplanes : ip => flatten([
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
       hostname           = node.hostname
       install_disk       = node.install_disk
@@ -31,7 +31,8 @@ locals {
       name = "tailscale"
       env  = local.extensions.tailscale.env
     }),
-  ] }
+    node.image == local.rpi_overlay_image ? [templatefile("${path.module}/templates/pi4-cpufreq.yaml.tmpl", {})] : [],
+  ]) }
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {

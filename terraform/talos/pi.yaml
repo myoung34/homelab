@@ -1,6 +1,13 @@
 overlay:
   name: rpi_generic
   image: siderolabs/sbc-raspberrypi
+  options:
+    # The stock config.txt sets arm_boost=1, which runs the Pi 4 at 1.8GHz
+    # instead of 1.5GHz. PoE HATs can't power that under load: the Pis log
+    # "Undervoltage detected!" and throttle to 600MHz. Appended last, so it
+    # overrides the stock line.
+    configTxtAppend: |
+      arm_boost=0
 customization:
   extraKernelArgs:
     - talos.logging.kernel=tcp://192.168.3.2:5046/
