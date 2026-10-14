@@ -40,13 +40,10 @@ spec:
         app.kubernetes.io/name: ollama
     spec:
       automountServiceAccountToken: true
-      # Serves qwen3-coder-next (80B MoE, ~3B active, 51GB Q4_K_M) for async
-      # coding agents. It doesn't fit in the 32GB card: llama-server keeps
-      # attention/shared weights plus ~26GB of experts on the GPU and the
-      # remaining ~23GB of expert tensors in host RAM (it does the
-      # --n-cpu-moe style split itself; no knob needed). Clients should use
-      # the tuned `qwen3-coder-next:agent` tag built by pull-model below,
-      # not the bare library tag.
+      # Serves qwen3-coder-next (80B MoE, ~3B active) for async coding
+      # agents, as unsloth's UD-IQ3_XXS GGUF (28.5GB). At 128k context and
+      # num_batch 2048 it fits entirely in the 32GB card. Clients should use
+      # the tuned `qwen3-coder-next:agent` tag built by pull-model below.
       #
       # GPU offload (AMD Radeon AI PRO R9700 32GB / gfx1201 via ROCm): requesting
       # amd.com/gpu below requires the siderolabs/amdgpu Talos extension on
@@ -83,33 +80,35 @@ spec:
         # this to a supported target to force recognition:
         # - name: HSA_OVERRIDE_GFX_VERSION
         #   value: "11.0.0"
-        # Builds qwen3-coder-next:agent: the library model (which already
-        # carries Qwen's recommended sampling: temperature 1.0, top_p 0.95,
-        # top_k 40) plus load/runtime params that can only be set per
-        # model or per request, never server-wide:
+        # Builds qwen3-coder-next:agent from unsloth's UD-IQ3_XXS GGUF. The
+        # TEMPLATE/RENDERER/PARSER and sampling (Qwen's temperature 1.0,
+        # top_p 0.95, top_k 40) are copied from the library model's
+        # Modelfile; the qwen3-coder renderer is what images/ollama patches.
         #
-        # use_mmap false - the model is 51GB and the node has 32GB of RAM.
-        #   With mmap the CPU-side experts live in page cache and get evicted
-        #   while the GPU half streams in, so the load re-reads from Longhorn
-        #   until it stalls out (observed: >10min, then "timed out waiting
-        #   for llama-server to start"). With it off: ~90-220s load.
+        # Quant, measured 2026-10-14 (18k-token prompt tok/s reading /
+        # generating; HumanEval+ and MBPP+ pass@1, greedy, evalplus):
+        #   Q4_K_M (library) 48.5GB 44% CPU 1190 / 28  HE+ 88.4  MBPP+ 74.6
+        #   UD-IQ4_XS        38.4GB 27% CPU 1807 / 33  HE+ 87.8
+        #   UD-Q3_K_XL       36.3GB 24% CPU 1920 / 37  HE+ 89.0
+        #   UD-IQ3_XXS       28.5GB  0% CPU 2517 / 65  HE+ 88.4  MBPP+ 75.4
+        # (IQ3_XXS row at num_batch 2048, the others at 4096.) Every quant
+        # scored within noise of Q4_K_M and passed 20/20 tool calls, so the
+        # one that fits on the GPU wins: 2.1x prompt reading, 2.3x
+        # generation, and ~24GB of node RAM back.
+        #
+        # use_mmap false - kept from Q4_K_M, where the 51GB model didn't fit
+        #   in RAM and mmap'd loads stalled re-reading from Longhorn.
         # num_ctx 131072 - agent sessions run long. KV is cheap on this
         #   arch (only 12 of 48 layers are full attention): 3GB f16 at 128k.
-        #   Clients sending a different num_ctx force a ~90s+ reload.
-        # num_batch 4096 - sets llama-server -b/-ub. The CPU-resident
-        #   experts make prefill batch-bound; measured on a 24k-token
-        #   prompt (Ollama 0.40.2, R9700):
-        #     512 (default) 333 tok/s prefill, 29.3 tok/s gen
-        #     1024          543              29.1
-        #     2048          857              29.0
-        #     4096         1205              28.3
-        #   Agents read far more than they write (~45:1 input:output in a
-        #   goose bench run), so 3.6x prefill beats -3% gen. Bigger batches
-        #   eat more VRAM (pushing experts to CPU) and host RAM, which is
-        #   already ~24.5GB of 32GB at 4096.
+        #   Clients sending a different num_ctx force a reload.
+        # num_batch 2048 - sets llama-server -b/-ub. On IQ3_XXS:
+        #     1024  2218 / 65  100% GPU
+        #     2048  2517 / 65  100% GPU
+        #     4096  2304 / 59  2.3GB spilled to CPU by the bigger buffer
         #
         # qwen3:4b was a GPU smoke test with no consumers; it's removed so a
         # stray request can't evict the coder model (MAX_LOADED_MODELS=1).
+        # The old library Q4_K_M is removed too (48.5GB of the 100Gi PVC).
         command:
         - /bin/sh
         - -c
@@ -118,15 +117,21 @@ spec:
           ollama serve &
           pid=$!
           until ollama list >/dev/null 2>&1; do sleep 1; done
-          ollama pull qwen3-coder-next
+          ollama pull hf.co/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS
           cat > /tmp/Modelfile <<'EOF'
-          FROM qwen3-coder-next
+          FROM hf.co/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS
+          TEMPLATE {{ .Prompt }}
+          RENDERER qwen3-coder
+          PARSER qwen3-coder
+          PARAMETER temperature 1
+          PARAMETER top_k 40
+          PARAMETER top_p 0.95
           PARAMETER use_mmap false
           PARAMETER num_ctx 131072
-          PARAMETER num_batch 4096
+          PARAMETER num_batch 2048
           EOF
           ollama create qwen3-coder-next:agent -f /tmp/Modelfile
-          ollama rm qwen3:4b qwen3:8b 2>/dev/null || true
+          ollama rm qwen3:4b qwen3:8b qwen3-coder-next:latest 2>/dev/null || true
           kill $pid
         volumeMounts:
         - name: data
@@ -184,7 +189,7 @@ spec:
         # reload at a different size.
         - name: OLLAMA_CONTEXT_LENGTH
           value: "131072"
-        # Load-stall timeout (default 5m). A cold load reads 51GB off the
+        # Load-stall timeout (default 5m). A cold load reads 28.5GB off the
         # PVC; give a slow disk or busy node headroom rather than failing.
         - name: OLLAMA_LOAD_TIMEOUT
           value: "15m"
@@ -194,8 +199,8 @@ spec:
         #
         # Defaults are an 8GiB prompt cache plus up to 32 context checkpoints
         # per slot (~75MiB each; qwen3next is hybrid/recurrent, so rolling
-        # back needs a saved state). Both live in host RAM, and this node has
-        # ~3.5GB free once the CPU-side experts are loaded. A long session
+        # back needs a saved state). Both live in host RAM, and on Q4_K_M this
+        # node had ~3.5GB free once the CPU-side experts loaded. A long session
         # grows them until the kernel OOM-kills Ollama (seen twice on
         # 2026-10-09: a 60k-token prompt took MemAvailable from 3.3GB to 0;
         # the cache logged a 67k-token prompt at 1.8GiB). Every kill costs a
@@ -212,9 +217,10 @@ spec:
         # Deliberately not set, per testing/research:
         # - OLLAMA_FLASH_ATTENTION: the default (auto) already resolves to
         #   enabled on this card ("Flash Attention enabled" in load logs).
-        # - OLLAMA_KV_CACHE_TYPE=q8_0: would save ~1.5GB VRAM at 128k, but
-        #   KV is already small here, and quantized KV has quality and speed
-        #   regressions reported on some MoE models. Not worth it untested.
+        # - OLLAMA_KV_CACHE_TYPE=q8_0: measured on IQ3_XXS at 128k / batch
+        #   2048: saves 1.4GB VRAM, same prompt reading, generation 65 -> 59
+        #   tok/s (-10%), HE+ 87.8 vs 88.4 (noise). The model already fits
+        #   on the GPU, so the VRAM buys nothing.
         # See the HSA_OVERRIDE_GFX_VERSION note on the pull-model
         # initContainer above if the GPU isn't actually getting used.
         ports:
@@ -224,15 +230,13 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /root/.ollama
-        # ~23.5GB of host-side expert weights + ~1GB compute buffer at
-        # num_batch 4096, all anonymous memory (no mmap). Requesting it keeps
-        # the scheduler from packing other pods onto the node's last 32GB.
-        # No memory limit: an OOM kill would cost a multi-minute reload.
-        # CPU does real work here too (the CPU-side experts run there).
+        # The model is all on the GPU: 1.3GiB measured loaded, plus up to
+        # ~1.6GiB of prompt cache and checkpoints (LLAMA_ARG_* above).
+        # No memory limit: an OOM kill would cost a reload.
         resources:
           requests:
-            cpu: 4000m
-            memory: 26Gi
+            cpu: 1000m
+            memory: 3Gi
             amd.com/gpu: 1
           limits:
             amd.com/gpu: 1
