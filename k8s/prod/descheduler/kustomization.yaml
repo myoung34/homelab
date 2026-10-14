@@ -4,6 +4,7 @@ namespace: descheduler
 
 resources:
   - namespace.yaml
+  - io-pressure-tainter.yaml
 
 helmCharts:
 - name: descheduler
@@ -13,7 +14,7 @@ helmCharts:
   version: 0.37.0
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
-    schedule: "0 4 */3 * *" # every 3 days at 4am
+    schedule: "*/5 * * * *" # frequent so io-pressure taints act quickly
     deschedulerPolicy:
       profiles:
         - name: default
@@ -29,6 +30,10 @@ helmCharts:
                 namespaces:
                   include:
                   - "actions-runner"
+            - name: RemovePodsViolatingNodeTaints
+              args:
+                includedTaints:
+                  - homelab/io-pressure
           plugins:
             balance:
               enabled:
@@ -36,3 +41,4 @@ helmCharts:
             deschedule:
               enabled:
                 - PodLifeTime
+                - RemovePodsViolatingNodeTaints
