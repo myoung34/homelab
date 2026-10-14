@@ -2,9 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app.kubernetes.io/instance: ollama-bonsai
+    app.kubernetes.io/instance: ollama-general
     app.kubernetes.io/name: ollama
-  name: ollama-bonsai
+  name: ollama-general
   namespace: ollama
 spec:
   ports:
@@ -13,7 +13,7 @@ spec:
     protocol: TCP
     targetPort: http
   selector:
-    app.kubernetes.io/instance: ollama-bonsai
+    app.kubernetes.io/instance: ollama-general
     app.kubernetes.io/name: ollama
   type: ClusterIP
 ---
@@ -21,22 +21,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/instance: ollama-bonsai
+    app.kubernetes.io/instance: ollama-general
     app.kubernetes.io/name: ollama
-  name: ollama-bonsai
+  name: ollama-general
   namespace: ollama
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/instance: ollama-bonsai
+      app.kubernetes.io/instance: ollama-general
       app.kubernetes.io/name: ollama
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app.kubernetes.io/instance: ollama-bonsai
+        app.kubernetes.io/instance: ollama-general
         app.kubernetes.io/name: ollama
     spec:
       automountServiceAccountToken: false
@@ -61,10 +61,10 @@ spec:
       # a lipogram by thinking past 8192 tokens, and named the wrong first
       # woman Nobel laureate in Literature). LFM generated ~90 tok/s vs ~33.
       #
-      # The deployment, Service, Ingress (ollama-bonsai.king-gila.ts.net),
-      # PVC and Aperture provider keep their bonsai names to avoid churn.
-      # Rollback: bonsai-27b:agent is still built below; point the preload,
-      # OLLAMA_CONTEXT_LENGTH and the kagent ModelConfig back at it.
+      # Named for its role (the small general-purpose model), not the model.
+      # Only the tailnet Ingress (ollama-bonsai.king-gila.ts.net,
+      # tailscale.yaml) and Aperture's "ollama-bonsai" provider pointing at
+      # it keep the old name; Aperture's config lives outside this repo.
       runtimeClassName: nvidia
       initContainers:
       - name: pull-model
@@ -86,23 +86,6 @@ spec:
         # host RAM (~1GiB RSS, inside the 3Gi limit below). 64k leaves room
         # for an agent's ~20k tokens of tools plus a real conversation and
         # still beats bonsai at 112k (~500 / ~30) on both.
-        #
-        # Also still builds bonsai-27b:agent (rollback; already on disk),
-        # text-only, at a context that fits the 8GB card fully on GPU. The library tag bundles a vision projector
-        # (~0.6GB VRAM, loaded even for text) and defaults to 262144 ctx, so
-        # :agent is rebuilt from the tag's language-model blob only (its
-        # first FROM line), keeping the tag's renderer, parser, stops and
-        # PrismML's sampling (temperature 0.7, top_p 0.95, top_k 20).
-        #
-        # Measured on the 2070 (Ollama 0.40.3, 2026-10-12), 8k / 22k-token
-        # prompts, tok/s reading / generating:
-        #   with projector, q8_0 KV:  32k ctx 530/31, 480/26 (100% GPU)
-        #                             64k spills 11% to CPU: gen 16.7
-        #   text-only, q4_0 KV:      112k ctx 525/30.5     (100% GPU)
-        #                            128k spills 10% to CPU: gen 15-20
-        # So 112k costs nothing over 32k. A 56k-token prompt reads at
-        # 384 tok/s (146s), generates at 20.7, and still recalls a fact
-        # planted near its start. Vision is gone; no client sends images.
         command:
         - /bin/sh
         - -c
@@ -111,15 +94,6 @@ spec:
           ollama serve &
           pid=$!
           until ollama list >/dev/null 2>&1; do sleep 1; done
-          ollama pull MichelRosselli/bonsai-27b:Q1_0
-          # Everything from the tag's Modelfile except the projector FROM,
-          # the LICENSE blocks and its 262144 num_ctx.
-          ollama show --modelfile MichelRosselli/bonsai-27b:Q1_0 \
-            | awk '/^FROM /{if(f++)next} /^LICENSE/{skip=1}
-                   !skip && !/^PARAMETER num_ctx/ && !/^#/' > /tmp/Modelfile
-          echo 'PARAMETER num_ctx 114688' >> /tmp/Modelfile
-          cat /tmp/Modelfile
-          ollama create bonsai-27b:agent -f /tmp/Modelfile
           ollama pull hf.co/unsloth/LFM2.5-24B-A2B-Preview-GGUF:UD-IQ2_XXS
           cat > /tmp/Modelfile.lfm <<'EOF'
           FROM hf.co/unsloth/LFM2.5-24B-A2B-Preview-GGUF:UD-IQ2_XXS
@@ -245,4 +219,4 @@ spec:
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: ollama-bonsai-data
+          claimName: ollama-general-data

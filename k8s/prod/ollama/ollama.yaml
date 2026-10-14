@@ -57,8 +57,8 @@ spec:
       # (k8s/prod/node-feature-discovery/amd-gpu-nodefeaturerule.yaml) makes
       # that intent explicit without pinning a hostname.
       #
-      # cluster41 also has an RTX 2070 SUPER, which serves bonsai-27b from
-      # its own Ollama (bonsai.yaml). This pod only gets the R9700: the ROCm
+      # cluster41 also has an RTX 2070 SUPER, which serves the small
+      # general-purpose model from its own Ollama (general.yaml). This pod only gets the R9700: the ROCm
       # image plus amd.com/gpu never sees /dev/nvidia*.
       nodeSelector:
         feature.node.kubernetes.io/amd-gpu: "true"

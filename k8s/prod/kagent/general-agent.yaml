@@ -1,6 +1,6 @@
-# kagent-bonsai-test: a scratch agent for kicking the tyres on the 2070's
-# local model with everyday questions - look something up,
-# read a page, check or book something on the calendar, run a Zapier action.
+# general-agent: the general-purpose agent on the 2070's small local model,
+# for everyday questions - look something up, read a page, check or book
+# something on the calendar, run a Zapier action.
 #
 # Deliberately small: no cluster or GitHub tools, so whatever it gets wrong
 # can't touch the homelab. Its Aperture tools are web search/fetch, Google
@@ -10,19 +10,17 @@
 # what makes that bash run at all (see homelab-agent-srt for why). The
 # sandbox has no network: web access goes through aperture_web_*.
 #
-# Name kept from when the 2070 served Bonsai 27B; it now runs LFM2.5-24B
-# (modelconfig-lfm.yaml). Rollback: modelConfig: bonsai-27b.
-#
-# Safe to delete once the 2070's model has been judged.
+# Named for its role, not its model; it runs LFM2.5-24B
+# (modelconfig-lfm.yaml) on ollama-general (k8s/prod/ollama/general.yaml).
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
-  name: kagent-bonsai-test
+  name: general-agent
   namespace: kagent
 spec:
   type: Declarative
   description: >-
-    Test agent for the 2070's local model (LFM2.5-24B-A2B): answers general
+    General-purpose agent on the 2070's small local model: answers general
     questions with web search and page fetches, and can read and manage
     Mark's Google Calendar and run Zapier actions.
   declarative:
@@ -115,27 +113,27 @@ spec:
           memory: 768Mi
       env:
       # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
-      # kagent-bonsai-test-srt ConfigMap below. The rest is the image's PATH.
+      # general-agent-srt ConfigMap below. The rest is the image's PATH.
       - name: PATH
         value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
       volumes:
       - name: srt-shim
         configMap:
-          name: kagent-bonsai-test-srt
+          name: general-agent-srt
           defaultMode: 0555
       volumeMounts:
       - name: srt-shim
         mountPath: /opt/srt-shim
         readOnly: true
 ---
-# srt settings + shim for kagent-bonsai-test's bash. Same mechanism as
+# srt settings + shim for general-agent's bash. Same mechanism as
 # printer-agent-srt / homelab-agent-srt (see homelab-agent.yaml for why it
 # is a PATH shim). No allowedDomains: the sandbox gets no network, and the
 # Agent above sets no spec.sandbox, so the two agree.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kagent-bonsai-test-srt
+  name: general-agent-srt
   namespace: kagent
 data:
   # kagent calls `srt --settings <its file> <command...>`; drop its

@@ -23,7 +23,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: ollama-bonsai-data
+  name: ollama-general-data
 spec:
   accessModes:
   - ReadWriteOnce
@@ -36,7 +36,7 @@ spec:
       dataLocality: best-effort
       numberOfReplicas: "1"
       staleReplicaTimeout: "30"
-    volumeHandle: ollama-bonsai-data
+    volumeHandle: ollama-general-data
   persistentVolumeReclaimPolicy: Retain
   storageClassName: longhorn-static
   volumeMode: Filesystem
