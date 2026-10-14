@@ -73,6 +73,25 @@ spec:
         - name: usb-zooz
           hostPath:
             path: /dev/serial/by-id/usb-Silicon_Labs_Zooz_ZST10_700_Z-Wave_Stick_baf11d5406caec11b51361a341be1031-if00-port0
+      # ser2net can only run where the stick is plugged in, so ride out that
+      # node being tainted, cordoned or briefly NotReady instead of being
+      # evicted to Pending.
+      tolerations:
+        - key: homelab/zwave-usb
+          operator: Exists
+          effect: NoSchedule
+        - key: homelab/io-pressure
+          operator: Exists
+          effect: NoSchedule
+        - key: node.kubernetes.io/unschedulable
+          operator: Exists
+          effect: NoSchedule
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+          effect: NoExecute
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

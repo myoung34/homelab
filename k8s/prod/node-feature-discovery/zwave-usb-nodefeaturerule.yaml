@@ -1,0 +1,29 @@
+# Taints any node with the Zooz Z-Wave stick (Silicon Labs CP210x, USB
+# ff:10c4:ea60 — the same device behind the
+# feature.node.kubernetes.io/usb-ff_10c4_ea60.present label) so that only
+# ser2net and tolerating DaemonSets run there.
+#
+# Why: Longhorn attaches a volume over iSCSI on whichever node its pod runs.
+# A stale Longhorn iSCSI session on this node once hung udev and containerd
+# (PLEG unhealthy, node NotReady), and ser2net can't run anywhere else. Keeping
+# PVC-backed workloads off the node keeps Longhorn off it.
+#
+# Needs master.enableTaints in kustomization.yaml. Any pod that must run here
+# tolerates homelab/zwave-usb (see ser2net, nfd-worker, datadog).
+apiVersion: nfd.k8s-sigs.io/v1alpha1
+kind: NodeFeatureRule
+metadata:
+  name: zwave-usb
+spec:
+  rules:
+    - name: zwave-usb
+      taints:
+        - key: homelab/zwave-usb
+          value: "true"
+          effect: NoSchedule
+      matchFeatures:
+        - feature: usb.device
+          matchExpressions:
+            class: {op: In, value: ["ff"]}
+            vendor: {op: In, value: ["10c4"]}
+            device: {op: In, value: ["ea60"]}
