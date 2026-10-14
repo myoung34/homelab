@@ -42,8 +42,13 @@ helmCharts:
           cpu: 5m
           memory: 105M
       # Keep labelling the Z-Wave node, or ser2net's affinity label disappears.
+      # Ride out io-pressure too: a worker that can't reschedule onto a stalled
+      # node leaves its labels stale, and ser2net follows a stick that moved.
       tolerations:
         - key: homelab/zwave-usb
+          operator: Exists
+          effect: NoSchedule
+        - key: homelab/io-pressure
           operator: Exists
           effect: NoSchedule
     gc:
