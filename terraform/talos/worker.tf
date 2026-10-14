@@ -35,6 +35,7 @@ locals {
       longhorn_min_size  = node.longhorn_min_size
     })],
     node.image == local.bare_metal_image ? [templatefile("${path.module}/templates/bare-metal.yaml.tmpl", {})] : [],
+    node.image == local.rpi_overlay_image ? [templatefile("${path.module}/templates/pi4-cpufreq.yaml.tmpl", {})] : [],
     length(node.mount_point) == 0 ? [] : [templatefile("${path.module}/templates/worker-with-extra-disk.yaml.tmpl", {
       mount_point  = node.mount_point
       extra_device = node.extra_device

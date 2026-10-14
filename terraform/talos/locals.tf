@@ -4,7 +4,7 @@ locals {
   talos_version      = "v1.13.7"
   kubernetes_version = "v1.36.2"
 
-  rpi_overlay_sha   = "1ebcf8682462cead022eabbb8f4e1b4127ab53054a3fb0ed705989e5feb0af28" # pragma: allowlist secret
+  rpi_overlay_sha   = "8c0ab3c46bd174822da61ad52d4f014b05dc7e7d7dd8910bd2b57b0811086d1e" # pragma: allowlist secret
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
 
   rpi5_overlay_sha   = "0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791" # pragma: allowlist secret
