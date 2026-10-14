@@ -1,7 +1,6 @@
 # Local LFM2.5-24B-A2B on cluster41's RTX 2070 SUPER (k8s/prod/ollama/
-# bonsai.yaml - the file and Aperture provider kept their bonsai names),
-# reached through Aperture's "ollama-bonsai" provider like the bonsai
-# ModelConfig it replaced. Same placeholder key Secret: Aperture
+# general.yaml), reached through Aperture's "ollama-bonsai" provider (old
+# name, configured outside this repo). Same placeholder key Secret: Aperture
 # authenticates by tailnet identity (tag:k8s) and ignores it.
 #
 # :agent is unsloth's UD-IQ2_XXS quant of the Preview checkpoint at 64k

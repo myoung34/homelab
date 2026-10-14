@@ -1,6 +1,6 @@
 # Bound to the static PVs in pv.yaml, which point at named Longhorn volumes
 # (k8s/prod/longhorn/ollama.yaml) so they show up as ollama-data /
-# ollama-bonsai-data instead of pvc-<uid>. Snapshot/backup opt-out lives on
+# ollama-general-data instead of pvc-<uid>. Snapshot/backup opt-out lives on
 # the Longhorn Volumes there.
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -20,7 +20,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ollama-bonsai-data
+  name: ollama-general-data
   namespace: ollama
 spec:
   accessModes:
@@ -30,4 +30,4 @@ spec:
       storage: 20Gi
   storageClassName: longhorn-static
   volumeMode: Filesystem
-  volumeName: ollama-bonsai-data
+  volumeName: ollama-general-data

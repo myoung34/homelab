@@ -35,10 +35,10 @@ apiVersion: longhorn.io/v1beta2
 kind: Volume
 metadata:
   labels:
-    longhornvolume: ollama-bonsai-data
+    longhornvolume: ollama-general-data
     recurring-job.longhorn.io/snapshot-cleanup: enabled
     recurring-job.longhorn.io/snapshot-delete: enabled
-  name: ollama-bonsai-data
+  name: ollama-general-data
   namespace: longhorn-system
 spec:
   accessMode: rwo
@@ -46,6 +46,6 @@ spec:
   dataLocality: best-effort
   frontend: blockdev
   numberOfReplicas: 1
-  # 20Gi: bonsai-27b Q1_0 is 4.4GB; room for a second small model or re-pull.
+  # 20Gi: lfm2.5-24b UD-IQ2_XXS is 7.5GB; room for a re-pull.
   size: "21474836480"
   staleReplicaTimeout: 30
