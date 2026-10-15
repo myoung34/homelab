@@ -1,4 +1,4 @@
-# Talos 1.14.2 + Kubernetes 1.37.2 migration PR
+# Talos 1.14.2 + Kubernetes 1.37.2 Migration
 #
 # This PR migrates the Talos cluster from v1.13.7 with Kubernetes 1.36.2
 # to Talos 1.14.2 with Kubernetes 1.37.2.
@@ -63,6 +63,7 @@
 # - `locals.tf`: Bumped `talos_version` to v1.14.2, `kubernetes_version` to v1.37.2
 # - `templates/*.yaml.tmpl`: Migrated to multi-document config
 # - `UPGRADE-1.14.2.md`: New migration guide
+# - `nvidia.yaml.tmpl` (renamed from `bare-metal.yaml.tmpl`)
 #
 # ## References
 #

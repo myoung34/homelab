@@ -3,13 +3,9 @@ data "talos_machine_configuration" "controlplane" {
   cluster_endpoint = local.cluster_endpoint
   machine_type     = "controlplane"
   machine_secrets  = local.machine_secrets
-  # See the note in worker.tf - this must track the nodes' Talos version, not
-  # whatever pkg/machinery the provider happens to bundle.
   talos_version = local.talos_version
 }
 
-# Per-node patches, keyed by node IP. A local rather than inline in the
-# resource so validate.sh can render exactly what terraform applies.
 locals {
   controlplane_patches = { for ip, node in local.node_data.controlplanes : ip => flatten([
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
