@@ -1,14 +1,3 @@
-machine:
-  kubelet:
-    extraMounts:
-      - destination: ${mount_point}
-        type: bind
-        source: ${mount_point}
-        options:
-          - bind
-          - rshared
-          - rw
----
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: ${mount_point}
@@ -18,4 +7,6 @@ provisioning:
   grow: true
   mountOptions:
     - noatime
+mount:
+  path: ${mount_point}
 ---
