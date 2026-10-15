@@ -206,12 +206,16 @@ spec:
         # the cache logged a 67k-token prompt at 1.8GiB). Every kill costs a
         # 90s+ reload and the in-flight agent turn.
         #
-        # 1GiB still holds a printer-agent-sized prompt so switching between
-        # agents doesn't always re-read it; homelab-agent's ~64k prompt won't
-        # fit and gets re-read (~55s) after another agent has run. 8
+        # That budget is gone: on UD-IQ3_XXS the model is all on the GPU and
+        # the node sits at ~8GB used of 32GB (2026-10-15). The old 1GiB cap
+        # now held nothing useful. In 24h llama-server skipped caching 85
+        # prompt states (median 3.2GiB, max 3.7GiB) and fully re-read the
+        # prompt 80 times, mostly when homelab-agent and printer-agent take
+        # turns, which every homelab -> printer delegation does. 8GiB, the
+        # llama-server default, holds both agents' prompts at once. 8
         # checkpoints (~600MiB) is plenty for append-only agent turns.
         - name: LLAMA_ARG_CACHE_RAM
-          value: "1024"
+          value: "8192"
         - name: LLAMA_ARG_CTX_CHECKPOINTS
           value: "8"
         # Deliberately not set, per testing/research:
@@ -231,12 +235,13 @@ spec:
         - name: data
           mountPath: /root/.ollama
         # The model is all on the GPU: 1.3GiB measured loaded, plus up to
-        # ~1.6GiB of prompt cache and checkpoints (LLAMA_ARG_* above).
+        # 8GiB of prompt cache and ~0.6GiB of checkpoints (LLAMA_ARG_* above).
+        # The request covers that so the scheduler doesn't pack the node.
         # No memory limit: an OOM kill would cost a reload.
         resources:
           requests:
             cpu: 1000m
-            memory: 3Gi
+            memory: 11Gi
             amd.com/gpu: 1
           limits:
             amd.com/gpu: 1
