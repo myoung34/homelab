@@ -1,0 +1,51 @@
+# Builds images/kagent-adk (stock kagent Go agent runtime + a2a-go#414) and
+# pushes ghcr.io/myoung34/homelab/golang-adk. Runs on any branch that touches
+# the image, so the tags exist before the PR that uses them is merged.
+#
+# Two variants, matching what the kagent controller asks for: <tag> for plain
+# agents and <tag>-full for agents with spec.skills. Both architectures,
+# since agents land on the arm64 Pis and on cluster41 (amd64). No QEMU: the
+# Go stage cross-compiles on the runner and the final stage only COPYs.
+name: kagent-adk image
+
+on:
+  push:
+    paths:
+      - images/kagent-adk/**
+      - .github/workflows/kagent-adk-image.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: ["", "-full"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read KAGENT_VERSION and PATCHES
+        id: v
+        run: |
+          echo "version=$(sed -n 's/^ARG KAGENT_VERSION=//p' images/kagent-adk/Dockerfile)" >> "$GITHUB_OUTPUT"
+          echo "patches=$(sed -n 's/^ARG PATCHES=//p' images/kagent-adk/Dockerfile)" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: images/kagent-adk
+          pull: true
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BASE=ghcr.io/kagent-dev/kagent/golang-adk:${{ steps.v.outputs.version }}${{ matrix.variant }}
+          tags: ghcr.io/${{ github.repository }}/golang-adk:${{ steps.v.outputs.version }}-${{ steps.v.outputs.patches }}${{ matrix.variant }}
+          cache-from: type=gha,scope=kagent-adk${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=kagent-adk${{ matrix.variant }}
