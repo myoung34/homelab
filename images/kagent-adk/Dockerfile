@@ -25,6 +25,9 @@
 # here (A2A_VERSION = the a2a-go/v2 version in kagent's go/go.mod), the
 # patch re-checked, and the tag in kustomization.yaml updated by hand.
 ARG KAGENT_VERSION=0.10.3
+# Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
+# changes, or nodes with the old tag cached (IfNotPresent) keep running it.
+ARG PATCHES=a2a414
 ARG A2A_VERSION=2.3.1
 ARG BASE=ghcr.io/kagent-dev/kagent/golang-adk:${KAGENT_VERSION}
 

@@ -33,9 +33,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Read KAGENT_VERSION
+      - name: Read KAGENT_VERSION and PATCHES
         id: v
-        run: echo "version=$(sed -n 's/^ARG KAGENT_VERSION=//p' images/kagent-adk/Dockerfile)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "version=$(sed -n 's/^ARG KAGENT_VERSION=//p' images/kagent-adk/Dockerfile)" >> "$GITHUB_OUTPUT"
+          echo "patches=$(sed -n 's/^ARG PATCHES=//p' images/kagent-adk/Dockerfile)" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: images/kagent-adk
@@ -44,6 +46,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             BASE=ghcr.io/kagent-dev/kagent/golang-adk:${{ steps.v.outputs.version }}${{ matrix.variant }}
-          tags: ghcr.io/${{ github.repository }}/golang-adk:${{ steps.v.outputs.version }}-a2a414${{ matrix.variant }}
+          tags: ghcr.io/${{ github.repository }}/golang-adk:${{ steps.v.outputs.version }}-${{ steps.v.outputs.patches }}${{ matrix.variant }}
           cache-from: type=gha,scope=kagent-adk${{ matrix.variant }}
           cache-to: type=gha,mode=max,scope=kagent-adk${{ matrix.variant }}
