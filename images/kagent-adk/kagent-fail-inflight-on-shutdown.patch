@@ -1,0 +1,321 @@
+diff --git a/go/adk/pkg/a2a/server/server.go b/go/adk/pkg/a2a/server/server.go
+index b0193dd..528d218 100644
+--- a/go/adk/pkg/a2a/server/server.go
++++ b/go/adk/pkg/a2a/server/server.go
+@@ -24,6 +24,9 @@ type ServerConfig struct {
+ 	Host            string
+ 	Port            string
+ 	ShutdownTimeout time.Duration
++	// OnShutdown, if set, runs after the HTTP server has stopped (or the
++	// shutdown timeout has passed), before the process exits.
++	OnShutdown func(context.Context)
+ }
+
+ // A2AServer wraps the A2A server with health endpoints and graceful shutdown.
+@@ -128,7 +131,13 @@ func (s *A2AServer) WaitForShutdown() error {
+ 	ctx, cancel := context.WithTimeout(context.Background(), s.config.ShutdownTimeout)
+ 	defer cancel()
+
+-	if err := s.httpServer.Shutdown(ctx); err != nil {
++	err := s.httpServer.Shutdown(ctx)
++	if s.config.OnShutdown != nil {
++		hookCtx, hookCancel := context.WithTimeout(context.Background(), s.config.ShutdownTimeout)
++		defer hookCancel()
++		s.config.OnShutdown(hookCtx)
++	}
++	if err != nil {
+ 		return fmt.Errorf("error shutting down server: %w", err)
+ 	}
+
+diff --git a/go/adk/pkg/a2a/server/shutdown_test.go b/go/adk/pkg/a2a/server/shutdown_test.go
+new file mode 100644
+index 0000000..1ed9b6c
+--- /dev/null
++++ b/go/adk/pkg/a2a/server/shutdown_test.go
+@@ -0,0 +1,41 @@
++package server
++
++import (
++	"context"
++	"syscall"
++	"testing"
++	"time"
++
++	a2atype "github.com/a2aproject/a2a-go/a2a"
++	"github.com/go-logr/logr"
++)
++
++func TestSIGTERMRunsOnShutdown(t *testing.T) {
++	called := make(chan struct{})
++	srv, err := NewA2AServer(a2atype.AgentCard{}, substrateExecutor{}, logr.Discard(), ServerConfig{
++		Host:            "127.0.0.1",
++		Port:            "0",
++		ShutdownTimeout: time.Second,
++		OnShutdown:      func(context.Context) { close(called) },
++	})
++	if err != nil {
++		t.Fatalf("NewA2AServer: %v", err)
++	}
++
++	done := make(chan error, 1)
++	go func() { done <- srv.Run() }()
++	// Let Run install its signal handler before signalling.
++	time.Sleep(200 * time.Millisecond)
++	if err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM); err != nil {
++		t.Fatal(err)
++	}
++
++	select {
++	case <-called:
++	case <-time.After(5 * time.Second):
++		t.Fatal("OnShutdown not called after SIGTERM")
++	}
++	if err := <-done; err != nil {
++		t.Errorf("Run: %v", err)
++	}
++}
+diff --git a/go/adk/pkg/app/app.go b/go/adk/pkg/app/app.go
+index 78da730..440240f 100644
+--- a/go/adk/pkg/app/app.go
++++ b/go/adk/pkg/app/app.go
+@@ -26,6 +26,8 @@ const (
+ 	defaultPort            = "8080"
+ 	defaultShutdownTimeout = 5 * time.Second
+ 	defaultAppName         = "go-adk-agent"
++
++	shutdownFailureMessage = "The agent was restarted before it finished this response. Send your message again."
+ )
+
+ // AppConfig holds configuration for a KAgent A2A application.
+@@ -96,6 +98,7 @@ func New(cfg AppConfig, executor a2asrv.AgentExecutor) (*KAgentApp, error) {
+
+ 	// Wire remote infrastructure when KAgentURL is configured.
+ 	var handlerOpts []a2asrv.RequestHandlerOption
++	var onShutdown func(context.Context)
+ 	if cfg.KAgentURL != "" {
+ 		httpClient := cfg.HTTPClient
+ 		if httpClient == nil {
+@@ -113,8 +116,13 @@ func New(cfg AppConfig, executor a2asrv.AgentExecutor) (*KAgentApp, error) {
+ 		app.sessionService = sessionSvc
+ 		log.Info("Using KAgent session service", "url", cfg.KAgentURL)
+
+-		taskStore := taskstore.NewKAgentTaskStoreWithClient(cfg.KAgentURL, httpClient)
++		taskStore := taskstore.NewShutdownTaskStore(taskstore.NewKAgentTaskStoreWithClient(cfg.KAgentURL, httpClient))
+ 		handlerOpts = append(handlerOpts, a2asrv.WithTaskStore(taskStore))
++		onShutdown = func(ctx context.Context) {
++			if err := taskStore.FailInFlight(ctx, shutdownFailureMessage); err != nil {
++				log.Error(err, "Failed to mark in-flight tasks failed on shutdown")
++			}
++		}
+ 		log.Info("Using KAgent task store", "url", cfg.KAgentURL)
+ 	} else {
+ 		log.Info("No KAgentURL configured, using in-memory session and no task persistence")
+@@ -135,6 +143,7 @@ func New(cfg AppConfig, executor a2asrv.AgentExecutor) (*KAgentApp, error) {
+ 		Host:            cfg.Host,
+ 		Port:            cfg.Port,
+ 		ShutdownTimeout: cfg.ShutdownTimeout,
++		OnShutdown:      onShutdown,
+ 	}
+
+ 	a2aServer, err := server.NewA2AServer(cfg.AgentCard, executor, log, serverConfig, handlerOpts...)
+diff --git a/go/adk/pkg/taskstore/shutdown.go b/go/adk/pkg/taskstore/shutdown.go
+new file mode 100644
+index 0000000..9aaddae
+--- /dev/null
++++ b/go/adk/pkg/taskstore/shutdown.go
+@@ -0,0 +1,72 @@
++package taskstore
++
++import (
++	"context"
++	"errors"
++	"fmt"
++	"sync"
++	"time"
++
++	a2atype "github.com/a2aproject/a2a-go/a2a"
++	"github.com/a2aproject/a2a-go/a2asrv"
++)
++
++// ShutdownTaskStore wraps a TaskStore and remembers every task whose last
++// saved state was submitted or working. When the pod is stopped mid-turn,
++// FailInFlight marks those tasks failed. Without it they stay "working" in
++// the controller forever, and the UI refuses new messages in that session
++// ("This session is already being processed").
++type ShutdownTaskStore struct {
++	a2asrv.TaskStore
++
++	mu       sync.Mutex
++	closed   bool
++	inFlight map[a2atype.TaskID]a2atype.Task
++}
++
++// NewShutdownTaskStore wraps inner.
++func NewShutdownTaskStore(inner a2asrv.TaskStore) *ShutdownTaskStore {
++	return &ShutdownTaskStore{TaskStore: inner, inFlight: map[a2atype.TaskID]a2atype.Task{}}
++}
++
++// Save implements a2asrv.TaskStore. It fails once FailInFlight has run, so a
++// late event from a still-running execution cannot overwrite the failure.
++func (s *ShutdownTaskStore) Save(ctx context.Context, task *a2atype.Task, event a2atype.Event, prev *a2atype.Task, prevVersion a2atype.TaskVersion) (a2atype.TaskVersion, error) {
++	s.mu.Lock()
++	defer s.mu.Unlock()
++	if s.closed {
++		return a2atype.TaskVersionMissing, errors.New("agent is shutting down")
++	}
++	v, err := s.TaskStore.Save(ctx, task, event, prev, prevVersion)
++	if err != nil || task == nil {
++		return v, err
++	}
++	switch task.Status.State {
++	case a2atype.TaskStateSubmitted, a2atype.TaskStateWorking:
++		s.inFlight[task.ID] = *task
++	default:
++		delete(s.inFlight, task.ID)
++	}
++	return v, nil
++}
++
++// FailInFlight stops further saves and marks every unfinished task failed
++// with reason as its status message.
++func (s *ShutdownTaskStore) FailInFlight(ctx context.Context, reason string) error {
++	s.mu.Lock()
++	defer s.mu.Unlock()
++	s.closed = true
++	now := time.Now()
++	var errs []error
++	for id, task := range s.inFlight {
++		msg := a2atype.NewMessage(a2atype.MessageRoleAgent, a2atype.TextPart{Text: reason})
++		msg.ContextID = task.ContextID
++		msg.TaskID = id
++		task.Status = a2atype.TaskStatus{State: a2atype.TaskStateFailed, Message: msg, Timestamp: &now}
++		if _, err := s.TaskStore.Save(ctx, &task, nil, nil, a2atype.TaskVersionMissing); err != nil {
++			errs = append(errs, fmt.Errorf("task %s: %w", id, err))
++		}
++		delete(s.inFlight, id)
++	}
++	return errors.Join(errs...)
++}
+diff --git a/go/adk/pkg/taskstore/shutdown_test.go b/go/adk/pkg/taskstore/shutdown_test.go
+new file mode 100644
+index 0000000..239a9a0
+--- /dev/null
++++ b/go/adk/pkg/taskstore/shutdown_test.go
+@@ -0,0 +1,117 @@
++package taskstore
++
++import (
++	"context"
++	"sync"
++	"testing"
++
++	a2atype "github.com/a2aproject/a2a-go/a2a"
++)
++
++// memStore is a minimal in-memory a2asrv.TaskStore standing in for the
++// controller's task API.
++type memStore struct {
++	mu    sync.Mutex
++	tasks map[a2atype.TaskID]a2atype.Task
++}
++
++func newMemStore() *memStore { return &memStore{tasks: map[a2atype.TaskID]a2atype.Task{}} }
++
++func (m *memStore) Save(_ context.Context, t *a2atype.Task, _ a2atype.Event, _ *a2atype.Task, _ a2atype.TaskVersion) (a2atype.TaskVersion, error) {
++	m.mu.Lock()
++	defer m.mu.Unlock()
++	m.tasks[t.ID] = *t
++	return 1, nil
++}
++
++func (m *memStore) Get(_ context.Context, id a2atype.TaskID) (*a2atype.Task, a2atype.TaskVersion, error) {
++	m.mu.Lock()
++	defer m.mu.Unlock()
++	t, ok := m.tasks[id]
++	if !ok {
++		return nil, 0, a2atype.ErrTaskNotFound
++	}
++	return &t, 1, nil
++}
++
++func (m *memStore) List(context.Context, *a2atype.ListTasksRequest) (*a2atype.ListTasksResponse, error) {
++	return nil, nil
++}
++
++func (m *memStore) state(id a2atype.TaskID) a2atype.TaskState {
++	t, _, _ := m.Get(context.Background(), id)
++	return t.Status.State
++}
++
++func save(t *testing.T, s *ShutdownTaskStore, id a2atype.TaskID, state a2atype.TaskState) error {
++	t.Helper()
++	_, err := s.Save(context.Background(), &a2atype.Task{ID: id, ContextID: "ctx", Status: a2atype.TaskStatus{State: state}}, nil, nil, 0)
++	return err
++}
++
++func TestFailInFlightMarksUnfinishedTasksFailed(t *testing.T) {
++	inner := newMemStore()
++	s := NewShutdownTaskStore(inner)
++
++	for id, state := range map[a2atype.TaskID]a2atype.TaskState{
++		"running":   a2atype.TaskStateWorking,
++		"queued":    a2atype.TaskStateSubmitted,
++		"done":      a2atype.TaskStateCompleted,
++		"approval":  a2atype.TaskStateInputRequired,
++		"finished1": a2atype.TaskStateWorking,
++	} {
++		if err := save(t, s, id, state); err != nil {
++			t.Fatal(err)
++		}
++	}
++	// A task that was working and then finished must not be touched.
++	if err := save(t, s, "finished1", a2atype.TaskStateCompleted); err != nil {
++		t.Fatal(err)
++	}
++
++	if err := s.FailInFlight(context.Background(), "agent restarted"); err != nil {
++		t.Fatal(err)
++	}
++
++	want := map[a2atype.TaskID]a2atype.TaskState{
++		"running":   a2atype.TaskStateFailed,
++		"queued":    a2atype.TaskStateFailed,
++		"done":      a2atype.TaskStateCompleted,
++		"approval":  a2atype.TaskStateInputRequired,
++		"finished1": a2atype.TaskStateCompleted,
++	}
++	for id, w := range want {
++		if got := inner.state(id); got != w {
++			t.Errorf("task %s: state %q, want %q", id, got, w)
++		}
++	}
++
++	failed, _, _ := inner.Get(context.Background(), "running")
++	if failed.Status.Message == nil || len(failed.Status.Message.Parts) == 0 {
++		t.Fatal("failed task has no status message explaining why")
++	}
++	if tp, ok := failed.Status.Message.Parts[0].(a2atype.TextPart); !ok || tp.Text != "agent restarted" {
++		t.Errorf("status message = %#v, want text %q", failed.Status.Message.Parts[0], "agent restarted")
++	}
++}
++
++func TestSaveAfterFailInFlightIsRejected(t *testing.T) {
++	inner := newMemStore()
++	s := NewShutdownTaskStore(inner)
++	if err := save(t, s, "running", a2atype.TaskStateWorking); err != nil {
++		t.Fatal(err)
++	}
++
++	if err := s.FailInFlight(context.Background(), "agent restarted"); err != nil {
++		t.Fatal(err)
++	}
++
++	// The execution goroutine is still alive during shutdown; a late working
++	// event must not overwrite the failed status.
++	if err := save(t, s, "running", a2atype.TaskStateWorking); err == nil {
++		t.Error("Save after FailInFlight succeeded, want error")
++	}
++	if got := inner.state("running"); got != a2atype.TaskStateFailed {
++		t.Errorf("state %q after late save, want failed", got)
++	}
++}

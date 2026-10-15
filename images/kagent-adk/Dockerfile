@@ -27,6 +27,15 @@
 # 327k-character GitHub_search_pull_requests result pushed a qwen session
 # past its 131k context, and Ollama silently dropped the system prompt.
 #
+# kagent-fail-inflight-on-shutdown.patch (ours, not upstream) marks a turn
+# failed when the pod is stopped mid-turn. Stock kagent exits on SIGTERM
+# with the task still "working" in the controller, and the UI then refuses
+# every new message in that chat ("This session is already being
+# processed") forever. On 2026-10-15 two ArgoCD rollouts of homelab-agent
+# bricked two chats this way. The task store now remembers unfinished
+# tasks, and after the HTTP server's shutdown timeout it saves them as
+# failed with a "send your message again" note and rejects late saves.
+#
 # Only /app changes. Each variant starts from the official image named by
 # BASE: golang-adk:<v> for plain agents, golang-adk:<v>-full (sandbox
 # runtime for skills) for agents with spec.skills. The controller derives
@@ -43,7 +52,7 @@
 ARG KAGENT_VERSION=0.10.3
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
-ARG PATCHES=a2a414-cap-compact
+ARG PATCHES=a2a414-cap-compact-orphan
 ARG A2A_VERSION=2.5.0
 ARG BASE=ghcr.io/kagent-dev/kagent/golang-adk:${KAGENT_VERSION}
 
@@ -55,17 +64,20 @@ ARG TARGETARCH
 WORKDIR /src
 RUN git clone -q --depth 1 --branch v${A2A_VERSION} https://github.com/a2aproject/a2a-go.git a2a \
  && git clone -q --depth 1 --branch v${KAGENT_VERSION} https://github.com/kagent-dev/kagent.git kagent
-COPY a2a-go-pr414.patch kagent-pr2791.patch kagent-tool-result-cap.patch ./
+COPY a2a-go-pr414.patch kagent-pr2791.patch kagent-tool-result-cap.patch \
+     kagent-fail-inflight-on-shutdown.patch ./
 COPY wedge_test.go a2a/a2asrv/eventqueue/homelab_wedge_test.go
 RUN git -C a2a apply ../a2a-go-pr414.patch \
  && git -C kagent apply ../kagent-pr2791.patch \
- && git -C kagent apply ../kagent-tool-result-cap.patch
+ && git -C kagent apply ../kagent-tool-result-cap.patch \
+ && git -C kagent apply ../kagent-fail-inflight-on-shutdown.patch
 # The patched queue's own tests plus the homelab repro (wedge_test.go),
 # which fails on stock a2a-go. Native arch: this stage runs on BUILDPLATFORM.
 RUN cd a2a && go test -race -count=1 ./a2asrv/eventqueue/... ./internal/taskexec/...
 WORKDIR /src/kagent/go
 RUN go mod edit -replace github.com/a2aproject/a2a-go/v2=/src/a2a \
- && go test -count=1 ./adk/pkg/a2a/... ./adk/pkg/agent/... ./adk/pkg/runner/...
+ && go test -count=1 ./adk/pkg/a2a/... ./adk/pkg/agent/... ./adk/pkg/runner/... \
+      ./adk/pkg/app/... ./adk/pkg/taskstore/...
 # Mirrors kagent's own build (go/Dockerfile): static, no CGO.
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath \
       -ldflags "-s -w -X github.com/kagent-dev/kagent/go/core/internal/version.Version=${KAGENT_VERSION}-${PATCHES}" \
