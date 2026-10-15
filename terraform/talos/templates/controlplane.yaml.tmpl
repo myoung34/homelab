@@ -5,10 +5,12 @@ machine:
       - endpoint: "tcp://192.168.3.2:5046/"
         format: "json_lines"
   network:
-#    hostname: ${hostname}
-    #interfaces:
-    #    - interface: tailscale0
-    #      mtu: 1420
+    interfaces:
+      - deviceSelector:
+          hardwareAddr: ${network_hardware_addr}
+        dhcp: true
+        vip:
+          ip: 192.168.1.254
   install:
     image: ${image}
     provision:
@@ -97,11 +99,6 @@ image: registry.k8s.io/kube-scheduler:${kubernetes_version}
 apiVersion: v1alpha1
 kind: KubeAPIServerConfig
 image: registry.k8s.io/kube-apiserver:${kubernetes_version}
-certSANs:
-%{ for san in cert_sans ~}
-  - ${san}
-%{ endfor ~}
-disablePodSecurityPolicy: true
 ---
 apiVersion: v1alpha1
 kind: KubeAdmissionControlConfig
@@ -160,3 +157,4 @@ manifests:
 apiVersion: v1alpha1
 kind: KubeInlineManifestConfig
 manifests: []
+---
