@@ -8,10 +8,17 @@
 # eight hours: every chat hung 300s with no Execute log until a restart.
 #
 # #414 bounds how long the broker waits on one subscriber (5m) and isolates
-# stalled subscribers from registration. It is written against a2a-go main;
-# a2a-go-pr414.patch is that diff applied to v2.3.1 (the version kagent
-# 0.10.3 pins) with one change: v2.3.1 lacks defaultInactivityTimeout, so
-# defaultSubscriberTimeout is inlined as 5 * time.Minute.
+# stalled subscribers from registration. a2a-go-pr414.patch is #414's diff,
+# unmodified, applied to a2a-go v2.5.0 (the version kagent-pr2791.patch
+# moves kagent to; stock kagent 0.10.3 pins v2.3.1).
+#
+# kagent-pr2791.patch is kagent-dev/kagent#2791 (open backport to
+# release/v0.10.x of #2790, merged on main): the Go runtime honours
+# spec.declarative.context.compaction, which stock 0.10.3 ignores. Agent code
+# plus go.mod/go.sum only (google.golang.org/adk/v2 2.1.0 -> 2.3.0, which
+# carries session/compaction, and a2a-go/v2 2.3.1 -> 2.5.0). The 0.10.3
+# controller already writes the compaction settings into the agent config;
+# it just labels them "ignored" in the UnsupportedFeatures condition.
 #
 # kagent-tool-result-cap.patch (ours, not upstream) adds an AfterToolCallback
 # that truncates any tool result over KAGENT_MAX_TOOL_RESULT_CHARS, with a
@@ -29,35 +36,39 @@
 # drop controller.goAgentImage from k8s/prod/kagent/kustomization.yaml and
 # remove images/kagent-adk plus .github/workflows/kagent-adk-image.yaml.
 # Until then a kagent bump needs KAGENT_VERSION and A2A_VERSION updated
-# here (A2A_VERSION = the a2a-go/v2 version in kagent's go/go.mod), the
-# patch re-checked, and the tag in kustomization.yaml updated by hand.
+# here (A2A_VERSION = the a2a-go/v2 version in kagent's go/go.mod, after
+# kagent-pr2791.patch), the patches re-checked, and the tag in
+# kustomization.yaml updated by hand. Drop kagent-pr2791.patch once the
+# kagent release includes #2790/#2791.
 ARG KAGENT_VERSION=0.10.3
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
-ARG PATCHES=a2a414-cap
-ARG A2A_VERSION=2.3.1
+ARG PATCHES=a2a414-cap-compact
+ARG A2A_VERSION=2.5.0
 ARG BASE=ghcr.io/kagent-dev/kagent/golang-adk:${KAGENT_VERSION}
 
 FROM --platform=$BUILDPLATFORM golang:1.27-bookworm AS build
 ARG KAGENT_VERSION
 ARG A2A_VERSION
+ARG PATCHES
 ARG TARGETARCH
 WORKDIR /src
 RUN git clone -q --depth 1 --branch v${A2A_VERSION} https://github.com/a2aproject/a2a-go.git a2a \
  && git clone -q --depth 1 --branch v${KAGENT_VERSION} https://github.com/kagent-dev/kagent.git kagent
-COPY a2a-go-pr414.patch kagent-tool-result-cap.patch ./
+COPY a2a-go-pr414.patch kagent-pr2791.patch kagent-tool-result-cap.patch ./
 COPY wedge_test.go a2a/a2asrv/eventqueue/homelab_wedge_test.go
 RUN git -C a2a apply ../a2a-go-pr414.patch \
+ && git -C kagent apply ../kagent-pr2791.patch \
  && git -C kagent apply ../kagent-tool-result-cap.patch
 # The patched queue's own tests plus the homelab repro (wedge_test.go),
 # which fails on stock a2a-go. Native arch: this stage runs on BUILDPLATFORM.
 RUN cd a2a && go test -race -count=1 ./a2asrv/eventqueue/... ./internal/taskexec/...
 WORKDIR /src/kagent/go
 RUN go mod edit -replace github.com/a2aproject/a2a-go/v2=/src/a2a \
- && go test -count=1 ./adk/pkg/a2a/... ./adk/pkg/agent/...
+ && go test -count=1 ./adk/pkg/a2a/... ./adk/pkg/agent/... ./adk/pkg/runner/...
 # Mirrors kagent's own build (go/Dockerfile): static, no CGO.
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath \
-      -ldflags "-s -w -X github.com/kagent-dev/kagent/go/core/internal/version.Version=${KAGENT_VERSION}-a2a414" \
+      -ldflags "-s -w -X github.com/kagent-dev/kagent/go/core/internal/version.Version=${KAGENT_VERSION}-${PATCHES}" \
       -o /app ./adk/cmd
 
 FROM ${BASE}
