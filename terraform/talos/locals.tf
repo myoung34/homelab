@@ -1,8 +1,8 @@
 locals {
   cluster_name       = "prod"
   cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.13.7"
-  kubernetes_version = "v1.36.2"
+  talos_version      = "v1.14.2"
+  kubernetes_version = "v1.37.2"
 
   rpi_overlay_sha   = "8c0ab3c46bd174822da61ad52d4f014b05dc7e7d7dd8910bd2b57b0811086d1e" # pragma: allowlist secret
   rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
@@ -10,16 +10,6 @@ locals {
   rpi5_overlay_sha   = "0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791" # pragma: allowlist secret
   rpi5_overlay_image = "factory.talos.dev/installer/${local.rpi5_overlay_sha}:${local.talos_version}"
 
-  # Bare-metal amd64 + Radeon (amdgpu) schematic from bare.yaml. No overlay on
-  # amd64; siderolabs/amdgpu ships both the firmware and kernel modules the
-  # Radeon AI PRO R9700 / gfx1201 needs; siderolabs/amd-ucode is CPU microcode
-  # for the Ryzen 5 5500. The nvidia-* pair drives the RTX 2070 SUPER next to
-  # it (open kernel modules: Turing is the oldest arch they support, and NVIDIA
-  # recommends them from Turing on); both must stay on the same driver branch
-  # (-production). Their modules are loaded by templates/bare-metal.yaml.tmpl.
-  # Regenerate via:
-  #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
-  # and drop the returned "id" in below.
   bare_metal_sha   = "c74594ca0d5f8b6fe7e6a73c1258da7dd48cf8278684f4d40b996a248635fb95" # pragma: allowlist secret
   bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:${local.talos_version}"
 
@@ -31,7 +21,7 @@ locals {
     }
   }
 
-  temp_cert_sans = [] # useful when migrating controlplane nodes and having to add then remove
+  temp_cert_sans = []
   cert_sans      = setunion(keys(local.node_data.controlplanes), local.temp_cert_sans)
 
   node_data = {
@@ -69,7 +59,6 @@ locals {
         longhorn_disk_selector = ""
         ephemeral_max_size     = ""
         longhorn_min_size      = ""
-        #network_hardware_addr = "00:e0*"
       },
       "192.168.1.21" = {
         hostname               = "cluster12"
@@ -92,7 +81,6 @@ locals {
         longhorn_disk_selector = ""
         ephemeral_max_size     = ""
         longhorn_min_size      = ""
-
       },
       "192.168.1.24" = {
         hostname               = "cluster21"
@@ -134,13 +122,6 @@ locals {
         kubernetes_version = ""
         extra_device       = ""
         mount_point        = ""
-        # cluster{row}{column}: this 4U sits alone on row 4.
-        # Radeon AI PRO R9700 32GB + RTX 2070 SUPER 8GB. 1TB NVMe, single-disk: same disk serves
-        # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
-        # (floor of 900GB, grows to fill whatever's left). Disk is targeted by
-        # selector, not device path, in case NVMe names aren't stable across
-        # reboots. Longhorn uses /var/mnt/longhorn directly as its disk; see
-        # templates/longhorn-dedicated-volume.yaml.tmpl.
         longhorn_disk_selector = "disk.transport == \"nvme\""
         ephemeral_max_size     = "64GB"
         longhorn_min_size      = "900GB"
