@@ -50,11 +50,16 @@ locals {
         network_hardware_addr = "e4*"
         kubernetes_version    = ""
       },
-      "192.168.1.26" = {
-        hostname              = "cluster23"
+      # cluster21 took over from cluster23 on 2026-10-15. cluster23 is a 4GB
+      # Pi 4 and kube-apiserver alone uses ~2.1GB here, so it lived at
+      # 0.4-1.4GB usable and thrashed (load 21, 93% IO pressure) whenever it
+      # held the VIP. Every control plane needs 8GB. 2c* is the newer Raspberry
+      # Pi OUI (2c:cf:67), not the e4* the other boards carry.
+      "192.168.1.24" = {
+        hostname              = "cluster21"
         install_disk          = "/dev/sda"
         image                 = local.rpi_overlay_image
-        network_hardware_addr = "e4*"
+        network_hardware_addr = "2c*"
         kubernetes_version    = ""
       },
     }
@@ -94,8 +99,9 @@ locals {
         longhorn_min_size      = ""
 
       },
-      "192.168.1.24" = {
-        hostname               = "cluster21"
+      # A 4GB Pi 4 (worker only, see the controlplanes note on cluster21).
+      "192.168.1.26" = {
+        hostname               = "cluster23"
         install_disk           = "/dev/sda"
         image                  = local.rpi_overlay_image
         kubernetes_version     = ""
