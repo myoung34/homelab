@@ -75,7 +75,10 @@ spec:
             path: /dev/serial/by-id/usb-Silicon_Labs_Zooz_ZST10_700_Z-Wave_Stick_baf11d5406caec11b51361a341be1031-if00-port0
       # ser2net can only run where the stick is plugged in, so ride out that
       # node being tainted, cordoned or briefly NotReady instead of being
-      # evicted to Pending.
+      # evicted to Pending. NotReady is bounded: if the stick moves while its
+      # old node is down, an unbounded toleration pins ser2net to the dead
+      # node forever. Evicting is harmless otherwise, since the pod just waits
+      # Pending for the node with the stick to come back.
       tolerations:
         - key: homelab/zwave-usb
           operator: Exists
@@ -89,9 +92,11 @@ spec:
         - key: node.kubernetes.io/not-ready
           operator: Exists
           effect: NoExecute
+          tolerationSeconds: 120
         - key: node.kubernetes.io/unreachable
           operator: Exists
           effect: NoExecute
+          tolerationSeconds: 120
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
