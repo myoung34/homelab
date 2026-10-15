@@ -1,4 +1,3 @@
----
 # Talos 1.14.2 + Kubernetes 1.37.2 migration
 #
 # Multi-document config documents
