@@ -170,18 +170,18 @@ spec:
 
       ## Your other tools
 
-      Aperture proxies 28 more:
+      Aperture proxies 24 more:
         - aperture_web_search / aperture_web_fetch: search the web, and fetch
           one exact URL. web_fetch takes exact URLs only - get them from a
           search result, do not invent them.
         - GitHub_*: files, commits, branches, code search, and pull
           requests (create, update, read, comment, request a Copilot
           review). No issue, release or merge tools.
-        - Datadog_*: logs, metrics, hosts, monitors, events.
-          Call Datadog_list_datadog_skills then Datadog_load_datadog_skill
-          before composing a non-trivial query; the skills hold the query
-          syntax you need. Datadog also covers the Synology and the Nomad
-          jobs, which you have no other way to see.
+        - Datadog_*: logs and metrics only. Before a non-trivial query,
+          call Datadog_load_datadog_skill with `datadog/logs` or
+          `datadog/metrics`; the skill holds the query syntax you need.
+          Datadog also covers the Synology and the Nomad jobs, which you
+          have no other way to see.
 
       {{include "prompts/github"}}
 
@@ -284,7 +284,11 @@ spec:
     # repo create/fork, file delete, merge, reviews, secret scanning, search
     # beyond code/PRs. Dropped 2026-10-15: aperture_list_sessions,
     # aperture_get_session and aperture_get_session_request (Aperture's own
-    # session browser; unused by any prompt, ~1.4k tokens of schema).
+    # session browser; unused by any prompt, ~1.4k tokens of schema). Also
+    # 2026-10-15, Datadog down to logs and metrics (9 -> 5): dropped
+    # search_datadog_monitors, search_datadog_events, search_datadog_hosts
+    # and list_datadog_skills (the prompt names the two skills it needs,
+    # datadog/logs and datadog/metrics). ~9.4k chars, ~2.4k tokens.
     #
     # To undo: delete the toolNames list below (back to "allow all"; also
     # restore the Google/Zapier lines in "Your other tools" in the system
@@ -307,15 +311,11 @@ spec:
         toolNames:
           - aperture_web_search
           - aperture_web_fetch
-          - Datadog_list_datadog_skills
           - Datadog_load_datadog_skill
           - Datadog_search_datadog_logs
           - Datadog_analyze_datadog_logs
           - Datadog_get_datadog_metric
           - Datadog_search_datadog_metrics
-          - Datadog_search_datadog_monitors
-          - Datadog_search_datadog_events
-          - Datadog_search_datadog_hosts
           - GitHub_get_me
           - GitHub_get_file_contents
           - GitHub_create_or_update_file
