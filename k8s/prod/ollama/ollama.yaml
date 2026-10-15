@@ -131,7 +131,10 @@ spec:
           PARAMETER num_batch 2048
           EOF
           ollama create qwen3-coder-next:agent -f /tmp/Modelfile
-          ollama rm qwen3:4b qwen3:8b qwen3-coder-next:latest 2>/dev/null || true
+          # One rm per model: a multi-arg rm stops at the first missing one.
+          for m in qwen3:4b qwen3:8b qwen3-coder-next:latest; do
+            ollama rm "$m" 2>/dev/null || true
+          done
           kill $pid
         volumeMounts:
         - name: data
