@@ -1,0 +1,1698 @@
+diff --git a/a2asrv/eventqueue/manager_in_memory_impl.go b/a2asrv/eventqueue/manager_in_memory_impl.go
+index 8c498b5..4e7eab3 100644
+--- a/a2asrv/eventqueue/manager_in_memory_impl.go
++++ b/a2asrv/eventqueue/manager_in_memory_impl.go
+@@ -16,13 +16,20 @@ package eventqueue
+
+ import (
+ 	"context"
++	"errors"
++	"fmt"
+ 	"sync"
++	"time"
+
+ 	"github.com/a2aproject/a2a-go/v2/a2a"
+ )
+
+ const defaultQueueBufferSize = 32
+
++// Reuse the pull-based reader's five-minute inactivity window as the default
++// grace period for an in-memory subscriber.
++const defaultSubscriberTimeout = 5 * time.Minute
++
+ // MemManagerOption is a functional option for configuring an in-memory event manager.
+ type MemManagerOption func(*inMemoryManager)
+
+@@ -33,30 +40,44 @@ func WithQueueBufferSize(size int) MemManagerOption {
+ 	}
+ }
+
++// WithSubscriberTimeout configures how long Writer.Write waits for each reader
++// to accept an individual broadcast before that reader is closed and removed.
++// The timer restarts for every broadcast. The default is five minutes. A
++// non-positive duration disables automatic subscriber removal.
++func WithSubscriberTimeout(timeout time.Duration) MemManagerOption {
++	return func(manager *inMemoryManager) {
++		manager.subscriberTimeout = timeout
++	}
++}
++
+ // inMemoryManager implements Manager interface.
+ type inMemoryManager struct {
+ 	mu      sync.Mutex
+ 	brokers map[a2a.TaskID]*inMemoryEventBroker
+
+-	bufferSize int
++	bufferSize        int
++	subscriberTimeout time.Duration
+ }
+
+ var _ Manager = (*inMemoryManager)(nil)
+
+ // NewInMemoryManager creates a new in-memory eventqueue manager.
+-// A message dispatcher goroutine is started when the first queue for a task ID is created.
+-// All the queues returned for the task ID before Destroy() is called are attached to the same goroutine. Each goroutine must use its own Queue.
+-// Destroy() stops the goroutine and closes all the queues. If queues were buffered consumers are allowed to drain them.
++// A broker goroutine is started when the first connection for a task ID is created.
++// All connections returned for the task ID before Destroy() is called are attached to the same broker. Each connection must use its own Reader or Writer.
++// Destroy() stops the broker and closes all connections. Buffered readers are allowed to drain their messages.
+ //
+-// Queue.Write() returns when a message is put to all the open queues associated with the task.
+-// Queue.Read() blocks until a message is received through another queue or until close.
+-// Queue.Read() will not receive a message sent using Write() call on the same queue.
+-// Queue.Close() unregisters a queue from further broadcasts.
+-// Queue.Close() may partially drain the queue, so Read() behavior after is Close() is undefined.
++// Writer.Write() returns when a message is put to all the open readers associated with the task. Writer connections are publishers and are not broadcast subscribers.
++// If a broadcast is accepted before its context is canceled, delivery continues; a later Write on the same writer waits for that broadcast to finish.
++// A subscriber that remains unable to accept a message for the configured subscriber timeout is
++// removed and its Reader returns ErrQueueClosed after draining buffered messages. Reader.Read()
++// blocks until a message is received through another connection or until close.
++// Reader.Read() will not receive a message sent using Write() call on the same connection.
++// Reader.Close() unregisters a connection from further broadcasts and allows buffered messages to drain.
+ func NewInMemoryManager(options ...MemManagerOption) Manager {
+ 	manager := &inMemoryManager{
+-		brokers:    make(map[a2a.TaskID]*inMemoryEventBroker),
+-		bufferSize: defaultQueueBufferSize,
++		brokers:           make(map[a2a.TaskID]*inMemoryEventBroker),
++		bufferSize:        defaultQueueBufferSize,
++		subscriberTimeout: defaultSubscriberTimeout,
+ 	}
+ 	for _, opt := range options {
+ 		opt(manager)
+@@ -65,32 +86,90 @@ func NewInMemoryManager(options ...MemManagerOption) Manager {
+ }
+
+ func (m *inMemoryManager) CreateReader(ctx context.Context, taskID a2a.TaskID) (Reader, error) {
+-	return m.createReadWriter(ctx, taskID)
++	queue, err := m.createQueue(ctx, taskID, true)
++	if err != nil {
++		return nil, err
++	}
++	return queue, nil
+ }
+
+ func (m *inMemoryManager) CreateWriter(ctx context.Context, taskID a2a.TaskID) (Writer, error) {
+-	return m.createReadWriter(ctx, taskID)
++	queue, err := m.createQueue(ctx, taskID, false)
++	if err != nil {
++		return nil, err
++	}
++	return queue, nil
+ }
+
+-func (m *inMemoryManager) createReadWriter(ctx context.Context, taskID a2a.TaskID) (*inMemoryQueue, error) {
+-	m.mu.Lock()
+-	defer m.mu.Unlock()
+-	broker, ok := m.brokers[taskID]
+-	if !ok {
+-		broker = newInMemoryEventBroker(m.bufferSize)
+-		m.brokers[taskID] = broker
++func (m *inMemoryManager) createQueue(ctx context.Context, taskID a2a.TaskID, subscriber bool) (*inMemoryQueue, error) {
++	for {
++		if err := ctx.Err(); err != nil {
++			return nil, err
++		}
++		m.mu.Lock()
++		broker, ok := m.brokers[taskID]
++		if !ok {
++			broker = newInMemoryEventBroker(m.bufferSize, m.subscriberTimeout)
++			m.brokers[taskID] = broker
++		}
++		// Hold a reference before releasing the manager lock so a failed concurrent
++		// connection cannot remove a broker that another caller is still joining.
++		broker.connectionRefs.Add(1)
++		m.mu.Unlock()
++
++		queue, err := broker.connect(ctx, subscriber)
++		m.mu.Lock()
++		if err != nil {
++			if queue == nil {
++				broker.connectionRefs.Add(-1)
++			} else {
++				queue.drop()
++				queue = nil
++			}
++		}
++		current, exists := m.brokers[taskID]
++		replaced := !exists || current != broker
++		cleanup := err != nil && !replaced && broker.connectionRefs.Load() == 0
++		if cleanup {
++			delete(m.brokers, taskID)
++			replaced = true
++		}
++		m.mu.Unlock()
++
++		if queue != nil && replaced {
++			queue.drop()
++			queue = nil
++			err = ErrQueueClosed
++		}
++		if cleanup {
++			if destroyErr := broker.destroy(context.Background()); destroyErr != nil {
++				return nil, fmt.Errorf("failed to clean up broker after connect failure: %w: %w", err, destroyErr)
++			}
++		}
++		if err == nil {
++			return queue, nil
++		}
++		if ctxErr := ctx.Err(); ctxErr != nil {
++			return nil, ctxErr
++		}
++		if replaced && errors.Is(err, ErrQueueClosed) {
++			// A concurrent destroy can replace more than one broker while this
++			// connection is in flight. Do not wait for broker destruction here:
++			// draining a reader must not block the control plane.
++			continue
++		}
++		return nil, err
+ 	}
+-	return broker.connect()
+ }
+
+ func (m *inMemoryManager) Destroy(ctx context.Context, taskID a2a.TaskID) error {
+ 	m.mu.Lock()
+-	defer m.mu.Unlock()
+ 	broker, ok := m.brokers[taskID]
+ 	if !ok {
++		m.mu.Unlock()
+ 		return nil
+ 	}
+-	broker.destroy() // responsiveness expected, as we're holding the mutex
+ 	delete(m.brokers, taskID)
+-	return nil
++	m.mu.Unlock()
++	return broker.destroy(ctx)
+ }
+diff --git a/a2asrv/eventqueue/manager_in_memory_impl_test.go b/a2asrv/eventqueue/manager_in_memory_impl_test.go
+index 986cff9..567a5bb 100644
+--- a/a2asrv/eventqueue/manager_in_memory_impl_test.go
++++ b/a2asrv/eventqueue/manager_in_memory_impl_test.go
+@@ -15,10 +15,13 @@
+ package eventqueue
+
+ import (
++	"context"
+ 	"errors"
+ 	"fmt"
+ 	"sync"
++	"sync/atomic"
+ 	"testing"
++	"time"
+
+ 	"github.com/a2aproject/a2a-go/v2/a2a"
+ 	"github.com/google/go-cmp/cmp"
+@@ -122,3 +125,303 @@ func TestInMemoryManager_ConcurrentCreation(t *testing.T) {
+ 		t.Fatalf("Expected %d queues to be created, but got %d", numTaskIDs, len(imqm.brokers))
+ 	}
+ }
++
++func TestInMemoryManager_DestroyHonorsContext(t *testing.T) {
++	t.Parallel()
++	m := NewInMemoryManager(WithQueueBufferSize(0))
++	tid := a2a.NewTaskID()
++	_, writer := mustCreateReadWriter(t, m, tid)
++	manager := m.(*inMemoryManager)
++	manager.mu.Lock()
++	broker := manager.brokers[tid]
++	manager.mu.Unlock()
++	writeDone := make(chan error, 1)
++	go func() {
++		writeDone <- writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "blocked"}})
++	}()
++	select {
++	case err := <-writeDone:
++		t.Fatalf("Write() returned %v, want it to remain blocked", err)
++	case <-time.After(20 * time.Millisecond):
++	}
++
++	ctx, cancel := context.WithCancel(t.Context())
++	cancel()
++	if err := m.Destroy(ctx, tid); !errors.Is(err, context.Canceled) {
++		t.Fatalf("Destroy() error = %v, want %v", err, context.Canceled)
++	}
++	select {
++	case <-writeDone:
++	case <-time.After(time.Second):
++		t.Fatal("Write() did not unblock after canceled Destroy() requested broker shutdown")
++	}
++	select {
++	case <-broker.destroyed:
++	case <-time.After(time.Second):
++		t.Fatal("broker did not finish shutting down after canceled Destroy()")
++	}
++	reader, err := m.CreateReader(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("CreateReader() after canceled Destroy() error = %v, want nil", err)
++	}
++	if err := reader.Close(); err != nil {
++		t.Fatalf("replacement reader Close() error = %v, want nil", err)
++	}
++	if err := m.Destroy(t.Context(), tid); err != nil {
++		t.Fatalf("second Destroy() error = %v, want nil", err)
++	}
++}
++
++func TestInMemoryManager_CreateDuringDestroyUsesReplacementBroker(t *testing.T) {
++	t.Parallel()
++	manager := newTestManager(t)
++	tid := a2a.NewTaskID()
++	reader, err := manager.CreateReader(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("manager.CreateReader() error = %v, want nil", err)
++	}
++	queue := reader.(*inMemoryQueue)
++	queue.dispatchMu.Lock()
++
++	destroyDone := make(chan error, 1)
++	go func() {
++		destroyDone <- manager.Destroy(t.Context(), tid)
++	}()
++	select {
++	case <-queue.broker.destroySignal:
++	case <-time.After(time.Second):
++		queue.dispatchMu.Unlock()
++		t.Fatal("manager.Destroy() did not start broker shutdown")
++	}
++
++	writer, createErr := manager.CreateWriter(t.Context(), tid)
++	queue.dispatchMu.Unlock()
++	if err := <-destroyDone; err != nil {
++		t.Fatalf("manager.Destroy() error = %v, want nil", err)
++	}
++	if createErr != nil {
++		t.Fatalf("manager.CreateWriter() during Destroy error = %v, want nil", createErr)
++	}
++	if err := writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "replacement"}}); err != nil {
++		t.Fatalf("writer.Write() error = %v, want nil", err)
++	}
++}
++
++func TestInMemoryManager_CreateRetriesBrokerRemovedDuringConnect(t *testing.T) {
++	t.Parallel()
++	manager := newTestManager(t)
++	tid := a2a.NewTaskID()
++	reader, err := manager.CreateReader(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("manager.CreateReader() error = %v, want nil", err)
++	}
++	queue := reader.(*inMemoryQueue)
++	broker := queue.broker
++	queue.dispatchMu.Lock()
++
++	unregisterAccepted := make(chan struct{})
++	go func() {
++		broker.unregisterChan <- queue
++		close(unregisterAccepted)
++	}()
++	select {
++	case <-unregisterAccepted:
++	case <-time.After(time.Second):
++		queue.dispatchMu.Unlock()
++		t.Fatal("broker did not start unregistering the existing reader")
++	}
++
++	type createResult struct {
++		writer Writer
++		err    error
++	}
++	createDone := make(chan createResult, 1)
++	go func() {
++		writer, err := manager.CreateWriter(t.Context(), tid)
++		createDone <- createResult{writer: writer, err: err}
++	}()
++	deadline := time.Now().Add(time.Second)
++	for broker.connectionRefs.Load() != 2 && time.Now().Before(deadline) {
++		time.Sleep(time.Millisecond)
++	}
++	if got := broker.connectionRefs.Load(); got != 2 {
++		queue.dispatchMu.Unlock()
++		t.Fatalf("broker connection references = %d, want 2", got)
++	}
++
++	destroyDone := make(chan error, 1)
++	go func() {
++		destroyDone <- manager.Destroy(t.Context(), tid)
++	}()
++	select {
++	case <-broker.destroySignal:
++	case <-time.After(time.Second):
++		queue.dispatchMu.Unlock()
++		t.Fatal("manager.Destroy() did not start broker shutdown")
++	}
++	result := <-createDone
++	queue.dispatchMu.Unlock()
++	if err := <-destroyDone; err != nil {
++		t.Fatalf("manager.Destroy() error = %v, want nil", err)
++	}
++	if result.err != nil {
++		t.Fatalf("manager.CreateWriter() error = %v, want nil", result.err)
++	}
++	if err := result.writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "replacement"}}); err != nil {
++		t.Fatalf("writer.Write() error = %v, want nil", err)
++	}
++}
++
++type destroyAndReplaceContext struct {
++	context.Context
++	manager *inMemoryManager
++	taskID  a2a.TaskID
++	calls   atomic.Int32
++	err     error
++}
++
++func (c *destroyAndReplaceContext) Err() error {
++	switch c.calls.Add(1) {
++	case 2:
++		c.err = c.manager.Destroy(context.Background(), c.taskID)
++	case 3:
++		stale := newInMemoryEventBroker(c.manager.bufferSize, c.manager.subscriberTimeout)
++		if err := stale.destroy(context.Background()); err != nil {
++			c.err = err
++			break
++		}
++		c.manager.mu.Lock()
++		c.manager.brokers[c.taskID] = stale
++		c.manager.mu.Unlock()
++	}
++	return c.Context.Err()
++}
++
++func TestInMemoryManager_CreateRetriesUntilStableBroker(t *testing.T) {
++	t.Parallel()
++	manager := newTestManager(t).(*inMemoryManager)
++	taskID := a2a.NewTaskID()
++	ctx := &destroyAndReplaceContext{Context: t.Context(), manager: manager, taskID: taskID}
++
++	writer, err := manager.CreateWriter(ctx, taskID)
++	if err != nil {
++		t.Fatalf("manager.CreateWriter() error = %v, want nil", err)
++	}
++	if ctx.err != nil {
++		t.Fatalf("broker replacement setup error = %v", ctx.err)
++	}
++	if err := writer.Close(); err != nil {
++		t.Fatalf("writer.Close() error = %v, want nil", err)
++	}
++}
++
++func TestInMemoryManager_CanceledCreationDoesNotRetainBroker(t *testing.T) {
++	tests := []struct {
++		name   string
++		create func(Manager, context.Context, a2a.TaskID) (any, error)
++	}{
++		{
++			name: "CreateReader",
++			create: func(manager Manager, ctx context.Context, taskID a2a.TaskID) (any, error) {
++				return manager.CreateReader(ctx, taskID)
++			},
++		},
++		{
++			name: "CreateWriter",
++			create: func(manager Manager, ctx context.Context, taskID a2a.TaskID) (any, error) {
++				return manager.CreateWriter(ctx, taskID)
++			},
++		},
++	}
++
++	for _, test := range tests {
++		t.Run(test.name, func(t *testing.T) {
++			t.Parallel()
++			manager := NewInMemoryManager()
++			taskID := a2a.NewTaskID()
++			ctx, cancel := context.WithCancel(t.Context())
++			cancel()
++
++			queue, err := test.create(manager, ctx, taskID)
++			if queue != nil || !errors.Is(err, context.Canceled) {
++				t.Fatalf("manager.%s() = (%v, %v), want (nil, %v)", test.name, queue, err, context.Canceled)
++			}
++
++			inMemory := manager.(*inMemoryManager)
++			inMemory.mu.Lock()
++			_, exists := inMemory.brokers[taskID]
++			inMemory.mu.Unlock()
++			if exists {
++				t.Fatalf("manager.%s() retained a broker after the canceled call", test.name)
++			}
++		})
++	}
++}
++
++type cancelOnSecondErrContext struct {
++	context.Context
++	cancel context.CancelFunc
++	calls  atomic.Int32
++}
++
++func (c *cancelOnSecondErrContext) Err() error {
++	if c.calls.Add(1) == 2 {
++		c.cancel()
++	}
++	return c.Context.Err()
++}
++
++func TestInMemoryManager_CancellationDuringCreationDoesNotRetainBroker(t *testing.T) {
++	t.Parallel()
++	manager := NewInMemoryManager()
++	taskID := a2a.NewTaskID()
++	base, cancel := context.WithCancel(t.Context())
++	ctx := &cancelOnSecondErrContext{Context: base, cancel: cancel}
++
++	reader, err := manager.CreateReader(ctx, taskID)
++	if reader != nil || !errors.Is(err, context.Canceled) {
++		t.Fatalf("manager.CreateReader() = (%v, %v), want (nil, %v)", reader, err, context.Canceled)
++	}
++
++	inMemory := manager.(*inMemoryManager)
++	inMemory.mu.Lock()
++	_, exists := inMemory.brokers[taskID]
++	inMemory.mu.Unlock()
++	if exists {
++		t.Fatal("manager.CreateReader() retained a broker after cancellation during creation")
++	}
++}
++
++type cancelOnDoneContext struct {
++	context.Context
++	cancel context.CancelFunc
++	once   sync.Once
++}
++
++func (c *cancelOnDoneContext) Done() <-chan struct{} {
++	c.once.Do(c.cancel)
++	return c.Context.Done()
++}
++
++func TestInMemoryManager_CancellationAfterRegistrationDoesNotReturnQueue(t *testing.T) {
++	t.Parallel()
++	for i := range 100 {
++		manager := NewInMemoryManager()
++		taskID := a2a.TaskID(fmt.Sprintf("cancel-after-register-%d", i))
++		base, cancel := context.WithCancel(t.Context())
++		ctx := &cancelOnDoneContext{Context: base, cancel: cancel}
++
++		reader, err := manager.CreateReader(ctx, taskID)
++		if reader != nil || !errors.Is(err, context.Canceled) {
++			t.Fatalf("manager.CreateReader() at iteration %d = (%v, %v), want (nil, %v)", i, reader, err, context.Canceled)
++		}
++
++		inMemory := manager.(*inMemoryManager)
++		inMemory.mu.Lock()
++		_, exists := inMemory.brokers[taskID]
++		inMemory.mu.Unlock()
++		if exists {
++			t.Fatalf("manager.CreateReader() at iteration %d retained a broker after cancellation", i)
++		}
++	}
++}
+diff --git a/a2asrv/eventqueue/queue_in_memory_impl.go b/a2asrv/eventqueue/queue_in_memory_impl.go
+index d6a84c0..4f9d494 100644
+--- a/a2asrv/eventqueue/queue_in_memory_impl.go
++++ b/a2asrv/eventqueue/queue_in_memory_impl.go
+@@ -16,16 +16,43 @@ package eventqueue
+
+ import (
+ 	"context"
+-	"fmt"
++	"sync"
++	"sync/atomic"
++	"time"
+ )
+
+ type broadcast struct {
+-	sender     *inMemoryQueue // sender does not receive its own broadcasts
+-	payload    *Message
+-	dispatched chan struct{} // closed after all registered Queues-s received the broadcast.
++	sender       *inMemoryQueue // sender does not receive its own broadcasts
++	payload      *Message
++	dispatched   chan struct{} // closed after all registered readers received the broadcast.
++	onDispatched func()
++	pending      atomic.Int64
+ }
+
+-// inMemoryEventBroker manages a goroutine which acts as an event bus for registeted Queue-s.
++func (b *broadcast) setPending(count int) {
++	if count == 0 {
++		b.complete()
++		return
++	}
++	b.pending.Store(int64(count))
++}
++
++func (b *broadcast) done() {
++	if b.pending.Add(-1) == 0 {
++		b.complete()
++	}
++}
++
++func (b *broadcast) complete() {
++	close(b.dispatched)
++	if b.onDispatched != nil {
++		b.onDispatched()
++	}
++}
++
++// inMemoryEventBroker manages the control plane for the queues associated with
++// one task. Data delivery is performed by per-reader workers so a full queue
++// cannot prevent the broker from accepting registration or unregistration.
+ type inMemoryEventBroker struct {
+ 	registered     map[*inMemoryQueue]any
+ 	destroySignal  chan struct{} // used to request broker destruction
+@@ -33,82 +60,117 @@ type inMemoryEventBroker struct {
+ 	registerChan   chan *inMemoryQueue
+ 	unregisterChan chan *inMemoryQueue
+ 	broadcastChan  chan *broadcast
++	destroyOnce    sync.Once
+
+-	queueBufferSize int
++	queueBufferSize   int
++	subscriberTimeout time.Duration
++	// connectionRefs includes connect attempts in progress and queues that have
++	// not been dropped, allowing failed initial connects to clean up safely.
++	connectionRefs atomic.Int64
+ }
+
+-func newInMemoryEventBroker(queueBufferSize int) *inMemoryEventBroker {
++func newInMemoryEventBroker(queueBufferSize int, subscriberTimeout time.Duration) *inMemoryEventBroker {
+ 	broker := &inMemoryEventBroker{
+-		registered:      make(map[*inMemoryQueue]any),
+-		registerChan:    make(chan *inMemoryQueue),
+-		unregisterChan:  make(chan *inMemoryQueue),
+-		broadcastChan:   make(chan *broadcast),
+-		destroySignal:   make(chan struct{}),
+-		destroyed:       make(chan struct{}),
+-		queueBufferSize: queueBufferSize,
+-	}
+-	go func() {
+-		defer func() {
+-			for queue := range broker.registered {
+-				queue.destroy()
++		registered:        make(map[*inMemoryQueue]any),
++		destroySignal:     make(chan struct{}),
++		destroyed:         make(chan struct{}),
++		registerChan:      make(chan *inMemoryQueue),
++		unregisterChan:    make(chan *inMemoryQueue),
++		broadcastChan:     make(chan *broadcast),
++		queueBufferSize:   queueBufferSize,
++		subscriberTimeout: subscriberTimeout,
++	}
++	go broker.run()
++	return broker
++}
++
++func (b *inMemoryEventBroker) run() {
++	defer func() {
++		for queue := range b.registered {
++			queue.destroy()
++		}
++		close(b.destroyed)
++	}()
++
++	for {
++		select {
++		case broadcast := <-b.broadcastChan:
++			b.dispatch(broadcast)
++
++		case queue := <-b.registerChan:
++			b.registered[queue] = struct{}{}
++			if queue.subscriber {
++				queue.startDispatch()
+ 			}
+-			close(broker.destroyed)
+-		}()
+-
+-		for {
+-			select {
+-			case b := <-broker.broadcastChan:
+-				for queue := range broker.registered {
+-					if queue == b.sender {
+-						continue
+-					}
+-
+-					select {
+-					case queue.eventsChan <- b.payload:
+-					case <-broker.destroySignal:
+-						return
+-					}
+-				}
+-				close(b.dispatched)
+-
+-			case sub := <-broker.registerChan:
+-				broker.registered[sub] = struct{}{}
+-
+-			case sub := <-broker.unregisterChan:
+-				if _, ok := broker.registered[sub]; ok {
+-					delete(broker.registered, sub)
+-					sub.destroy()
+-				}
+-
+-			case <-broker.destroySignal:
+-				return
++
++		case queue := <-b.unregisterChan:
++			if _, ok := b.registered[queue]; ok {
++				delete(b.registered, queue)
++				queue.destroy()
+ 			}
++
++		case <-b.destroySignal:
++			return
+ 		}
+-	}()
+-	return broker
++	}
++}
++
++func (b *inMemoryEventBroker) dispatch(broadcast *broadcast) {
++	recipients := 0
++	for queue := range b.registered {
++		if queue.subscriber && queue != broadcast.sender {
++			recipients++
++		}
++	}
++	broadcast.setPending(recipients)
++	for queue := range b.registered {
++		if queue.subscriber && queue != broadcast.sender {
++			queue.dispatch(broadcast)
++		}
++	}
+ }
+
+-func (b *inMemoryEventBroker) connect() (*inMemoryQueue, error) {
+-	conn := &inMemoryQueue{
+-		broker:     b,
+-		closedChan: make(chan struct{}),
+-		eventsChan: make(chan *Message, b.queueBufferSize),
++func (b *inMemoryEventBroker) connect(ctx context.Context, subscriber bool) (*inMemoryQueue, error) {
++	if err := ctx.Err(); err != nil {
++		return nil, err
+ 	}
++	queue := newInMemoryQueue(b, subscriber)
+ 	select {
++	case <-ctx.Done():
++		return nil, ctx.Err()
++	case <-b.destroySignal:
++		return nil, ErrQueueClosed
+ 	case <-b.destroyed:
+-		return nil, fmt.Errorf("broker destroyed")
+-	case b.registerChan <- conn:
+-		return conn, nil
++		return nil, ErrQueueClosed
++	case b.registerChan <- queue:
++		if err := ctx.Err(); err != nil {
++			return queue, err
++		}
++		return queue, nil
+ 	}
+ }
+
+-func (b *inMemoryEventBroker) destroy() {
++func (b *inMemoryEventBroker) requestUnregister(queue *inMemoryQueue) {
+ 	select {
+-	case <-b.destroyed: // already destroyed
+-		return
+-	case b.destroySignal <- struct{}{}: // send destroy signal
++	case b.unregisterChan <- queue:
++	case <-b.destroySignal:
++	case <-b.destroyed:
++	}
++}
++
++func (b *inMemoryEventBroker) destroy(ctx context.Context) error {
++	b.destroyOnce.Do(func() {
++		close(b.destroySignal)
++	})
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	select {
++	case <-b.destroyed:
++		return nil
++	case <-ctx.Done():
++		return ctx.Err()
+ 	}
+-	<-b.destroyed
+ }
+
+ // inMemoryQueue implements Queue interface.
+@@ -116,23 +178,67 @@ type inMemoryQueue struct {
+ 	broker     *inMemoryEventBroker
+ 	closedChan chan struct{}
+ 	eventsChan chan *Message
+-	closed     bool
++	subscriber bool
++
++	writeMu       sync.Mutex
++	writeInFlight chan struct{}
++
++	dispatchMu     sync.Mutex
++	dispatchCond   *sync.Cond
++	dispatchQueue  []*broadcast
++	dispatchDone   chan struct{}
++	unregisterOnce sync.Once
++	closed         bool
++}
++
++func newInMemoryQueue(broker *inMemoryEventBroker, subscriber bool) *inMemoryQueue {
++	queue := &inMemoryQueue{
++		broker:       broker,
++		closedChan:   make(chan struct{}),
++		eventsChan:   make(chan *Message, broker.queueBufferSize),
++		subscriber:   subscriber,
++		dispatchDone: make(chan struct{}),
++	}
++	queue.dispatchCond = sync.NewCond(&queue.dispatchMu)
++	if !subscriber {
++		close(queue.eventsChan)
++		close(queue.dispatchDone)
++	}
++	return queue
+ }
+
+ var _ Reader = (*inMemoryQueue)(nil)
+ var _ Writer = (*inMemoryQueue)(nil)
+
+ func (q *inMemoryQueue) Write(ctx context.Context, message *Message) error {
+-	if q.closed {
+-		return ErrQueueClosed
++	if err := q.writeStateError(ctx); err != nil {
++		return err
++	}
++	writeSlot, err := q.reserveWrite(ctx)
++	if err != nil {
++		return err
+ 	}
+
+-	broadcast := &broadcast{sender: q, payload: message, dispatched: make(chan struct{})}
+-
++	broadcast := &broadcast{
++		sender:     q,
++		payload:    message,
++		dispatched: make(chan struct{}),
++	}
++	broadcast.onDispatched = func() {
++		q.releaseWrite(writeSlot)
++	}
+ 	select {
+ 	case <-ctx.Done():
++		q.releaseWrite(writeSlot)
+ 		return ctx.Err()
+ 	case <-q.closedChan:
++		q.releaseWrite(writeSlot)
++		return ErrQueueClosed
++	case <-q.broker.destroySignal:
++		q.releaseWrite(writeSlot)
++		return ErrQueueClosed
++	case <-q.broker.destroyed:
++		q.releaseWrite(writeSlot)
+ 		return ErrQueueClosed
+ 	case q.broker.broadcastChan <- broadcast:
+ 	}
+@@ -142,40 +248,194 @@ func (q *inMemoryQueue) Write(ctx context.Context, message *Message) error {
+ 		return ctx.Err()
+ 	case <-q.closedChan:
+ 		return ErrQueueClosed
++	case <-q.broker.destroySignal:
++		return ErrQueueClosed
++	case <-q.broker.destroyed:
++		return ErrQueueClosed
+ 	case <-broadcast.dispatched:
+-		// all subscribers received the broadcast
++		return q.writeStateError(ctx)
++	}
++}
++
++func (q *inMemoryQueue) reserveWrite(ctx context.Context) (chan struct{}, error) {
++	for {
++		q.writeMu.Lock()
++		if q.writeInFlight == nil {
++			writeSlot := make(chan struct{})
++			q.writeInFlight = writeSlot
++			q.writeMu.Unlock()
++			return writeSlot, nil
++		}
++		writeInFlight := q.writeInFlight
++		q.writeMu.Unlock()
++
++		select {
++		case <-ctx.Done():
++			return nil, ctx.Err()
++		case <-q.closedChan:
++			return nil, ErrQueueClosed
++		case <-q.broker.destroySignal:
++			return nil, ErrQueueClosed
++		case <-q.broker.destroyed:
++			return nil, ErrQueueClosed
++		case <-writeInFlight:
++		}
++		if err := q.writeStateError(ctx); err != nil {
++			return nil, err
++		}
++	}
++}
++
++func (q *inMemoryQueue) releaseWrite(writeSlot chan struct{}) {
++	q.writeMu.Lock()
++	if q.writeInFlight == writeSlot {
++		q.writeInFlight = nil
++		close(writeSlot)
++	}
++	q.writeMu.Unlock()
++}
++
++func (q *inMemoryQueue) writeStateError(ctx context.Context) error {
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	select {
++	case <-q.closedChan:
++		return ErrQueueClosed
++	case <-q.broker.destroySignal:
++		return ErrQueueClosed
++	case <-q.broker.destroyed:
++		return ErrQueueClosed
++	default:
++		return nil
+ 	}
+-	return nil
+ }
+
+ func (q *inMemoryQueue) Read(ctx context.Context) (*Message, error) {
+ 	select {
+-	case <-ctx.Done():
+-		return nil, ctx.Err()
+-	case message, ok := <-q.eventsChan: // allow to drain
++	case message, ok := <-q.eventsChan:
++		if !ok {
++			return nil, ErrQueueClosed
++		}
++		return message, nil
++	default:
++	}
++
++	select {
++	case message, ok := <-q.eventsChan:
+ 		if !ok {
+ 			return nil, ErrQueueClosed
+ 		}
+ 		return message, nil
++	case <-ctx.Done():
++		return nil, ctx.Err()
+ 	}
+ }
+
+ func (q *inMemoryQueue) Close() error {
+-	// loop to ensure we drain q.eventsChan, so that the broker is not blocked trying to send us a broadcast
++	q.drop()
++	return nil
++}
++
++func (q *inMemoryQueue) startDispatch() {
++	go q.runDispatch()
++}
++
++func (q *inMemoryQueue) dispatch(broadcast *broadcast) {
++	q.dispatchMu.Lock()
++	if q.closed {
++		q.dispatchMu.Unlock()
++		broadcast.done()
++		return
++	}
++	q.dispatchQueue = append(q.dispatchQueue, broadcast)
++	q.dispatchCond.Signal()
++	q.dispatchMu.Unlock()
++}
++
++func (q *inMemoryQueue) runDispatch() {
++	defer func() {
++		close(q.eventsChan)
++		close(q.dispatchDone)
++	}()
+ 	for {
+-		select {
+-		case _, ok := <-q.eventsChan:
+-			if !ok {
+-				return nil
++		q.dispatchMu.Lock()
++		for len(q.dispatchQueue) == 0 && !q.closed {
++			q.dispatchCond.Wait()
++		}
++		if q.closed {
++			pending := q.dispatchQueue
++			q.dispatchQueue = nil
++			q.dispatchMu.Unlock()
++			for _, broadcast := range pending {
++				broadcast.done()
+ 			}
+-		case q.broker.unregisterChan <- q:
+-			return nil
++			return
++		}
++		broadcast := q.dispatchQueue[0]
++		if len(q.dispatchQueue) == 1 {
++			q.dispatchQueue = nil
++		} else {
++			q.dispatchQueue[0] = nil
++			q.dispatchQueue = q.dispatchQueue[1:]
++		}
++		q.dispatchMu.Unlock()
++
++		timedOut := q.deliver(broadcast)
++		if timedOut {
++			q.drop()
+ 		}
++		broadcast.done()
+ 	}
+ }
+
+-func (q *inMemoryQueue) destroy() {
++func (q *inMemoryQueue) deliver(broadcast *broadcast) bool {
++	var timeout <-chan time.Time
++	var timer *time.Timer
++	if q.broker.subscriberTimeout > 0 {
++		timer = time.NewTimer(q.broker.subscriberTimeout)
++		timeout = timer.C
++		defer timer.Stop()
++	}
++
++	select {
++	case q.eventsChan <- broadcast.payload:
++		return false
++	case <-q.closedChan:
++		return false
++	case <-timeout:
++		select {
++		case <-q.closedChan:
++			return false
++		default:
++		}
++		select {
++		case q.eventsChan <- broadcast.payload:
++			return false
++		default:
++			return true
++		}
++	}
++}
++
++func (q *inMemoryQueue) drop() {
++	q.dispatchMu.Lock()
++	if q.closed {
++		q.dispatchMu.Unlock()
++		return
++	}
+ 	q.closed = true
+-	close(q.eventsChan)
+ 	close(q.closedChan)
++	q.dispatchCond.Broadcast()
++	q.dispatchMu.Unlock()
++
++	q.unregisterOnce.Do(func() {
++		q.broker.connectionRefs.Add(-1)
++		go q.broker.requestUnregister(q)
++	})
++}
++
++func (q *inMemoryQueue) destroy() {
++	q.drop()
++	<-q.dispatchDone
+ }
+diff --git a/a2asrv/eventqueue/queue_in_memory_impl_test.go b/a2asrv/eventqueue/queue_in_memory_impl_test.go
+index 17d43f7..f19eb9a 100644
+--- a/a2asrv/eventqueue/queue_in_memory_impl_test.go
++++ b/a2asrv/eventqueue/queue_in_memory_impl_test.go
+@@ -17,12 +17,16 @@ package eventqueue
+ import (
+ 	"context"
+ 	"errors"
++	"fmt"
+ 	"reflect"
++	"sync"
++	"sync/atomic"
+ 	"testing"
+ 	"time"
+
+ 	"github.com/a2aproject/a2a-go/v2/a2a"
+ 	"github.com/a2aproject/a2a-go/v2/a2asrv/taskstore"
++	"github.com/google/go-cmp/cmp"
+ )
+
+ type eventVersionPair struct {
+@@ -69,12 +73,14 @@ func newTestManager(t *testing.T, opts ...MemManagerOption) Manager {
+ 	qm := NewInMemoryManager(opts...)
+ 	t.Cleanup(func() {
+ 		manager := qm.(*inMemoryManager)
++		manager.mu.Lock()
+ 		var ids []a2a.TaskID
+ 		for tid := range manager.brokers {
+ 			ids = append(ids, tid)
+ 		}
++		manager.mu.Unlock()
+ 		for _, tid := range ids {
+-			if err := qm.Destroy(t.Context(), tid); err != nil {
++			if err := qm.Destroy(context.Background(), tid); err != nil {
+ 				t.Fatalf("qm.Destroy() error = %v", err)
+ 			}
+ 		}
+@@ -200,6 +206,27 @@ func TestInMemoryQueue_WriteWithNoSubscribersDoesNotBlock(t *testing.T) {
+ 	mustWrite(t, writer, newUnversioned(&a2a.Message{ID: "test"}))
+ }
+
++func TestInMemoryQueue_WritersAreNotSubscribers(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(0), WithSubscriberTimeout(10*time.Millisecond))
++	tid := a2a.NewTaskID()
++
++	first, err := qm.CreateWriter(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("qm.CreateWriter() error = %v, want nil", err)
++	}
++	second, err := qm.CreateWriter(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("qm.CreateWriter() error = %v, want nil", err)
++	}
++
++	for i, writer := range []Writer{first, second} {
++		if err := writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: fmt.Sprintf("event-%d", i)}}); err != nil {
++			t.Fatalf("writer[%d].Write() error = %v, want nil", i, err)
++		}
++	}
++}
++
+ func TestInMemoryQueue_CloseUnsubscribesFromEvents(t *testing.T) {
+ 	t.Parallel()
+ 	qm := newTestManager(t, WithQueueBufferSize(0))
+@@ -243,6 +270,186 @@ func TestInMemoryQueue_WriteWithCanceledContext(t *testing.T) {
+ 	}
+ }
+
++type simultaneousCompletionContext struct {
++	context.Context
++	doneCalls  atomic.Int32
++	secondDone chan struct{}
++	release    chan struct{}
++}
++
++func (c *simultaneousCompletionContext) Done() <-chan struct{} {
++	if c.doneCalls.Add(1) == 2 {
++		close(c.secondDone)
++		<-c.release
++	}
++	return c.Context.Done()
++}
++
++func TestInMemoryQueue_CanceledBroadcastNeverReportsSuccess(t *testing.T) {
++	t.Parallel()
++
++	for i := range 100 {
++		broker := &inMemoryEventBroker{
++			destroySignal: make(chan struct{}),
++			destroyed:     make(chan struct{}),
++			broadcastChan: make(chan *broadcast),
++		}
++		writer := &inMemoryQueue{broker: broker, closedChan: make(chan struct{})}
++		base, cancel := context.WithCancel(t.Context())
++		ctx := &simultaneousCompletionContext{
++			Context:    base,
++			secondDone: make(chan struct{}),
++			release:    make(chan struct{}),
++		}
++		writeDone := make(chan error, 1)
++		go func() {
++			writeDone <- writer.Write(ctx, &Message{Event: &a2a.Message{ID: "event"}})
++		}()
++
++		pending := <-broker.broadcastChan
++		<-ctx.secondDone
++		cancel()
++		pending.complete()
++		close(ctx.release)
++
++		if err := <-writeDone; !errors.Is(err, context.Canceled) {
++			t.Fatalf("writer.Write() at iteration %d error = %v, want %v", i, err, context.Canceled)
++		}
++	}
++}
++
++func TestInMemoryQueue_CanceledWritePreservesSubscriberStream(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(1), WithSubscriberTimeout(time.Second))
++	tid := a2a.NewTaskID()
++	healthy, err := qm.CreateReader(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("qm.CreateReader() error = %v, want nil", err)
++	}
++	blocked, err := qm.CreateReader(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("qm.CreateReader() error = %v, want nil", err)
++	}
++	writer, err := qm.CreateWriter(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("qm.CreateWriter() error = %v, want nil", err)
++	}
++
++	readID := func(reader Reader) string {
++		t.Helper()
++		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++		defer cancel()
++		message, err := reader.Read(ctx)
++		if err != nil {
++			t.Fatalf("reader.Read() error = %v, want nil", err)
++		}
++		event, ok := message.Event.(*a2a.Message)
++		if !ok {
++			t.Fatalf("reader.Read() event type = %T, want *a2a.Message", message.Event)
++		}
++		return event.ID
++	}
++
++	mustWrite(t, writer, newUnversioned(&a2a.Message{ID: "m1"}))
++	if got := readID(healthy); got != "m1" {
++		t.Fatalf("healthy.Read() message ID = %q, want %q", got, "m1")
++	}
++
++	writeCtx, cancelWrite := context.WithCancel(t.Context())
++	writeDone := make(chan error, 1)
++	go func() {
++		writeDone <- writer.Write(writeCtx, &Message{Event: &a2a.Message{ID: "m2"}})
++	}()
++	if got := readID(healthy); got != "m2" {
++		cancelWrite()
++		t.Fatalf("healthy.Read() message ID = %q, want %q", got, "m2")
++	}
++	cancelWrite()
++	if err := <-writeDone; !errors.Is(err, context.Canceled) {
++		t.Fatalf("writer.Write() error = %v, want %v", err, context.Canceled)
++	}
++	if got := readID(blocked); got != "m1" {
++		t.Fatalf("blocked.Read() message ID = %q, want %q", got, "m1")
++	}
++
++	thirdCtx, cancelThird := context.WithTimeout(t.Context(), time.Second)
++	defer cancelThird()
++	thirdDone := make(chan error, 1)
++	go func() {
++		thirdDone <- writer.Write(thirdCtx, &Message{Event: &a2a.Message{ID: "m3"}})
++	}()
++	if got := readID(blocked); got != "m2" {
++		t.Fatalf("blocked.Read() message ID = %q, want %q", got, "m2")
++	}
++	if got := readID(healthy); got != "m3" {
++		t.Fatalf("healthy.Read() message ID = %q, want %q", got, "m3")
++	}
++	if got := readID(blocked); got != "m3" {
++		t.Fatalf("blocked.Read() message ID = %q, want %q", got, "m3")
++	}
++	if err := <-thirdDone; err != nil {
++		t.Fatalf("writer.Write() error = %v, want nil", err)
++	}
++}
++
++func TestInMemoryQueue_CanceledWritesDoNotAccumulateBehindStalledSubscriber(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(0), WithSubscriberTimeout(0))
++	tid := a2a.NewTaskID()
++	reader, writer := mustCreateReadWriter(t, qm, tid)
++
++	firstCtx, cancelFirst := context.WithCancel(t.Context())
++	firstDone := make(chan error, 1)
++	go func() {
++		firstDone <- writer.Write(firstCtx, &Message{Event: &a2a.Message{ID: "stalled"}})
++	}()
++	select {
++	case err := <-firstDone:
++		cancelFirst()
++		t.Fatalf("writer.Write() returned early with %v, want it blocked", err)
++	case <-time.After(20 * time.Millisecond):
++	}
++
++	for i := range 16 {
++		base, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
++		ctx := &simultaneousCompletionContext{
++			Context:    base,
++			secondDone: make(chan struct{}),
++			release:    make(chan struct{}),
++		}
++		writeDone := make(chan error, 1)
++		go func() {
++			writeDone <- writer.Write(ctx, &Message{Event: &a2a.Message{ID: fmt.Sprintf("canceled-%d", i)}})
++		}()
++
++		select {
++		case <-ctx.secondDone:
++			cancel()
++		case <-base.Done():
++		}
++		close(ctx.release)
++		if err := <-writeDone; !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
++			cancel()
++			t.Fatalf("writer.Write() at iteration %d error = %v, want a context error", i, err)
++		}
++		cancel()
++	}
++
++	queue := reader.(*inMemoryQueue)
++	queue.dispatchMu.Lock()
++	pending := len(queue.dispatchQueue)
++	queue.dispatchMu.Unlock()
++	if pending != 0 {
++		cancelFirst()
++		t.Fatalf("reader pending delivery count = %d, want 0 after canceled writes", pending)
++	}
++
++	cancelFirst()
++	if err := <-firstDone; !errors.Is(err, context.Canceled) {
++		t.Fatalf("first writer.Write() error = %v, want %v", err, context.Canceled)
++	}
++}
++
+ func TestInMemoryQueue_BlockedWriteOnFullQueueThenDestroy(t *testing.T) {
+ 	t.Parallel()
+ 	ctx := t.Context()
+@@ -279,3 +486,352 @@ func TestInMemoryQueue_BlockedWriteOnFullQueueThenDestroy(t *testing.T) {
+ 	}
+ 	<-completed
+ }
++
++func TestInMemoryQueue_StalledSubscriberDoesNotBlockNewSubscriber(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(1), WithSubscriberTimeout(0))
++	tid := a2a.NewTaskID()
++	stalled, writer := mustCreateReadWriter(t, qm, tid)
++	if err := writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "buffered"}}); err != nil {
++		t.Fatalf("initial Write() error = %v, want nil", err)
++	}
++
++	writeDone := make(chan error, 1)
++	go func() {
++		writeDone <- writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "stalled"}})
++	}()
++	select {
++	case err := <-writeDone:
++		t.Fatalf("Write() returned %v, want it to remain blocked on the stalled subscriber", err)
++	case <-time.After(20 * time.Millisecond):
++	}
++
++	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++	defer cancel()
++	createDone := make(chan struct {
++		reader Reader
++		err    error
++	}, 1)
++	go func() {
++		healthy, err := qm.CreateReader(ctx, tid)
++		createDone <- struct {
++			reader Reader
++			err    error
++		}{healthy, err}
++	}()
++	var healthy Reader
++	select {
++	case result := <-createDone:
++		if result.err != nil {
++			t.Fatalf("CreateReader() error = %v, want a reader while another subscriber is stalled", result.err)
++		}
++		healthy = result.reader
++	case <-time.After(time.Second):
++		t.Fatal("CreateReader() did not return while another subscriber was stalled")
++	}
++	healthyWriter, err := qm.CreateWriter(ctx, tid)
++	if err != nil {
++		t.Fatalf("CreateWriter() error = %v, want a writer while another subscriber is stalled", err)
++	}
++
++	healthyWriteDone := make(chan error, 1)
++	go func() {
++		healthyWriteDone <- healthyWriter.Write(ctx, &Message{Event: &a2a.Message{ID: "healthy"}})
++	}()
++	msg, err := healthy.Read(ctx)
++	if err != nil {
++		t.Fatalf("healthy.Read() error = %v, want the healthy subscriber to receive its event", err)
++	}
++	if msg.Event.(*a2a.Message).ID != "healthy" {
++		t.Fatalf("healthy.Read() event ID = %q, want %q", msg.Event.(*a2a.Message).ID, "healthy")
++	}
++	select {
++	case err := <-healthyWriteDone:
++		t.Fatalf("healthy Write() returned %v, want producer backpressure from the stalled subscriber", err)
++	case <-time.After(20 * time.Millisecond):
++	}
++	cancel()
++	select {
++	case err := <-healthyWriteDone:
++		if !errors.Is(err, context.Canceled) {
++			t.Fatalf("healthy Write() error = %v, want %v after cancellation", err, context.Canceled)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("healthy Write() did not unblock after cancellation")
++	}
++
++	if err := stalled.Close(); err != nil {
++		t.Fatalf("stalled.Close() error = %v", err)
++	}
++	select {
++	case err := <-writeDone:
++		if err != nil {
++			t.Fatalf("stalled Write() error = %v, want nil after stalled subscriber Close()", err)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("stalled Write() did not unblock after stalled subscriber Close()")
++	}
++}
++
++func TestInMemoryQueue_StalledSubscriberDoesNotBlockClose(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(0), WithSubscriberTimeout(0))
++	tid := a2a.NewTaskID()
++	stalled, writer := mustCreateReadWriter(t, qm, tid)
++
++	writeDone := make(chan error, 1)
++	go func() {
++		writeDone <- writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "stalled"}})
++	}()
++	select {
++	case err := <-writeDone:
++		t.Fatalf("Write() returned %v, want it to remain blocked on the stalled subscriber", err)
++	case <-time.After(20 * time.Millisecond):
++	}
++
++	closeDone := make(chan error, 1)
++	go func() {
++		closeDone <- stalled.Close()
++	}()
++	select {
++	case err := <-closeDone:
++		if err != nil {
++			t.Fatalf("stalled.Close() error = %v, want nil", err)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("stalled.Close() did not return while the broker had a pending delivery")
++	}
++	select {
++	case err := <-writeDone:
++		if err != nil {
++			t.Fatalf("Write() error = %v, want nil after the only subscriber closed", err)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("Write() did not unblock after subscriber Close()")
++	}
++}
++
++func TestInMemoryQueue_StalledSubscriberDoesNotBlockUnrelatedTask(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(0), WithSubscriberTimeout(0))
++	stalledTask := a2a.NewTaskID()
++	_, writer := mustCreateReadWriter(t, qm, stalledTask)
++
++	writeDone := make(chan error, 1)
++	go func() {
++		writeDone <- writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "stalled"}})
++	}()
++	select {
++	case err := <-writeDone:
++		t.Fatalf("Write() returned %v, want it to remain blocked on the stalled subscriber", err)
++	case <-time.After(20 * time.Millisecond):
++	}
++
++	connectCtx, connectCancel := context.WithTimeout(t.Context(), time.Second)
++	defer connectCancel()
++	connectDone := make(chan error, 1)
++	go func() {
++		_, err := qm.CreateReader(connectCtx, stalledTask)
++		connectDone <- err
++	}()
++
++	otherTask := a2a.NewTaskID()
++	otherCtx, otherCancel := context.WithTimeout(t.Context(), time.Second)
++	defer otherCancel()
++	otherDone := make(chan error, 1)
++	go func() {
++		_, err := qm.CreateReader(otherCtx, otherTask)
++		otherDone <- err
++	}()
++	select {
++	case err := <-connectDone:
++		if err != nil {
++			t.Fatalf("CreateReader() error = %v, want nil", err)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("CreateReader() for the stalled task did not return")
++	}
++	select {
++	case err := <-otherDone:
++		if err != nil {
++			t.Fatalf("CreateReader() for an unrelated task error = %v, want nil", err)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("CreateReader() for an unrelated task did not return while another task was stalled")
++	}
++	if err := qm.Destroy(otherCtx, otherTask); err != nil {
++		t.Fatalf("qm.Destroy() for an unrelated task error = %v, want nil", err)
++	}
++	if err := qm.Destroy(t.Context(), stalledTask); err != nil {
++		t.Fatalf("qm.Destroy() error = %v", err)
++	}
++	select {
++	case <-writeDone:
++	case <-time.After(time.Second):
++		t.Fatal("stalled Write() did not unblock after Destroy()")
++	}
++}
++
++func TestInMemoryQueue_StalledSubscriberIsDroppedAfterGracePeriod(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(1), WithSubscriberTimeout(50*time.Millisecond))
++	tid := a2a.NewTaskID()
++	stalled, writer := mustCreateReadWriter(t, qm, tid)
++
++	if err := writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "buffered"}}); err != nil {
++		t.Fatalf("initial Write() error = %v, want nil", err)
++	}
++
++	writeDone := make(chan error, 1)
++	go func() {
++		writeDone <- writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: "full"}})
++	}()
++	select {
++	case err := <-writeDone:
++		t.Fatalf("second Write() returned %v before the subscriber grace period elapsed", err)
++	case <-time.After(20 * time.Millisecond):
++	}
++	select {
++	case err := <-writeDone:
++		if err != nil {
++			t.Fatalf("second Write() error = %v, want nil after dropping the stalled subscriber", err)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("second Write() remained blocked beyond the subscriber grace period")
++	}
++
++	if _, err := stalled.Read(t.Context()); err != nil {
++		t.Fatalf("stalled.Read() for buffered event error = %v, want nil", err)
++	}
++	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
++	defer cancel()
++	if _, err := stalled.Read(ctx); !errors.Is(err, ErrQueueClosed) {
++		t.Fatalf("stalled.Read() after drop error = %v, want %v", err, ErrQueueClosed)
++	}
++
++	replacement, err := qm.CreateReader(ctx, tid)
++	if err != nil {
++		t.Fatalf("CreateReader() after subscriber drop error = %v, want nil", err)
++	}
++	want := &Message{Event: &a2a.Message{ID: "after-resubscribe"}}
++	if err := writer.Write(ctx, want); err != nil {
++		t.Fatalf("Write() after resubscribe error = %v, want nil", err)
++	}
++	got, err := replacement.Read(ctx)
++	if err != nil {
++		t.Fatalf("replacement.Read() error = %v, want nil", err)
++	}
++	if diff := cmp.Diff(want, got); diff != "" {
++		t.Fatalf("replacement.Read() wrong result (-want +got) diff = %s", diff)
++	}
++}
++
++func TestInMemoryQueue_SubscriberTimeoutDoesNotDropReadySubscriber(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(1), WithSubscriberTimeout(time.Nanosecond))
++
++	for i := range 1_000 {
++		tid := a2a.TaskID(fmt.Sprintf("ready-subscriber-%d", i))
++		reader, writer := mustCreateReadWriter(t, qm, tid)
++		want := &Message{Event: &a2a.Message{ID: "ready"}}
++		if err := writer.Write(t.Context(), want); err != nil {
++			t.Fatalf("writer.Write() at iteration %d error = %v, want nil", i, err)
++		}
++		got, err := reader.Read(t.Context())
++		if err != nil {
++			t.Fatalf("reader.Read() at iteration %d error = %v, want nil", i, err)
++		}
++		if diff := cmp.Diff(want, got); diff != "" {
++			t.Fatalf("reader.Read() at iteration %d wrong result (-want +got) diff = %s", i, diff)
++		}
++		if err := qm.Destroy(t.Context(), tid); err != nil {
++			t.Fatalf("qm.Destroy() at iteration %d error = %v, want nil", i, err)
++		}
++	}
++}
++
++func TestInMemoryQueue_PreservesMessageOrderAcrossSubscribers(t *testing.T) {
++	t.Parallel()
++	qm := newTestManager(t, WithQueueBufferSize(3), WithSubscriberTimeout(0))
++	tid := a2a.NewTaskID()
++	first, writer := mustCreateReadWriter(t, qm, tid)
++	second, err := qm.CreateReader(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("CreateReader() error = %v", err)
++	}
++
++	for i := range 3 {
++		if err := writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: fmt.Sprintf("event-%d", i)}}); err != nil {
++			t.Fatalf("Write(%d) error = %v", i, err)
++		}
++	}
++	for _, reader := range []Reader{first, second} {
++		for i := range 3 {
++			message, err := reader.Read(t.Context())
++			if err != nil {
++				t.Fatalf("Read(%d) error = %v", i, err)
++			}
++			want := fmt.Sprintf("event-%d", i)
++			if got := message.Event.(*a2a.Message).ID; got != want {
++				t.Fatalf("Read(%d) ID = %q, want %q", i, got, want)
++			}
++		}
++	}
++}
++
++func TestInMemoryQueue_PreservesConcurrentBroadcastOrderAcrossSubscribers(t *testing.T) {
++	t.Parallel()
++	const broadcastCount = 32
++
++	qm := newTestManager(t, WithQueueBufferSize(broadcastCount), WithSubscriberTimeout(0))
++	tid := a2a.NewTaskID()
++	first, firstWriter := mustCreateReadWriter(t, qm, tid)
++	second, err := qm.CreateReader(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("CreateReader() error = %v", err)
++	}
++	secondWriter, err := qm.CreateWriter(t.Context(), tid)
++	if err != nil {
++		t.Fatalf("CreateWriter() error = %v", err)
++	}
++
++	start := make(chan struct{})
++	errs := make(chan error, broadcastCount)
++	var writes sync.WaitGroup
++	for i := range broadcastCount {
++		writes.Go(func() {
++			<-start
++			writer := firstWriter
++			if i%2 != 0 {
++				writer = secondWriter
++			}
++			errs <- writer.Write(t.Context(), &Message{Event: &a2a.Message{ID: fmt.Sprintf("event-%d", i)}})
++		})
++	}
++	close(start)
++	writes.Wait()
++	close(errs)
++	for err := range errs {
++		if err != nil {
++			t.Fatalf("Write() error = %v, want nil", err)
++		}
++	}
++
++	readIDs := func(reader Reader) []string {
++		t.Helper()
++		ids := make([]string, 0, broadcastCount)
++		for range broadcastCount {
++			message, err := reader.Read(t.Context())
++			if err != nil {
++				t.Fatalf("Read() error = %v, want nil", err)
++			}
++			ids = append(ids, message.Event.(*a2a.Message).ID)
++		}
++		return ids
++	}
++	firstIDs := readIDs(first)
++	secondIDs := readIDs(second)
++	if diff := cmp.Diff(firstIDs, secondIDs); diff != "" {
++		t.Fatalf("subscriber broadcast order mismatch (-first +second) diff = %s", diff)
++	}
++}
+diff --git a/internal/taskexec/manager_test.go b/internal/taskexec/manager_test.go
+index 6a4e831..2caff94 100644
+--- a/internal/taskexec/manager_test.go
++++ b/internal/taskexec/manager_test.go
+@@ -25,6 +25,7 @@ import (
+
+ 	"github.com/a2aproject/a2a-go/v2/a2a"
+ 	"github.com/a2aproject/a2a-go/v2/a2asrv/eventqueue"
++	"github.com/a2aproject/a2a-go/v2/a2asrv/limiter"
+ 	"github.com/a2aproject/a2a-go/v2/a2asrv/taskstore"
+ 	"github.com/a2aproject/a2a-go/v2/a2asrv/workqueue"
+ 	"github.com/a2aproject/a2a-go/v2/internal/eventpipe"
+@@ -867,3 +868,61 @@ func TestManager_AgentInactivityTimeout(t *testing.T) {
+ 		t.Fatalf("context.Cause(executorCtx) = %v, want errors.Is(_, ErrAgentInactivityTimeout)", executorCause)
+ 	}
+ }
++
++func TestManager_StalledSubscriptionReleasesConcurrencyQuota(t *testing.T) {
++	t.Parallel()
++
++	executors := make(chan *testExecutor, 2)
++	manager := NewLocalManager(LocalManagerConfig{
++		QueueManager: eventqueue.NewInMemoryManager(
++			eventqueue.WithQueueBufferSize(0),
++			eventqueue.WithSubscriberTimeout(20*time.Millisecond),
++		),
++		ConcurrencyConfig: limiter.ConcurrencyConfig{MaxExecutions: 1},
++		TaskStore:         testutil.NewTestTaskStore(),
++		Factory: &testFactory{
++			CreateExecutorFn: func(context.Context, a2a.TaskID, *a2a.SendMessageRequest) (Executor, Processor, Cleaner, error) {
++				executor := newExecutor()
++				executor.nextEventTerminal = true
++				executors <- executor
++				return executor, executor, executor, nil
++			},
++		},
++	})
++
++	first, err := manager.Execute(t.Context(), &a2a.SendMessageRequest{Message: a2a.NewMessage(a2a.MessageRoleUser)})
++	if err != nil {
++		t.Fatalf("first Execute() error = %v", err)
++	}
++	firstExecutor := <-executors
++	<-firstExecutor.executeCalled
++
++	firstExecutor.mustWrite(t, &a2a.Task{ID: first.TaskID(), Status: a2a.TaskStatus{State: a2a.TaskStateCompleted}})
++
++	var second Subscription
++	deadline := time.After(time.Second)
++	for second == nil {
++		var executeErr error
++		second, executeErr = manager.Execute(t.Context(), &a2a.SendMessageRequest{Message: a2a.NewMessage(a2a.MessageRoleUser)})
++		if executeErr == nil {
++			break
++		}
++		second = nil
++		select {
++		case <-deadline:
++			t.Fatalf("second Execute() remained blocked by the first execution quota: %v", executeErr)
++		case <-time.After(time.Millisecond):
++		}
++	}
++
++	secondExecutor := <-executors
++	<-secondExecutor.executeCalled
++	secondEvents, secondErr := consumeEvents(t, second)
++	secondExecutor.mustWrite(t, &a2a.Task{ID: second.TaskID(), Status: a2a.TaskStatus{State: a2a.TaskStateCompleted}})
++	if err := <-secondErr; err != nil {
++		t.Fatalf("second subscription error = %v", err)
++	}
++	if got := <-secondEvents; len(got) != 1 {
++		t.Fatalf("second execution emitted %d events, want 1", len(got))
++	}
++}
