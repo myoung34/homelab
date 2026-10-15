@@ -80,6 +80,12 @@ spec:
       compaction:
         tokenThreshold: 70000
         eventRetentionSize: 24
+        # The CRD defaults compactionInterval to 5 (minimum 1), which also
+        # turns on ADK's sliding window: a qwen-written summary every 5 user
+        # turns whatever their size (agent logged compaction_interval=5,
+        # overlap_size=2). It can't be set to off, so set it out of reach;
+        # tail retention above is the only strategy wanted here.
+        compactionInterval: 100000
     # Two sources. `builtin` is the chart's own ConfigMap and carries the
     # Kubernetes methodology prompts k8s-agent used to include; `prompts` is
     # ours (homelab-agent-prompt.yaml) and carries the homelab topology and the GitHub
