@@ -1,0 +1,164 @@
+diff --git a/go/adk/pkg/agent/agent.go b/go/adk/pkg/agent/agent.go
+index 5af5781..e701a9d 100644
+--- a/go/adk/pkg/agent/agent.go
++++ b/go/adk/pkg/agent/agent.go
+@@ -113,6 +113,14 @@ func CreateGoogleADKAgent(ctx context.Context, agentConfig *adk.AgentConfig, age
+ 	}
+ 	beforeToolCallbacks = append(beforeToolCallbacks, makeBeforeToolCallback(log))
+
++	// Logging first: it always returns nil, and ADK stops at the first
++	// callback that returns a result.
++	afterToolCallbacks := []llmagent.AfterToolCallback{makeAfterToolCallback(log)}
++	if limit := toolResultCapFromEnv(); limit > 0 {
++		log.Info("Wiring tool result cap", "maxChars", limit)
++		afterToolCallbacks = append(afterToolCallbacks, makeResultCapCallback(log, limit))
++	}
++
+ 	llmAgentConfig := llmagent.Config{
+ 		Name:                  agentName,
+ 		Description:           agentConfig.Description,
+@@ -124,9 +132,7 @@ func CreateGoogleADKAgent(ctx context.Context, agentConfig *adk.AgentConfig, age
+ 		Toolsets:              toolsets,
+ 		BeforeToolCallbacks:   beforeToolCallbacks,
+ 		BeforeModelCallbacks:  beforeModelCallbacks,
+-		AfterToolCallbacks: []llmagent.AfterToolCallback{
+-			makeAfterToolCallback(log),
+-		},
++		AfterToolCallbacks:    afterToolCallbacks,
+ 		OnToolErrorCallbacks: []llmagent.OnToolErrorCallback{
+ 			makeOnToolErrorCallback(log),
+ 		},
+diff --git a/go/adk/pkg/agent/result_cap.go b/go/adk/pkg/agent/result_cap.go
+new file mode 100644
+index 0000000..8a4df2b
+--- /dev/null
++++ b/go/adk/pkg/agent/result_cap.go
+@@ -0,0 +1,63 @@
++package agent
++
++import (
++	"encoding/json"
++	"fmt"
++	"os"
++	"strconv"
++	"strings"
++
++	"github.com/go-logr/logr"
++	"google.golang.org/adk/v2/agent"
++	"google.golang.org/adk/v2/agent/llmagent"
++	"google.golang.org/adk/v2/tool"
++)
++
++// toolResultCapFromEnv reads KAGENT_MAX_TOOL_RESULT_CHARS. Unset, invalid or
++// non-positive disables the cap.
++func toolResultCapFromEnv() int {
++	n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("KAGENT_MAX_TOOL_RESULT_CHARS")))
++	if err != nil || n <= 0 {
++		return 0
++	}
++	return n
++}
++
++// capToolResult returns a replacement for a tool result whose JSON encoding
++// exceeds limit characters, or nil to keep the original. One oversized result
++// (a 327k-character PR search) otherwise fills a local model's context window
++// in a single call, and the server silently drops the head of the prompt.
++func capToolResult(result map[string]any, limit int) map[string]any {
++	if limit <= 0 {
++		return nil
++	}
++	encoded, err := json.Marshal(result)
++	if err != nil || len(encoded) <= limit {
++		return nil
++	}
++	return map[string]any{
++		"content":        string(encoded[:limit]),
++		"original_chars": len(encoded),
++		"note": fmt.Sprintf("Result truncated from %d to %d characters. "+
++			"Re-run with a narrower call: fewer fields, a smaller perPage or page, "+
++			"a more specific query or path, or pipe through head/grep/jq.",
++			len(encoded), limit),
++	}
++}
++
++func makeResultCapCallback(logger logr.Logger, limit int) llmagent.AfterToolCallback {
++	return func(ctx agent.Context, t tool.Tool, _, result map[string]any, err error) (map[string]any, error) {
++		if err != nil {
++			return nil, nil
++		}
++		capped := capToolResult(result, limit)
++		if capped != nil {
++			logger.Info("Tool result truncated",
++				"tool", t.Name(),
++				"functionCallID", ctx.FunctionCallID(),
++				"originalChars", capped["original_chars"],
++				"limit", limit)
++		}
++		return capped, nil
++	}
++}
+diff --git a/go/adk/pkg/agent/result_cap_test.go b/go/adk/pkg/agent/result_cap_test.go
+new file mode 100644
+index 0000000..f096433
+--- /dev/null
++++ b/go/adk/pkg/agent/result_cap_test.go
+@@ -0,0 +1,59 @@
++package agent
++
++import (
++	"encoding/json"
++	"strings"
++	"testing"
++)
++
++func TestCapToolResult_LeavesSmallResultsAlone(t *testing.T) {
++	result := map[string]any{"output": "short"}
++	if got := capToolResult(result, 100); got != nil {
++		t.Fatalf("small result replaced: %v", got)
++	}
++}
++
++func TestCapToolResult_DisabledWhenLimitNotPositive(t *testing.T) {
++	result := map[string]any{"output": strings.Repeat("x", 1000)}
++	if got := capToolResult(result, 0); got != nil {
++		t.Fatalf("limit 0 should disable the cap, got %v", got)
++	}
++}
++
++func TestCapToolResult_TruncatesOversizedResults(t *testing.T) {
++	result := map[string]any{"output": strings.Repeat("x", 5000)}
++	got := capToolResult(result, 1000)
++	if got == nil {
++		t.Fatal("oversized result was not capped")
++	}
++	encoded, err := json.Marshal(got)
++	if err != nil {
++		t.Fatal(err)
++	}
++	// The replacement must itself stay near the limit (prefix + a short note).
++	if len(encoded) > 1500 {
++		t.Fatalf("capped result is %d chars, want about 1000", len(encoded))
++	}
++	note, _ := got["note"].(string)
++	if !strings.Contains(note, "truncated") || !strings.Contains(note, "narrow") {
++		t.Fatalf("note should say it was truncated and to narrow the call, got %q", note)
++	}
++	if got["original_chars"] != 5000+len(`{"output":""}`) {
++		t.Fatalf("original_chars = %v", got["original_chars"])
++	}
++}
++
++func TestToolResultCapFromEnv(t *testing.T) {
++	t.Setenv("KAGENT_MAX_TOOL_RESULT_CHARS", "")
++	if got := toolResultCapFromEnv(); got != 0 {
++		t.Fatalf("unset env: got %d, want 0", got)
++	}
++	t.Setenv("KAGENT_MAX_TOOL_RESULT_CHARS", "40000")
++	if got := toolResultCapFromEnv(); got != 40000 {
++		t.Fatalf("got %d, want 40000", got)
++	}
++	t.Setenv("KAGENT_MAX_TOOL_RESULT_CHARS", "nope")
++	if got := toolResultCapFromEnv(); got != 0 {
++		t.Fatalf("invalid env: got %d, want 0", got)
++	}
++}

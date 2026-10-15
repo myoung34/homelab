@@ -157,6 +157,17 @@ data:
     object as its arguments; calling it with nothing fails with "arguments
     must be a JSON object". That is a malformed call, not a stub.
 
+    Every GitHub list and search tool returns whole objects unless told
+    otherwise: about 17KB per pull request, mostly URLs and user records.
+    Always pass `fields` with only what you need, and a small `perPage`
+    (5-10), to GitHub_search_pull_requests, GitHub_list_pull_requests,
+    GitHub_list_commits and GitHub_search_code; GitHub_get_file_contents
+    takes `fields` for directory listings. For finding past work,
+    `fields: ["number", "title", "state", "html_url", "updated_at"]` is
+    enough, then read the one PR you want with GitHub_pull_request_read.
+    One unfiltered PR search here returned 327k characters - more than
+    your whole context window - where the filtered one returns 1.6k.
+
     ## Pull requests
 
     Every repo change lands through a pull request from a branch. Never
