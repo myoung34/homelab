@@ -56,11 +56,30 @@ spec:
     Talos cluster with the k8s_* tools and ships fixes as pull requests
     against myoung34/homelab, with web, GitHub and Datadog through Aperture.
   declarative:
-    # Local qwen3-coder-next (modelconfig-qwen.yaml). This agent's tools eat
-    # ~64k of the 128k context; back to default-model-config (Claude) if
-    # sessions start running out of room.
+    # Local qwen3-coder-next (modelconfig-qwen.yaml). Fixed cost is ~31k of
+    # the 131k context per request: ~21k of Aperture tool schemas, ~3k of
+    # k8s_* schemas, ~6.5k of prompts (measured 2026-10-15). Back to
+    # default-model-config (Claude) if sessions start running out of room.
     modelConfig: qwen3-coder-next
     stream: true
+    # Bounds long chats on qwen's 131k context. After a turn whose prompt
+    # reached tokenThreshold, everything but the last eventRetentionSize
+    # events is folded into one rolling summary (tail retention; ADK seeds
+    # each summary with the previous one, so it never grows). The summary is
+    # written by this agent's own model with ADK's default prompt. Needs our
+    # runtime build (images/kagent-adk, kagent-pr2791.patch); stock 0.10.3
+    # ignores this block, and the Agent's UnsupportedFeatures condition still
+    # says so - with our image that message is out of date.
+    #
+    # Post-invocation only: it runs when a turn ends, so it cannot rescue one
+    # long turn. KAGENT_MAX_TOOL_RESULT_CHARS (deployment.env) covers that.
+    # 70000 leaves ~60k of headroom for the next turn on top of the ~31k
+    # fixed cost (tool schemas + prompts); 24 events is about a dozen tool
+    # round trips kept verbatim.
+    context:
+      compaction:
+        tokenThreshold: 70000
+        eventRetentionSize: 24
     # Two sources. `builtin` is the chart's own ConfigMap and carries the
     # Kubernetes methodology prompts k8s-agent used to include; `prompts` is
     # ours (homelab-agent-prompt.yaml) and carries the homelab topology and the GitHub

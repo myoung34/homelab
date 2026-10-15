@@ -234,7 +234,7 @@ helmCharts:
       goAgentImage:
         registry: ghcr.io
         repository: myoung34/homelab/golang-adk
-        tag: 0.10.3-a2a414-cap
+        tag: 0.10.3-a2a414-cap-compact
     ui:
       resources:
         requests:

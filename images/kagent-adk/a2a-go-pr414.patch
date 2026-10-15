@@ -1,5 +1,5 @@
 diff --git a/a2asrv/eventqueue/manager_in_memory_impl.go b/a2asrv/eventqueue/manager_in_memory_impl.go
-index 8c498b5..4e7eab3 100644
+index 8c498b5..e73b018 100644
 --- a/a2asrv/eventqueue/manager_in_memory_impl.go
 +++ b/a2asrv/eventqueue/manager_in_memory_impl.go
 @@ -16,13 +16,20 @@ package eventqueue
@@ -18,7 +18,7 @@ index 8c498b5..4e7eab3 100644
 
 +// Reuse the pull-based reader's five-minute inactivity window as the default
 +// grace period for an in-memory subscriber.
-+const defaultSubscriberTimeout = 5 * time.Minute
++const defaultSubscriberTimeout = defaultInactivityTimeout
 +
  // MemManagerOption is a functional option for configuring an in-memory event manager.
  type MemManagerOption func(*inMemoryManager)
@@ -184,7 +184,7 @@ index 8c498b5..4e7eab3 100644
 +	return broker.destroy(ctx)
  }
 diff --git a/a2asrv/eventqueue/manager_in_memory_impl_test.go b/a2asrv/eventqueue/manager_in_memory_impl_test.go
-index 986cff9..567a5bb 100644
+index 94bca12..330b422 100644
 --- a/a2asrv/eventqueue/manager_in_memory_impl_test.go
 +++ b/a2asrv/eventqueue/manager_in_memory_impl_test.go
 @@ -15,10 +15,13 @@
