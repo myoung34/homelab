@@ -110,6 +110,13 @@ spec:
       # printer-agent-srt ConfigMap below. The rest is the image's own PATH.
       - name: PATH
         value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
+      # Truncate any single tool result over 40k characters (~10k tokens),
+      # same as homelab-agent (see the comment there). This agent also runs
+      # on qwen's 131k context, and pod logs (k8s_get_pod_logs on the
+      # Klipper pods), Datadog log searches, web fetches and GitHub listings
+      # can each return far more than that.
+      - name: KAGENT_MAX_TOOL_RESULT_CHARS
+        value: "40000"
       volumes:
       # srt shim and settings; see the printer-agent-srt ConfigMap below.
       - name: srt-shim
