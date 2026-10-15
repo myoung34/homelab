@@ -1,7 +1,7 @@
-machine:
-  nodeLabels:
-    node.longhorn.io/create-default-disk: "true"
----
+# create-default-disk=true: Longhorn creates its default disk at the default
+# data path (/var/lib/longhorn) when the node registers. Required since
+# createDefaultDiskLabeledNodes is on (k8s/prod/longhorn), otherwise a fresh
+# node would get no disk.
 apiVersion: v1alpha1
 kind: UserVolumeConfig
 name: ${mount_point:-longhorn}
@@ -9,4 +9,6 @@ provisioning:
   diskSelector:
     match: ${longhorn_disk_selector:-disk.transport == "nvme"}
   grow: true
+mount:
+  path: /var/lib/longhorn
 ---
