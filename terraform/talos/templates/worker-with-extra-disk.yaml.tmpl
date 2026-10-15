@@ -1,6 +1,6 @@
 machine:
   kubelet:
-    extraMounts: # changeme
+    extraMounts:
       - destination: ${mount_point}
         type: bind
         source: ${mount_point}
@@ -8,7 +8,14 @@ machine:
           - bind
           - rshared
           - rw
-  disks: # changeme
-      - device: ${extra_device}
-        partitions:
-          - mountpoint: ${mount_point}
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: ${mount_point}
+provisioning:
+  diskSelector:
+    match: ${extra_device}
+  grow: true
+  mountOptions:
+    - noatime
+---
