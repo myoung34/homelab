@@ -75,6 +75,20 @@
         "patch"
       ],
       "enabled": false
+    },
+    {
+      "description": "Hold kagent at 0.10.3: images/kagent-adk patches a2a-go versions pinned to kagent 0.10.3's go.mod. Remove once kagent ships a2aproject/a2a-go#414 (see images/kagent-adk/Dockerfile)",
+      "matchManagers": [
+        "kustomize"
+      ],
+      "matchFileNames": [
+        "k8s/prod/kagent/**"
+      ],
+      "matchDepNames": [
+        "kagent",
+        "kagent-crds"
+      ],
+      "enabled": false
     }
   ],
   "customManagers": [
