@@ -226,15 +226,17 @@ helmCharts:
           mountPath: /etc/kagent/db
           readOnly: true
       # Agent pods run our build of the Go runtime: stock kagent plus
-      # a2a-go#414, which stops one stalled chat stream from wedging every
-      # task in the pod (see images/kagent-adk/Dockerfile). The controller
+      # a2a-go#414 and its v0.3.15 equivalent (the server runs on v0), which
+      # stop one stalled chat stream from wedging every task in the pod (see
+      # images/kagent-adk/Dockerfile). renovate.json holds the kagent charts
+      # at 0.10.3 to match. The controller
       # appends -full for agents with spec.skills, so the image workflow
       # pushes both <tag> and <tag>-full. Delete this block, and
       # images/kagent-adk, once a kagent release ships the fix.
       goAgentImage:
         registry: ghcr.io
         repository: myoung34/homelab/golang-adk
-        tag: 0.10.3-a2a414-cap-compact-orphan
+        tag: 0.10.3-a2a414v0-cap-compact-orphan
     ui:
       resources:
         requests:

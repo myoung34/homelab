@@ -1,0 +1,137 @@
+diff --git a/a2asrv/eventqueue/manager_in_memory_impl.go b/a2asrv/eventqueue/manager_in_memory_impl.go
+index 96cbb5c..aa21c6c 100644
+--- a/a2asrv/eventqueue/manager_in_memory_impl.go
++++ b/a2asrv/eventqueue/manager_in_memory_impl.go
+@@ -17,6 +17,7 @@ package eventqueue
+ import (
+ 	"context"
+ 	"sync"
++	"time"
+
+ 	"github.com/a2aproject/a2a-go/a2a"
+ 	"github.com/a2aproject/a2a-go/log"
+@@ -24,6 +25,10 @@ import (
+
+ const defaultQueueBufferSize = 32
+
++// defaultSubscriberTimeout bounds how long the broker waits for one
++// subscriber to accept one event (a2aproject/a2a-go#395).
++const defaultSubscriberTimeout = 5 * time.Minute
++
+ type MemManagerOption func(*inMemoryManager)
+
+ func WithQueueBufferSize(size int) MemManagerOption {
+@@ -32,12 +37,22 @@ func WithQueueBufferSize(size int) MemManagerOption {
+ 	}
+ }
+
++// WithSubscriberTimeout configures how long a broadcast waits for each
++// subscriber to accept it before that subscriber is closed and removed.
++// A non-positive duration waits forever (the pre-#395 behavior).
++func WithSubscriberTimeout(timeout time.Duration) MemManagerOption {
++	return func(manager *inMemoryManager) {
++		manager.subscriberTimeout = timeout
++	}
++}
++
+ // inMemoryManager implements Manager interface.
+ type inMemoryManager struct {
+ 	mu      sync.Mutex
+ 	brokers map[a2a.TaskID]*inMemoryEventBroker
+
+-	bufferSize int
++	bufferSize        int
++	subscriberTimeout time.Duration
+ }
+
+ var _ Manager = (*inMemoryManager)(nil)
+@@ -54,8 +69,9 @@ var _ Manager = (*inMemoryManager)(nil)
+ // Queue.Close() may partially drain the queue, so Read() behavior after is Close() is undefined.
+ func NewInMemoryManager(options ...MemManagerOption) Manager {
+ 	manager := &inMemoryManager{
+-		brokers:    make(map[a2a.TaskID]*inMemoryEventBroker),
+-		bufferSize: defaultQueueBufferSize,
++		brokers:           make(map[a2a.TaskID]*inMemoryEventBroker),
++		bufferSize:        defaultQueueBufferSize,
++		subscriberTimeout: defaultSubscriberTimeout,
+ 	}
+ 	for _, opt := range options {
+ 		opt(manager)
+@@ -68,7 +84,7 @@ func (m *inMemoryManager) GetOrCreate(ctx context.Context, taskID a2a.TaskID) (Q
+ 	defer m.mu.Unlock()
+ 	broker, ok := m.brokers[taskID]
+ 	if !ok {
+-		broker = newInMemoryEventBroker(m.bufferSize)
++		broker = newInMemoryEventBroker(m.bufferSize, m.subscriberTimeout)
+ 		m.brokers[taskID] = broker
+ 	}
+ 	return broker.connect()
+diff --git a/a2asrv/eventqueue/queue_in_memory_impl.go b/a2asrv/eventqueue/queue_in_memory_impl.go
+index 5746f07..8d3e3fd 100644
+--- a/a2asrv/eventqueue/queue_in_memory_impl.go
++++ b/a2asrv/eventqueue/queue_in_memory_impl.go
+@@ -17,6 +17,7 @@ package eventqueue
+ import (
+ 	"context"
+ 	"fmt"
++	"time"
+
+ 	"github.com/a2aproject/a2a-go/a2a"
+ )
+@@ -41,18 +42,20 @@ type inMemoryEventBroker struct {
+ 	unregisterChan chan *inMemoryQueue
+ 	broadcastChan  chan *broadcast
+
+-	queueBufferSize int
++	queueBufferSize   int
++	subscriberTimeout time.Duration
+ }
+
+-func newInMemoryEventBroker(queueBufferSize int) *inMemoryEventBroker {
++func newInMemoryEventBroker(queueBufferSize int, subscriberTimeout time.Duration) *inMemoryEventBroker {
+ 	broker := &inMemoryEventBroker{
+-		registered:      make(map[*inMemoryQueue]any),
+-		registerChan:    make(chan *inMemoryQueue),
+-		unregisterChan:  make(chan *inMemoryQueue),
+-		broadcastChan:   make(chan *broadcast),
+-		destroySignal:   make(chan struct{}),
+-		destroyed:       make(chan struct{}),
+-		queueBufferSize: queueBufferSize,
++		registered:        make(map[*inMemoryQueue]any),
++		registerChan:      make(chan *inMemoryQueue),
++		unregisterChan:    make(chan *inMemoryQueue),
++		broadcastChan:     make(chan *broadcast),
++		destroySignal:     make(chan struct{}),
++		destroyed:         make(chan struct{}),
++		queueBufferSize:   queueBufferSize,
++		subscriberTimeout: subscriberTimeout,
+ 	}
+ 	go func() {
+ 		defer func() {
+@@ -70,11 +73,27 @@ func newInMemoryEventBroker(queueBufferSize int) *inMemoryEventBroker {
+ 						continue
+ 					}
+
++					// A subscriber that stops reading (client connected, TCP
++					// window full) must not park the broker: that blocks every
++					// writer and every connect for this task, and callers hold
++					// process-wide locks across connect (a2aproject/a2a-go#395).
++					var timer *time.Timer
++					var timeout <-chan time.Time
++					if broker.subscriberTimeout > 0 {
++						timer = time.NewTimer(broker.subscriberTimeout)
++						timeout = timer.C
++					}
+ 					select {
+ 					case queue.eventsChan <- b.payload:
++					case <-timeout:
++						delete(broker.registered, queue)
++						queue.destroy()
+ 					case <-broker.destroySignal:
+ 						return
+ 					}
++					if timer != nil {
++						timer.Stop()
++					}
+ 				}
+ 				close(b.dispatched)

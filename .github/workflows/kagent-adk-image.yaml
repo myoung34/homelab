@@ -1,4 +1,4 @@
-# Builds images/kagent-adk (stock kagent Go agent runtime + a2a-go#414) and
+# Builds images/kagent-adk (stock kagent Go agent runtime + a2a-go#414/v0 fix) and
 # pushes ghcr.io/myoung34/homelab/golang-adk. Runs on any branch that touches
 # the image, so the tags exist before the PR that uses them is merged.
 #
