@@ -2,16 +2,13 @@ diff --git a/a2asrv/eventqueue/manager_in_memory_impl.go b/a2asrv/eventqueue/man
 index 96cbb5c..aa21c6c 100644
 --- a/a2asrv/eventqueue/manager_in_memory_impl.go
 +++ b/a2asrv/eventqueue/manager_in_memory_impl.go
-@@ -17,6 +17,7 @@ package eventqueue
- import (
+@@ -18,4 +18,5 @@ import (
  	"context"
  	"sync"
 +	"time"
 
  	"github.com/a2aproject/a2a-go/a2a"
- 	"github.com/a2aproject/a2a-go/log"
-@@ -24,6 +25,10 @@ import (
-
+@@ -25,4 +26,8 @@ import (
  const defaultQueueBufferSize = 32
 
 +// defaultSubscriberTimeout bounds how long the broker waits for one
@@ -20,9 +17,7 @@ index 96cbb5c..aa21c6c 100644
 +
  type MemManagerOption func(*inMemoryManager)
 
- func WithQueueBufferSize(size int) MemManagerOption {
-@@ -32,12 +37,22 @@ func WithQueueBufferSize(size int) MemManagerOption {
- 	}
+@@ -33,4 +38,13 @@ func WithQueueBufferSize(size int) MemManagerOption {
  }
 
 +// WithSubscriberTimeout configures how long a broadcast waits for each
@@ -36,7 +31,7 @@ index 96cbb5c..aa21c6c 100644
 +
  // inMemoryManager implements Manager interface.
  type inMemoryManager struct {
- 	mu      sync.Mutex
+@@ -38,5 +52,6 @@ type inMemoryManager struct {
  	brokers map[a2a.TaskID]*inMemoryEventBroker
 
 -	bufferSize int
@@ -44,9 +39,7 @@ index 96cbb5c..aa21c6c 100644
 +	subscriberTimeout time.Duration
  }
 
- var _ Manager = (*inMemoryManager)(nil)
-@@ -54,8 +69,9 @@ var _ Manager = (*inMemoryManager)(nil)
- // Queue.Close() may partially drain the queue, so Read() behavior after is Close() is undefined.
+@@ -55,6 +70,7 @@ var _ Manager = (*inMemoryManager)(nil)
  func NewInMemoryManager(options ...MemManagerOption) Manager {
  	manager := &inMemoryManager{
 -		brokers:    make(map[a2a.TaskID]*inMemoryEventBroker),
@@ -56,30 +49,24 @@ index 96cbb5c..aa21c6c 100644
 +		subscriberTimeout: defaultSubscriberTimeout,
  	}
  	for _, opt := range options {
- 		opt(manager)
-@@ -68,7 +84,7 @@ func (m *inMemoryManager) GetOrCreate(ctx context.Context, taskID a2a.TaskID) (Q
- 	defer m.mu.Unlock()
+@@ -69,5 +85,5 @@ func (m *inMemoryManager) GetOrCreate(ctx context.Context, taskID a2a.TaskID) (Q
  	broker, ok := m.brokers[taskID]
  	if !ok {
 -		broker = newInMemoryEventBroker(m.bufferSize)
 +		broker = newInMemoryEventBroker(m.bufferSize, m.subscriberTimeout)
  		m.brokers[taskID] = broker
  	}
- 	return broker.connect()
 diff --git a/a2asrv/eventqueue/queue_in_memory_impl.go b/a2asrv/eventqueue/queue_in_memory_impl.go
 index 5746f07..8d3e3fd 100644
 --- a/a2asrv/eventqueue/queue_in_memory_impl.go
 +++ b/a2asrv/eventqueue/queue_in_memory_impl.go
-@@ -17,6 +17,7 @@ package eventqueue
- import (
+@@ -18,4 +18,5 @@ import (
  	"context"
  	"fmt"
 +	"time"
 
  	"github.com/a2aproject/a2a-go/a2a"
- )
-@@ -41,18 +42,20 @@ type inMemoryEventBroker struct {
- 	unregisterChan chan *inMemoryQueue
+@@ -42,16 +43,18 @@ type inMemoryEventBroker struct {
  	broadcastChan  chan *broadcast
 
 -	queueBufferSize int
@@ -107,9 +94,7 @@ index 5746f07..8d3e3fd 100644
 +		subscriberTimeout: subscriberTimeout,
  	}
  	go func() {
- 		defer func() {
-@@ -70,11 +73,27 @@ func newInMemoryEventBroker(queueBufferSize int) *inMemoryEventBroker {
- 						continue
+@@ -71,9 +74,25 @@ func newInMemoryEventBroker(queueBufferSize int) *inMemoryEventBroker {
  					}
 
 +					// A subscriber that stops reading (client connected, TCP
