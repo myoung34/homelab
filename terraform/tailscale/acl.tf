@@ -52,8 +52,9 @@ resource "tailscale_acl" "acl" {
 		},
 		{
 			// Aperture (tag:ai) -> self-hosted model providers behind the
-			// tailscale operator's Ingresses (tag:k8s), today just
-			// https://ollama.king-gila.ts.net. tag:ai has no other outbound
+			// tailscale operator's Ingresses (tag:k8s), today
+			// https://ollama.king-gila.ts.net and
+			// https://ollama-gp.king-gila.ts.net. tag:ai has no other outbound
 			// rule, so without this Aperture times out connecting and answers
 			// 502. 443 only: Ingress proxies serve TLS there.
 			"src": ["tag:ai"],

@@ -14,13 +14,13 @@ spec:
   - hosts:
     - ollama
 ---
-# Old name kept: Aperture's "ollama-bonsai" provider (configured outside
-# this repo) points at ollama-bonsai.king-gila.ts.net. Renaming the host
-# means updating Aperture first.
+# Aperture's "ollama-gp" provider (configured outside this repo) points
+# at ollama-gp.king-gila.ts.net. Renaming the host means updating
+# Aperture too.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ollama-bonsai
+  name: ollama-gp
   namespace: ollama
 spec:
   defaultBackend:
@@ -31,4 +31,4 @@ spec:
   ingressClassName: tailscale
   tls:
   - hosts:
-    - ollama-bonsai
+    - ollama-gp
