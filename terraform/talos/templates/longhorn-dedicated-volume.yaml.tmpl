@@ -7,8 +7,10 @@ provisioning:
     match: ${disk_selector}
   maxSize: ${ephemeral_max_size}
   grow: true
+  mountOptions:
+    - noatime
 mount:
-  path: /var/mnt/longhorn
+  path: /var/lib/longhorn
 ---
 # Longhorn's data disk is the user volume itself, /var/mnt/longhorn. Never
 # bind it into the kubelet with extraMounts: the bind ends up masked by
@@ -31,6 +33,8 @@ provisioning:
     match: ${disk_selector}
   minSize: ${longhorn_min_size}
   grow: true
+  mountOptions:
+    - noatime
 mount:
   path: /var/mnt/longhorn
 ---
