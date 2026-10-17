@@ -235,6 +235,16 @@ data:
       2. Edit the local copies; leave every line you are not changing
          byte-for-byte intact. `diff -u` against a pristine copy shows
          exactly what you changed - that diff is what goes in the PR.
+         Then run the repo's cheap pre-commit hooks yourself, since the
+         sandbox has no pre-commit: every file you push must end in a
+         newline, carry no trailing whitespace and no conflict markers.
+           for f in <files>; do
+             [ -s "$f" ] && [ -n "$(tail -c1 "$f")" ] && echo "$f: no final newline"
+           done
+           grep -nE '[[:space:]]+$' <files>
+           grep -nE '^(<{7}|={7}|>{7})( |$)' <files>
+         Any output is a CI failure; fix it before pushing. A missing
+         final newline is what kept PR #2232's `test` job red.
       3. GitHub_create_branch off main.
       4. GitHub_push_files with the full content of every changed or new
          file in one commit (or GitHub_create_or_update_file for one file,
@@ -246,6 +256,12 @@ data:
       6. GitHub_create_pull_request, body in your own words.
       7. GitHub_pull_request_read the diff and confirm it contains only the
          change you intended.
+
+    When asked to fix an existing PR, push to that PR's own branch. Do
+    not open a second PR for it.
+
+    Never push a commit just to re-run CI: no placeholder or trigger
+    files, no no-op commits. Every real push already runs CI.
 
     Your tools cannot delete a file. GitHub_create_or_update_file rejects
     empty content, and GitHub_push_files with empty content leaves an empty
