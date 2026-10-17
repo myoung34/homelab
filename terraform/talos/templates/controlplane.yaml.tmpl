@@ -1,4 +1,9 @@
 machine:
+  token: ${machine_token}
+  logging:
+    destinations:
+      - endpoint: "tcp://192.168.3.2:5046/"
+        format: "json_lines"
   network:
     interfaces:
       - deviceSelector:
@@ -6,16 +11,71 @@ machine:
         dhcp: true
         vip:
           ip: 192.168.1.254
+  install:
+    image: ${image}
+    provision:
+      volumeSelector:
+        match: name == "EPHEMERAL"
+    wipe: true
   features:
-    kubernetesTalosAPIAccess:
-      enabled: true
-      allowedRoles:
-        - os:admin
-        # homelab-agent's talosctl (k8s/prod/kagent/talos.yaml): read-only.
-        - os:reader
-      allowedKubernetesNamespaces:
-        - argocd
-        - kagent
+    rbac: true
+    apidCheckExtKeyUsage: true
+    diskQuotaSupport: false
+  time:
+    disabled: false
+    servers:
+      - time.cloudflare.com
+      - time.windows.com
+---
+apiVersion: v1alpha1
+kind: ResolverConfig
+nameservers:
+  - address: 10.96.0.10
+  - address: 45.90.28.103
+  - address: 45.90.30.103
+---
+apiVersion: v1alpha1
+kind: StaticHostConfig
+hosts:
+  - ip: 192.168.1.254
+    aliases:
+      - controlplane.cluster.local
+---
+apiVersion: v1alpha1
+kind: SysctlConfig
+settings:
+  fs.inotify.max_user_instances: "256"
+  vm.swappiness: "1"
+  net.ipv4.ip_forward: "1"
+  net.core.bpf_jit_enable: "1"
+  user.max_user_namespaces: "11255"
+---
+apiVersion: v1alpha1
+kind: KubeletConfig
+image: ghcr.io/siderolabs/kubelet:${kubernetes_version}
+defaultRuntimeSeccompProfileEnabled: true
+disableManifestsDirectory: true
+extraArgs:
+  rotate-server-certificates: true
+nodeIP:
+  validSubnets:
+    - 192.168.1.0/24
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+nodeLabels:
+  node.longhorn.io/create-default-disk: "true"
+---
+apiVersion: v1alpha1
+kind: KubeTalosAPIAccessConfig
+enabled: true
+allowedRoles:
+  - os:admin
+  - os:reader
+allowedKubernetesNamespaces:
+  - argocd
+  - kagent
+---
 cluster:
   network:
     dnsDomain: cluster.local
@@ -23,75 +83,78 @@ cluster:
       - 10.244.0.0/16
     serviceSubnets:
       - 10.96.0.0/12
-  proxy:
-    image: registry.k8s.io/kube-proxy:${kubernetes_version}
-  controllerManager:
-    image: registry.k8s.io/kube-controller-manager:${kubernetes_version}
-  scheduler:
-    image: registry.k8s.io/kube-scheduler:${kubernetes_version}
-  etcd:
-    # Pin peer traffic to the LAN. Without these, Talos picks advertised
-    # addresses from whatever node addresses exist when etcd starts, which has
-    # selected Tailscale CGNAT addresses (100.64.0.0/10) on some nodes and LAN
-    # addresses on others. That makes etcd quorum depend on the tailnet being
-    # up, and makes the choice a boot-order race.
-    advertisedSubnets:
-      - 192.168.1.0/24
-    listenSubnets:
-      - 192.168.1.0/24
-    extraArgs:
-      election-timeout: "50000"
-      heartbeat-interval: "5000"
-  apiServer:
-    image: registry.k8s.io/kube-apiserver:${kubernetes_version}
-    certSANs:
-%{ for san in cert_sans ~}
-      - ${san}
-%{ endfor ~}
-    disablePodSecurityPolicy: true
-    admissionControl:
-      - configuration:
-          apiVersion: pod-security.admission.config.k8s.io/v1alpha1
-          defaults:
-            audit: restricted
-            audit-version: latest
-            enforce: baseline
-            enforce-version: latest
-            warn: restricted
-            warn-version: latest
-          exemptions:
-            namespaces:
-              - argocd
-              - actions-runner
-              - datadog
-              - hass
-              - esphome
-              - reloader
-              - local-path-storage
-              - node-feature-discovery
-              - ser2net
-              - zigbee2mqtt
-              - tailscale
-              - longhorn-system
-              - default
-              - amdgpu-device-plugin
-            runtimeClasses: []
-            usernames: []
-          kind: PodSecurityConfiguration
-        name: PodSecurity
-    auditPolicy:
-      apiVersion: audit.k8s.io/v1
-      kind: Policy
-      rules:
-        - level: Metadata
-  discovery:
-    enabled: true
-    registries:
-      kubernetes:
-        disabled: true
-  extraManifests:
-    # Pinned: these are re-fetched on every node boot, so floating refs (main /
-    # latest) let upstream changes land unreviewed and let nodes disagree.
-    - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.11.0/deploy/standalone-install.yaml
-    - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.9.0/components.yaml
-  inlineManifests: []
+---
+apiVersion: v1alpha1
+kind: KubeProxyConfig
+image: registry.k8s.io/kube-proxy:${kubernetes_version}
+---
+apiVersion: v1alpha1
+kind: KubeControllerManagerConfig
+image: registry.k8s.io/kube-controller-manager:${kubernetes_version}
+---
+apiVersion: v1alpha1
+kind: KubeSchedulerConfig
+image: registry.k8s.io/kube-scheduler:${kubernetes_version}
+---
+apiVersion: v1alpha1
+kind: KubeAPIServerConfig
+image: registry.k8s.io/kube-apiserver:${kubernetes_version}
+---
+apiVersion: v1alpha1
+kind: KubeAdmissionControlConfig
+name: PodSecurity
+configuration:
+  apiVersion: pod-security.admission.config.k8s.io/v1alpha1
+  defaults:
+    audit: restricted
+    audit-version: latest
+    enforce: baseline
+    enforce-version: latest
+    warn: restricted
+    warn-version: latest
+  exemptions:
+    namespaces:
+      - argocd
+      - actions-runner
+      - datadog
+      - hass
+      - esphome
+      - reloader
+      - local-path-storage
+      - node-feature-discovery
+      - ser2net
+      - zigbee2mqtt
+      - tailscale
+      - longhorn-system
+      - default
+      - amdgpu-device-plugin
+    runtimeClasses: []
+    usernames: []
+  kind: PodSecurityConfiguration
+---
+apiVersion: v1alpha1
+kind: KubeAuditPolicyConfig
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: Metadata
+---
+apiVersion: v1alpha1
+kind: DiscoveryServiceConfig
+enabled: true
+registries:
+  kubernetes:
+    disabled: true
+---
+apiVersion: v1alpha1
+kind: KubeExternalManifestConfig
+manifests:
+  - name: kubelet-serving-cert-approver
+    url: https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.11.0/deploy/standalone-install.yaml
+  - name: metrics-server
+    url: https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.9.0/components.yaml
+---
+apiVersion: v1alpha1
+kind: KubeInlineManifestConfig
+manifests: []
+---

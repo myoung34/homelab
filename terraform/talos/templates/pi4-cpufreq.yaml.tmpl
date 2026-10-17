@@ -3,6 +3,9 @@
 # what the PoE HATs brown out on ("Undervoltage detected!", then a throttle
 # to 600MHz). Belt and braces: applies without a reboot, and holds even if
 # a node still boots an image with arm_boost=1.
-machine:
-  sysfs:
-    devices.system.cpu.cpufreq.policy0.scaling_max_freq: "1500000"
+---
+apiVersion: v1alpha1
+kind: SysfsConfig
+settings:
+  devices/system/cpu/cpufreq/policy0/scaling_max_freq: "1500000"
+---
