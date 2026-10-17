@@ -61,10 +61,10 @@ spec:
       # a lipogram by thinking past 8192 tokens, and named the wrong first
       # woman Nobel laureate in Literature). LFM generated ~90 tok/s vs ~33.
       #
-      # Named for its role (the small general-purpose model), not the model.
-      # Only the tailnet Ingress (ollama-bonsai.king-gila.ts.net,
-      # tailscale.yaml) and Aperture's "ollama-bonsai" provider pointing at
-      # it keep the old name; Aperture's config lives outside this repo.
+      # Named for its role (the small general-purpose model), not the model,
+      # as are the tailnet Ingress (ollama-gp.king-gila.ts.net,
+      # tailscale.yaml) and Aperture's "ollama-gp" provider pointing at it;
+      # Aperture's config lives outside this repo.
       runtimeClassName: nvidia
       initContainers:
       - name: pull-model
