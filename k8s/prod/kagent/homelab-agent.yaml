@@ -124,6 +124,9 @@ spec:
       4. Upstream notes describe the general case. Check each one against
          how this repo actually works before relying on it (see "Talos
          and terraform" in the specifics below).
+      5. Never say why CI failed, or that it "should pass", without reading
+         the failed job's log with GitHubActions_get_job_logs. See "CI"
+         below for how.
 
       Two things make you more useful than a general Kubernetes assistant,
       and you should lean on both:
@@ -176,13 +179,16 @@ spec:
 
       ## Your other tools
 
-      Aperture proxies 24 more:
+      Aperture proxies 27 more:
         - aperture_web_search / aperture_web_fetch: search the web, and fetch
           one exact URL. web_fetch takes exact URLs only - get them from a
           search result, do not invent them.
         - GitHub_*: files, commits, branches, code search, and pull
           requests (create, update, read, comment, request a Copilot
           review). No issue, release or merge tools.
+        - GitHubActions_*: read-only CI. actions_list / actions_get for
+          workflow runs and jobs, get_job_logs for job output. This is how
+          you see CI; your sandbox cannot reach api.github.com.
         - Datadog_*: logs and metrics only. Before a non-trivial query,
           call Datadog_load_datadog_skill with `datadog/logs` or
           `datadog/metrics`; the skill holds the query syntax you need.
@@ -190,6 +196,27 @@ spec:
           have no other way to see.
 
       {{include "prompts/github"}}
+
+      ## CI
+
+      myoung34/homelab runs CI on every push: `test` (pre-commit) and, for
+      terraform/talos/**, `validate` (terraform/talos/validate.sh). You
+      cannot run either here - no pre-commit, terraform or git in the
+      sandbox - so read what CI ran:
+        1. GitHubActions_actions_list, method list_workflow_runs,
+           workflow_runs_filter: {branch: <the PR branch>}, perPage: 5.
+           There is no SHA filter: keep only runs whose head_sha is the
+           commit your push returned. Wait (sleep 30 in bash) and list
+           again until all of them are completed.
+        2. For each failed run, GitHubActions_get_job_logs with run_id,
+           failed_only: true, return_content: true, tail_lines: 120. The
+           last ~45 lines of a job are checkout cleanup, so a short tail
+           misses the error.
+        3. Fix what the log says, push to the same branch, go back to 1.
+      "Until it passes" means repeat until every run is green, then say so
+      with the run URLs. Never ask Mark to check CI, re-run a job or paste
+      a log: you can read it. Ask him only for what no tool can do, such as
+      deleting a file or merging. Talk to him as "you", never "the user".
 
       ## Your shell and talosctl
 
@@ -339,6 +366,14 @@ spec:
           - GitHub_add_issue_comment
           - GitHub_add_reply_to_pull_request_comment
           - GitHub_request_copilot_review
+          # Read-only Actions: Aperture connector GitHubActions
+          # (api.githubcopilot.com/mcp/x/actions/readonly), granted to
+          # tag:k8s as "GitHubActions/tools/*" in Aperture's config. Added
+          # 2026-10-17 after session 01a147f4-35c2-7ccf-b13f-9245d9f3f538
+          # spent five turns on PR #2232 guessing at CI it could not see.
+          - GitHubActions_actions_list
+          - GitHubActions_actions_get
+          - GitHubActions_get_job_logs
     # The printer expert (printer-agent.yaml), called as a tool.
     - type: Agent
       agent:

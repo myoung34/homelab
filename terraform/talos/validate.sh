@@ -63,13 +63,16 @@ for dir in "$work"/nodes/*/*; do
   node=$(basename "$dir")
   args=()
   for patch in "$dir"/*.yaml; do args+=(--config-patch "@$patch"); done
-  "$talosctl" gen config prod https://192.168.1.254:6443 \
+  # stderr only (stdout to /dev/null): the reason a patch was rejected.
+  if ! out=$("$talosctl" gen config prod https://192.168.1.254:6443 \
     --with-secrets "$work/secrets.yaml" \
     --talos-version "$talos_version" \
     --kubernetes-version "$kubernetes_version" \
     --output-types "$role" "${args[@]}" \
-    -o "$dir/config.yaml" >/dev/null 2>&1 ||
-    { echo "FAIL $role $node: talosctl gen config rejected the patches"; failed=1; continue; }
+    -o "$dir/config.yaml" 2>&1 >/dev/null); then
+    echo "FAIL $role $node: talosctl gen config rejected the patches"
+    echo "$out" | sed 's/^/     /'; failed=1; continue
+  fi
   if out=$("$talosctl" validate --mode metal --strict -c "$dir/config.yaml" 2>&1); then
     echo "ok   $role $node"
   else
