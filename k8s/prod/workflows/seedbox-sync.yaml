@@ -1,0 +1,85 @@
+---
+# Pulls what radarr told rtorrent to download on the seedbox onto the NAS, so
+# radarr (which cannot see the seedbox filesystem) has a local path to import
+# from. Only ~/data/radarr is synced - the rest of ~/data is years of unrelated
+# torrents we do not want mirrored.
+#
+# --delete makes the NAS copy a mirror: drop a torrent on the seedbox and the
+# landing copy disappears here too. That is safe only because radarr imports by
+# hardlink into the same NFS export, so the library copy survives. Turning off
+# "Use Hardlinks instead of Copy" in radarr would turn this into data loss.
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: seedbox-sync
+spec:
+  schedules:
+    - "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  suspend: false
+  workflowSpec:
+    entrypoint: sync
+    podGC:
+      strategy: OnWorkflowCompletion
+    ttlStrategy:
+      secondsAfterCompletion: 3600
+    volumes:
+      - name: movies
+        nfs:
+          server: 192.168.3.2
+          path: /volume1/Movies
+    templates:
+      - name: sync
+        container:
+          name: sync
+          image: alpine:latest
+          command:
+            - sh
+            - '-c'
+            - |
+              set -eu
+              apk add -U rsync openssh-client >/dev/null 2>&1
+
+              install -d -m 0700 /run/ssh
+              printf '%s' "${SEEDBOX_SSH_KEY}" > /run/ssh/id_ed25519
+              chmod 0600 /run/ssh/id_ed25519
+
+              cat > /run/ssh/known_hosts <<'EOF'
+              lt5-1-87vecchio.pulsedmedia.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkMoxFptrdr+HNzOtfNQP8GakBqEwd57uXt8fMXLpmj
+              EOF
+
+              SSH="ssh -i /run/ssh/id_ed25519 \
+                -o IdentitiesOnly=yes \
+                -o StrictHostKeyChecking=yes \
+                -o UserKnownHostsFile=/run/ssh/known_hosts"
+
+              # rtorrent creates this the first time radarr sends it a torrent;
+              # make it unconditionally so the very first run is not an error.
+              ${SSH} vilpengu@lt5-1-87vecchio.pulsedmedia.com 'mkdir -p ~/data/radarr'
+
+              install -d -m 0775 /movies/.downloads
+
+              # --partial-dir keeps half-transferred files in a hidden sibling
+              # rather than under their final name, so radarr never sees a
+              # truncated file that looks finished.
+              rsync -a --delete \
+                --partial-dir=.rsync-partial \
+                --no-perms --no-owner --no-group \
+                --chmod=D775,F664 \
+                -e "${SSH}" \
+                vilpengu@lt5-1-87vecchio.pulsedmedia.com:data/radarr/ \
+                /movies/.downloads/
+
+              echo "sync complete"
+          env:
+          - name: SEEDBOX_SSH_KEY
+            valueFrom:
+              secretKeyRef:
+                key: SEEDBOX_SSH_KEY
+                name: argowf
+          volumeMounts:
+          - name: movies
+            mountPath: /movies
