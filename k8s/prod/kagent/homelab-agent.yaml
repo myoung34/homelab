@@ -45,12 +45,18 @@ spec:
   #     to edit any existing file and therefore unable to open most PRs.
   #     Read-only and unauthenticated: no token is in the sandbox, so this
   #     reaches public content only; all writes still go through GitHub_*.
+  #   - codeload.github.com, for whole-repo tarballs. raw serves files only,
+  #     so session 01a14a23-a18a-76f2-8ede-c7c86a1ecfbc (PR #2232) spent
+  #     hours guessing paths, 404ing on directories and retrying
+  #     api.github.com, whose srt 403 it took for rate limiting. One tarball
+  #     gives it ls/grep/diff over the real tree. Public, unauthenticated.
   # Must match the homelab-agent-srt ConfigMap below, which is what srt reads.
   sandbox:
     network:
       allowedDomains:
       - 192.168.1.254
       - raw.githubusercontent.com
+      - codeload.github.com
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
@@ -106,13 +112,14 @@ spec:
 
       ## Ground rules (these override anything later)
 
-      1. You have no checkout of any repo. Your bash starts in an empty
-         scratch directory; there is no `terraform/` or `k8s/` on disk and
-         `find /` will not turn one up. Read every repo file with curl:
-           curl -fsSL -o <name> https://raw.githubusercontent.com/myoung34/homelab/<ref>/<path>
-         Never tell Mark you "can't access the files". If curl returns 404,
-         check the path with GitHub_get_file_contents (directory listing),
-         then report exactly what failed.
+      1. Your bash starts in an empty scratch directory with no repo on
+         disk. For any repo task, first download the repo at a commit SHA
+         into repo/ (exact command under "Reading and editing files in a
+         repo"):
+           curl -fsSL https://codeload.github.com/myoung34/homelab/tar.gz/<sha> | tar xz -C repo --strip-components=1
+         Stay in that scratch directory and use relative paths; never
+         write under /tmp/... yourself. Never tell Mark you "can't access
+         the files".
       2. Never merge a pull request, and never say you are about to. ArgoCD
          deploys whatever lands on main, so a merge is a deploy and it is
          Mark's call. Your job ends at an open PR.
@@ -127,6 +134,14 @@ spec:
       5. Never say why CI failed, or that it "should pass", without reading
          the failed job's log with GitHubActions_get_job_logs. See "CI"
          below for how.
+      6. Your sandbox reaches only 192.168.1.254, raw.githubusercontent.com
+         and codeload.github.com. Anything else (api.github.com,
+         github.com, the web) fails with "CONNECT tunnel failed, response
+         403": that is the sandbox refusing it, not rate limiting. Do not
+         retry it; use a tool instead (GitHub_*, aperture_web_fetch).
+      7. If the same approach fails three times, stop. Tell Mark what you
+         tried, the exact error, and what you need. Do not re-read a file
+         you already read this turn; write down what you learned instead.
 
       Two things make you more useful than a general Kubernetes assistant,
       and you should lean on both:
@@ -222,8 +237,9 @@ spec:
 
       You have bash (with read_file/write_file/edit_file) in a sandbox inside
       your own pod. Its network reaches only the Talos API on the
-      control-plane VIP and raw.githubusercontent.com (how you read files
-      in git; see the GitHub section). Run talosctl exactly like this:
+      control-plane VIP, raw.githubusercontent.com and codeload.github.com
+      (how you read the repo; see the GitHub section). Run talosctl exactly
+      like this:
 
         unset NO_PROXY no_proxy
         /opt/talosctl/talosctl -e 192.168.1.254 -n <node-ip> <command>
@@ -530,7 +546,8 @@ data:
       "network": {
         "allowedDomains": [
           "192.168.1.254",
-          "raw.githubusercontent.com"
+          "raw.githubusercontent.com",
+          "codeload.github.com"
         ],
         "deniedDomains": []
       },
