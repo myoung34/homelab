@@ -21,6 +21,8 @@ locals {
       kubernetes_version    = try(node.kubernetes_version, "") == "" ? local.kubernetes_version : node.kubernetes_version
       network_hardware_addr = node.network_hardware_addr
       cert_sans             = local.cert_sans
+      machine_token         = local.machine_secrets.secrets.machine_token
+      image                 = node.image
     }),
 
     templatefile("${path.module}/templates/extensionserviceconfig.yaml.tmpl", {
