@@ -14,8 +14,10 @@
 # tools, so asked for a PR it could only hand back a pasteable diff
 # (session 01a11d49-895c-70fa-9520-2fd8c0ee401c). It now has the GitHub
 # tools a PR needs, the shared GitHub rules (prompts/github from
-# homelab-agent-prompt.yaml), and raw.githubusercontent.com in its sandbox
-# for reading file bodies (see mcp.yaml for why get_file_contents cannot).
+# homelab-agent-prompt.yaml), and raw.githubusercontent.com plus
+# codeload.github.com (whole-repo tarballs, which prompts/github tells it to
+# start from) in its sandbox for reading file bodies (see mcp.yaml for why
+# get_file_contents cannot).
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
@@ -33,6 +35,7 @@ spec:
       allowedDomains:
       - "*.klipper.svc.cluster.local"
       - raw.githubusercontent.com
+      - codeload.github.com
   declarative:
     # Local qwen3-coder-next (modelconfig-qwen.yaml).
     modelConfig: qwen3-coder-next
@@ -162,7 +165,8 @@ data:
       "network": {
         "allowedDomains": [
           "*.klipper.svc.cluster.local",
-          "raw.githubusercontent.com"
+          "raw.githubusercontent.com",
+          "codeload.github.com"
         ],
         "deniedDomains": []
       },

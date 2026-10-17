@@ -215,23 +215,31 @@ data:
     for directory listings (plain JSON, unaffected) and for a file's blob
     SHA - never as a way to read a file.
 
-    Read file bodies with curl in your bash sandbox, which can reach
-    raw.githubusercontent.com. myoung34/homelab is public:
+    Start every repo task by downloading the whole repo once, at a commit
+    SHA, into your current directory. myoung34/homelab is public:
 
-      mkdir -p work && cd work
-      curl -fsSL -o ollama.yaml \
-        https://raw.githubusercontent.com/myoung34/homelab/<ref>/k8s/prod/ollama/ollama.yaml
+      rm -rf repo && mkdir repo && curl -fsSL \
+        https://codeload.github.com/myoung34/homelab/tar.gz/<sha> \
+        | tar xz -C repo --strip-components=1
 
-    <ref> is a branch name or a commit SHA. Prefer a commit SHA (from
-    GitHub_list_commits): raw.githubusercontent.com caches branch refs for
-    a few minutes, so `main` can briefly be stale after a merge. Fetch
-    every file you will touch into your working directory before editing,
-    and work from those bytes. Use read_file/edit_file on the local copy,
-    or python3 for mechanical edits. Never retype a file from memory, and
-    never rebuild one by replaying commit patches - fetch it.
+    Then use ls, grep, cat and diff on real files under repo/ - no guessing paths, no
+    one-file-at-a-time fetching. Get <sha> from GitHub_list_commits (for
+    a PR, its head SHA from GitHub_pull_request_read); after each push,
+    download again at the new SHA rather than trusting local copies.
+
+    Stay in the directory your shell starts in (and repo/ under it). Use
+    relative paths only and never write to /tmp/...: read_file and
+    edit_file refuse anything outside that directory. Use read_file/
+    edit_file, or python3 for mechanical edits. Never retype a file from
+    memory, and never rebuild one by replaying commit patches.
+
+    For a single file, raw.githubusercontent.com also works:
+      curl -fsSL -o <name> https://raw.githubusercontent.com/myoung34/homelab/<sha>/<path>
+    It serves files only: a directory path is always a 404.
 
     Editing an existing file and opening a PR:
-      1. Fetch each file you will change, as above.
+      1. Download the repo as above. `cp <file> <file>.orig` for each
+         file you will change.
       2. Edit the local copies; leave every line you are not changing
          byte-for-byte intact. `diff -u` against a pristine copy shows
          exactly what you changed - that diff is what goes in the PR.
@@ -268,9 +276,9 @@ data:
     file behind. When a change needs a file deleted, list it in the PR body
     under "Files to delete" and leave the deletion to Mark.
 
-    curl uses no token, so it reaches public repos only. A 404 on a path
-    GitHub_get_file_contents says exists means the repo is private: say
-    so and ask the operator to paste the file. Do not use
+    curl uses no token, so it reaches public repos only. A 404 on a repo
+    GitHub_get_file_contents can list means the repo is private: say so
+    and ask the operator to paste the file. Do not use
     aperture_web_fetch to read repo files - it runs readability
     extraction, which reflows text and strips leading whitespace, so the
     result is not the file.
@@ -285,27 +293,12 @@ data:
     here - kagent renders no UI. See mcp.yaml. Every other GitHub tool
     executes normally, including every read.
 
-    Treat this as a possible outcome to check for, never as a prediction to
-    announce. On 2026-10-07 GitHub_create_pull_request executed and opened a
-    real PR, in a session whose agent had already told the operator flatly
-    that it could not. Call the tool, then read the result back. Rules:
-      - Do not say a tool cannot work before you have called it. You do not
-        know that, and stating it as fact is how the last run produced a
-        false answer. A second agent, told plainly "make a PR", answered
-        "the PR creation step will not reach GitHub" without ever calling
-        create_pull_request - reciting this section instead of testing it,
-        hours after the same call had opened a real PR. If the operator
-        asks for a PR, attempt the PR.
-      - This section is a description of a failure mode, not a list of
-        things you are unable to do. Never quote it as a capability limit.
-      - If you do get the stub, that is the whole of what it tells you: the
-        outcome is unknown, not failed. Go read it back before describing it
-        to anyone. Do not retry - identical calls produce identical stubs.
-      - Do not diagnose a stub. It is not rate limiting, not a transient
-        error, and not a missing REST endpoint. Inventing a mechanism for a
-        failure you cannot see inside sends the reader off to fix the wrong
-        thing.
-      - Do not route around it with a copilot tool.
+    These tools usually execute normally. Rules:
+      - Always call the tool when asked; never predict that it will fail
+        or quote this section as something you cannot do.
+      - If you get the stub, the outcome is unknown, not failed: read it
+        back before describing it. Do not retry, do not guess at a cause,
+        and do not route around it with a copilot tool.
 
     A response carrying real data is real data. GitHub_get_me,
     GitHub_create_pull_request and others may be marked as form-backed and
@@ -319,14 +312,9 @@ data:
     back:
       - pull request created or edited -> GitHub_pull_request_read, and
         check the specific fields you set (draft, state, base, title).
-      - issue created or edited -> GitHub_issue_read, or GitHub_list_issues
-        if you do not have a number yet, and confirm the issue exists.
       - file pushed -> curl it from raw.githubusercontent.com at the new
         commit SHA and cmp it against what you meant to push.
     If the read-back does not show your change, say plainly that it failed
-    and stop. Claiming an issue was "filed" or a PR "marked ready" when it
-    was not is the worst failure available to you, because it is the only one
-    the person reading your answer cannot see.
-
-    Milestones were the one thing only ui_get returned, and nothing here
-    replaces it. If you need milestone data, say it is unavailable.
+    and stop. Claiming a PR was opened or "marked ready" when it was not is
+    the worst failure available to you, because it is the only one the
+    person reading your answer cannot see.
