@@ -9,6 +9,8 @@ provisioning:
   diskSelector:
     match: ${longhorn_disk_selector:-disk.transport == "nvme"}
   grow: true
+  mountOptions:
+    - noatime
 mount:
   path: /var/lib/longhorn
 ---
