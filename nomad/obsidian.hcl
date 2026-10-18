@@ -3,7 +3,7 @@ job "obsidian" {
   type        = "batch"
 
   periodic {
-    crons              = ["* 8 * * *"]
+    crons              = ["0 8 * * *"]
     prohibit_overlap   = true
   }
 
@@ -33,6 +33,8 @@ job "obsidian" {
         data = <<EOH
 AWS_ACCESS_KEY_ID="{{with secret "secret/data/obsidian"}}{{.Data.data.AWS_ACCESS_KEY_ID}}{{end}}"
 AWS_SECRET_ACCESS_KEY="{{with secret "secret/data/obsidian"}}{{.Data.data.AWS_SECRET_ACCESS_KEY}}{{end}}"
+AGENT_MEMORY_AWS_ACCESS_KEY_ID="{{with secret "secret/data/agent-memory"}}{{.Data.data.AWS_ACCESS_KEY_ID}}{{end}}"
+AGENT_MEMORY_AWS_SECRET_ACCESS_KEY="{{with secret "secret/data/agent-memory"}}{{.Data.data.AWS_SECRET_ACCESS_KEY}}{{end}}"
 EOH
 
         destination = "secrets/config.env"
@@ -47,7 +49,7 @@ EOH
 
         args = [
           "-c",
-          "( apt-get update; apt-get install -y awscli git ; git config --global --add safe.directory /opt/obsidian.git/.git; rm -rf content; git clone /opt/obsidian.git .content -b main; mv .content/Marc content/; sed -i.bak 's/Plugin.ObsidianFlavoredMarkdown.*/Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false, parseTags: true}),/g' quartz.config.ts; cat quartz.config.ts | grep ObsidianFlavoredMarkdown; npx quartz build; find public/ -type f -name '*.html' ! -name 'index.html' | while read -r file; do mv $file $$${file%.html}; done; mkdir /opt/obsidian; cp -r public/* /opt/obsidian; cd /opt/obsidian; aws configure set default.s3.signature_version s3v4; aws s3 rm --endpoint-url http://192.168.3.2:9000 s3://obsidian-rendered/ --recursive; ls -alh; aws --endpoint-url http://192.168.3.2:9000 s3 sync . s3://obsidian-rendered/; echo upload complete) 2>&1"
+          "( apt-get update; apt-get install -y awscli git ; git config --global --add safe.directory /opt/obsidian.git/.git; rm -rf content; git clone /opt/obsidian.git .content -b main; mv .content/Marc content/; aws configure set default.s3.signature_version s3v4; AWS_ACCESS_KEY_ID=$AGENT_MEMORY_AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AGENT_MEMORY_AWS_SECRET_ACCESS_KEY aws --endpoint-url http://192.168.3.2:9000 s3 sync content/Agents/ s3://agent-memory/ --delete --exclude '*' --include '*.md'; sed -i.bak 's/Plugin.ObsidianFlavoredMarkdown.*/Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false, parseTags: true}),/g' quartz.config.ts; cat quartz.config.ts | grep ObsidianFlavoredMarkdown; npx quartz build; find public/ -type f -name '*.html' ! -name 'index.html' | while read -r file; do mv $file $$${file%.html}; done; mkdir /opt/obsidian; cp -r public/* /opt/obsidian; cd /opt/obsidian; aws configure set default.s3.signature_version s3v4; aws s3 rm --endpoint-url http://192.168.3.2:9000 s3://obsidian-rendered/ --recursive; ls -alh; aws --endpoint-url http://192.168.3.2:9000 s3 sync . s3://obsidian-rendered/; echo upload complete) 2>&1"
         ]
 
         volumes = [
