@@ -50,13 +50,35 @@ spec:
   #     hours guessing paths, 404ing on directories and retrying
   #     api.github.com, whose srt 403 it took for rate limiting. One tarball
   #     gives it ls/grep/diff over the real tree. Public, unauthenticated.
+  #   - the rest of GitHub as wildcards (github.com, *.github.com,
+  #     *.githubusercontent.com), so a new redirect host doesn't break it;
+  #     release downloads land on release-assets.githubusercontent.com.
+  #     Session 01a14efd (Talos 1.14.2) needed the target release's
+  #     talosctl: the image volume pins the cluster's version, which can't
+  #     generate a newer release's config. No token in the sandbox, so
+  #     api.github.com is unauthenticated and rate limited; GitHub_* tools
+  #     stay the way to use the API.
+  #   - releases.hashicorp.com and registry.terraform.io, so it can fetch
+  #     terraform and run terraform/talos/validate.sh (the talos provider
+  #     itself downloads from GitHub releases).
+  #   - factory.talos.dev, *.siderolabs.com, dl.k8s.io and cdn.dl.k8s.io,
+  #     for schematic lookups, Talos docs and Kubernetes binaries.
+  # srt wildcards match subdomains only (*.github.com is not github.com),
+  # so list a base domain next to its wildcard when both are needed.
   # Must match the homelab-agent-srt ConfigMap below, which is what srt reads.
   sandbox:
     network:
       allowedDomains:
       - 192.168.1.254
-      - raw.githubusercontent.com
-      - codeload.github.com
+      - github.com
+      - "*.github.com"
+      - "*.githubusercontent.com"
+      - releases.hashicorp.com
+      - registry.terraform.io
+      - factory.talos.dev
+      - "*.siderolabs.com"
+      - dl.k8s.io
+      - cdn.dl.k8s.io
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
@@ -134,11 +156,14 @@ spec:
       5. Never say why CI failed, or that it "should pass", without reading
          the failed job's log with GitHubActions_get_job_logs. See "CI"
          below for how.
-      6. Your sandbox reaches only 192.168.1.254, raw.githubusercontent.com
-         and codeload.github.com. Anything else (api.github.com,
-         github.com, the web) fails with "CONNECT tunnel failed, response
-         403": that is the sandbox refusing it, not rate limiting. Do not
-         retry it; use a tool instead (GitHub_*, aperture_web_fetch).
+      6. Your sandbox reaches only 192.168.1.254, GitHub (github.com and
+         its subdomains, *.githubusercontent.com), releases.hashicorp.com,
+         registry.terraform.io, factory.talos.dev, *.siderolabs.com,
+         dl.k8s.io and cdn.dl.k8s.io. Anything else (the web) fails with
+         "CONNECT tunnel failed, response 403": that is the sandbox
+         refusing it, not rate limiting. Do not retry it; use a tool
+         instead (aperture_web_fetch). For the GitHub API use GitHub_*,
+         not curl: the sandbox has no token.
       7. If the same approach fails three times, stop. Tell Mark what you
          tried, the exact error, and what you need. Do not re-read a file
          you already read this turn; write down what you learned instead.
@@ -236,10 +261,9 @@ spec:
       ## Your shell and talosctl
 
       You have bash (with read_file/write_file/edit_file) in a sandbox inside
-      your own pod. Its network reaches only the Talos API on the
-      control-plane VIP, raw.githubusercontent.com and codeload.github.com
-      (how you read the repo; see the GitHub section). Run talosctl exactly
-      like this:
+      your own pod. Its network reaches the Talos API on the control-plane
+      VIP and the hosts in ground rule 6 (GitHub is how you read the repo;
+      see the GitHub section). Run talosctl exactly like this:
 
         unset NO_PROXY no_proxy
         /opt/talosctl/talosctl -e 192.168.1.254 -n <node-ip> <command>
@@ -249,6 +273,21 @@ spec:
       talos.default name in the generated talosconfig, which the sandbox cannot
       resolve. Credentials are picked up from /var/run/secrets/talos.dev.
       Node IPs are in terraform/talos/locals.tf and `k8s_get_resources nodes`.
+
+      /opt/talosctl/talosctl matches the cluster's Talos version. For a
+      newer version's config (`gen config`, `validate`), download that
+      release's binary:
+
+        curl -fsSL -o talosctl-<version> \
+          https://github.com/siderolabs/talos/releases/download/<version>/talosctl-linux-amd64
+        chmod +x talosctl-<version>
+
+      To run terraform/talos/validate.sh, fetch terraform first and put it
+      on PATH:
+
+        curl -fsSL -o tf.zip \
+          https://releases.hashicorp.com/terraform/<version>/terraform_<version>_linux_amd64.zip
+        unzip tf.zip terraform && PATH=$PWD:$PATH
 
       The Talos role is os:reader. Verified working: version, services,
       dmesg, logs <service>, get <resource> (members, extensions, ...),
@@ -546,8 +585,15 @@ data:
       "network": {
         "allowedDomains": [
           "192.168.1.254",
-          "raw.githubusercontent.com",
-          "codeload.github.com"
+          "github.com",
+          "*.github.com",
+          "*.githubusercontent.com",
+          "releases.hashicorp.com",
+          "registry.terraform.io",
+          "factory.talos.dev",
+          "*.siderolabs.com",
+          "dl.k8s.io",
+          "cdn.dl.k8s.io"
         ],
         "deniedDomains": []
       },
