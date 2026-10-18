@@ -42,30 +42,37 @@ See "Keep every behaviour".
    migrate the templates, and update the pins listed below. Apply it after
    merge.
 
-Release-note lines like "upgraded clusters keep the old behaviour" describe
-an in-place upgrade. They don't apply here: every apply regenerates the whole
-config from the new contract.
+Every apply regenerates the whole config from the new contract, so the
+target is what the new version generates, not what a node runs today:
 
-### Moving to Talos 1.14
+- Release-note lines like "upgraded clusters keep the old behaviour" describe
+  an in-place upgrade and don't apply here.
+- An upgrade never rewrites a node's config. Talos changes it only through
+  `apply-config`, `patch` or `edit`, so an upgraded node keeps its old shape,
+  and `talosctl get mc` returns what you already have.
 
-- 1.14 generates multi-document config (`KubeletConfig`, `KubeNodeConfig`,
-  `KubeAPIServerConfig`, `UnattendedInstallConfig`, `ResolverConfig`, and
-  more). A deprecated v1alpha1 field and its replacement document can't both
-  be set, so every v1alpha1 field in `templates/` must be rewritten as its
-  document. That covers `.machine.kubelet`, `.machine.install`,
-  `.machine.network`, `.machine.nodeLabels`, `.machine.kernel`,
-  `.machine.sysctls`, `.machine.time`, `.machine.disks`,
-  `.machine.features.kubernetesTalosAPIAccess`, and `.cluster.apiServer`,
-  `controllerManager`, `scheduler`, `proxy`, `network`, `discovery` and
-  `extraManifests`. Look up each field in the
-  [document map](https://docs.siderolabs.com/talos/v1.14/reference/configuration/document-map).
-- `.machine.kubelet.extraMounts` has no 1.14 equivalent and can't be combined
-  with `KubeletConfig`. Both Longhorn templates bind `/var/lib/longhorn` with
-  it. Stop and ask Mark how to handle Longhorn before migrating them.
-- 1.14 also generates `SecurityProfileConfig` with
-  `workloadIsolation: true`, plus a secure-mount `VolumeConfig` for
-  EPHEMERAL, unless a template pins them. Isolation blocks pods from the host
-  iscsid that Longhorn's v1 engine uses.
+Take the target shape from a freshly generated config, and diff each rendered
+template against it:
+
+```sh
+talosctl gen config ref https://x:6443 --talos-version <version> \
+  -o "$TMPDIR/ref"
+```
+
+### Migrating templates to a new version
+
+- Each release moves more v1alpha1 fields into typed documents. A deprecated
+  field and its replacement document can't both be set, so rewrite every
+  moved field in `templates/` as its document. Look up each field in the
+  target version's document map:
+  `https://docs.siderolabs.com/talos/<version>/reference/configuration/document-map`.
+- When a field has no replacement document, stop and ask Mark before
+  migrating that template. Example: in 1.14, `.machine.kubelet.extraMounts`
+  can't be combined with `KubeletConfig`, and both Longhorn templates use it.
+- Read the release's "What's New" for documents the generator now emits by
+  default, and name each one in the PR body with whether you pin it. Example:
+  1.14 adds `SecurityProfileConfig` with `workloadIsolation: true`, which
+  blocks pods from the host iscsid that Longhorn's v1 engine uses.
 
 ## Keep every behaviour
 
