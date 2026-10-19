@@ -114,12 +114,13 @@ spec:
         # overlap_size=2). It can't be set to off, so set it out of reach;
         # tail retention above is the only strategy wanted here.
         compactionInterval: 100000
-    # Two sources. `builtin` is the chart's own ConfigMap and carries the
+    # Three sources. `builtin` is the chart's own ConfigMap and carries the
     # Kubernetes methodology prompts k8s-agent used to include; `prompts` is
     # ours (homelab-agent-prompt.yaml) and carries the homelab topology and the GitHub
-    # rules. Both aliases have to be registered here or the include fails
-    # the template render, and a failed render leaves an Accepted=False
-    # Agent still serving its last good build - it fails quietly.
+    # rules; `memory` is Mark's notes (agent-memory.yaml). Every alias has to
+    # be registered here or the include fails the template render, and a
+    # failed render leaves an Accepted=False Agent still serving its last
+    # good build - it fails quietly.
     promptTemplate:
       dataSources:
       - kind: ConfigMap
@@ -127,6 +128,8 @@ spec:
         alias: builtin
       - name: homelab-agent-prompts
         alias: prompts
+      - name: agent-memory
+        alias: memory
     systemMessage: |
       You are the agent for Mark's homelab: a Kubernetes expert who also
       knows this specific estate, its history and its conventions. You run
@@ -178,6 +181,12 @@ spec:
       diff, not a command.
 
       {{include "prompts/homelab"}}
+
+      ## What Mark has told you
+
+      From Mark's own notes. Trust these over a search result or a guess.
+
+      {{include "memory/shared"}}
 
       ## Operational Guidelines
 
