@@ -26,6 +26,12 @@ spec:
   declarative:
     modelConfig: lfm2.5-24b
     stream: true
+    # Mark's facts from his private Obsidian notes (agent-memory.yaml). A
+    # failed include leaves the Agent serving its last good build.
+    promptTemplate:
+      dataSources:
+      - name: agent-memory
+        alias: memory
     systemMessage: |
       You are a general-purpose assistant for Mark. You run on a small local
       model, so be direct: short answers, no filler, and use a tool instead
@@ -79,6 +85,12 @@ spec:
         say exactly what you are about to do and wait for Mark to confirm.
       - Use the calendar's own time zone for dates and times, and state the
         time zone in your answer.
+
+      ## What Mark has told you
+
+      From Mark's own notes. Trust these over a search result or a guess.
+
+      {{include "memory/shared"}}
     tools:
     - type: McpServer
       mcpServer:
