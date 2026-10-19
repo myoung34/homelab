@@ -19,16 +19,23 @@
 # CONFIG_SOFTLOCKUP_DETECTOR, CONFIG_HARDLOCKUP_DETECTOR and
 # CONFIG_DETECT_HUNG_TASK, and it already reboots immediately on a panic
 # (CONFIG_PANIC_TIMEOUT=-1). The hardware watchdog is the lever that works.
-machine:
-  kernel:
-    modules:
-      - name: nvidia
-      - name: nvidia_uvm
-      - name: nvidia_drm
-      - name: nvidia_modeset
-      - name: sp5100_tco
 ---
-apiVersion: v1alpha1
+apiversion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia-modules
+modules:
+  - name: nvidia
+  - name: nvidia_uvm
+  - name: nvidia_drm
+  - name: nvidia_modeset
+---
+apiversion: v1alpha1
+kind: KernelModuleConfig
+name: sp5100-tco
+modules:
+  - name: sp5100_tco
+---
+apiversion: v1alpha1
 kind: WatchdogTimerConfig
 device: /dev/watchdog0
 timeout: 2m

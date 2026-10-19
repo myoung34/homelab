@@ -1,97 +1,175 @@
-machine:
-  network:
-    interfaces:
-      - deviceSelector:
-          hardwareAddr: ${network_hardware_addr}
-        dhcp: true
-        vip:
-          ip: 192.168.1.254
-  features:
-    kubernetesTalosAPIAccess:
-      enabled: true
-      allowedRoles:
-        - os:admin
-        # homelab-agent's talosctl (k8s/prod/kagent/talos.yaml): read-only.
-        - os:reader
-      allowedKubernetesNamespaces:
-        - argocd
-        - kagent
-cluster:
-  network:
-    dnsDomain: cluster.local
-    podSubnets:
-      - 10.244.0.0/16
-    serviceSubnets:
-      - 10.96.0.0/12
-  proxy:
-    image: registry.k8s.io/kube-proxy:${kubernetes_version}
-  controllerManager:
-    image: registry.k8s.io/kube-controller-manager:${kubernetes_version}
-  scheduler:
-    image: registry.k8s.io/kube-scheduler:${kubernetes_version}
-  etcd:
-    # Pin peer traffic to the LAN. Without these, Talos picks advertised
-    # addresses from whatever node addresses exist when etcd starts, which has
-    # selected Tailscale CGNAT addresses (100.64.0.0/10) on some nodes and LAN
-    # addresses on others. That makes etcd quorum depend on the tailnet being
-    # up, and makes the choice a boot-order race.
-    advertisedSubnets:
-      - 192.168.1.0/24
-    listenSubnets:
-      - 192.168.1.0/24
-    extraArgs:
-      election-timeout: "50000"
-      heartbeat-interval: "5000"
-  apiServer:
-    image: registry.k8s.io/kube-apiserver:${kubernetes_version}
-    certSANs:
+# WARNING: cluster.etcd is NOT migrated to typed documents in Talos v1.14.
+# The etcd section remains in v1alpha1 format because there is no etcd config document.
+---
+apiversion: v1alpha1
+kind: LinkConfig
+name: ${network_interface} # Name of the network interface.
+up: true
+# Static IP configuration via DHCP with VIP
+addresses:
+  - address: ${vip_ip}/24
+routes:
+  - destination: 192.168.1.0/24
+    gateway: ${gateway_ip}
+---
+apiversion: v1alpha1
+kind: HostnameConfig
+hostname: ${hostname} # The hostname to set on the control plane node.
+---
+apiversion: v1alpha1
+kind: ResolverConfig
+# Configuration for host DNS resolver.
+hostDNS:
+  enabled: true # Enable host DNS caching resolver.
+  forwardKubeDNSToHost: true # Use the host DNS resolver as upstream for Kubernetes CoreDNS pods.
+{{ if ne .dns_server "" }}
+externalDNS:
+  - ${dns_server} # External DNS servers to use.
+{{ end }}
+---
+apiversion: v1alpha1
+kind: KubeTalosAPIAccessConfig
+# The list of Talos API roles which can be granted for access from Kubernetes pods.
+allowedRoles:
+  - os:admin
+  # homelab-agent's talosctl (k8s/prod/kagent/talos.yaml): read-only.
+  - os:reader
+# The list of Kubernetes namespaces Talos API access is available from.
+allowedKubernetesNamespaces:
+  - argocd
+  - kagent
+---
+apiversion: v1alpha1
+kind: KubeClusterConfig
+# The name of the cluster.
+name: ${cluster_name}
+---
+apiversion: v1alpha1
+kind: KubeNetworkConfig
+# The domain used by Kubernetes DNS.
+dnsDomain: cluster.local
+# The pod subnet (CIDR), this can be a single value or two values for dual-stack clusters.
+podSubnets:
+  - 10.244.0.0/16
+# The service subnet (CIDR), this can be a single value or two values for dual-stack clusters.
+serviceSubnets:
+  - 10.96.0.0/12
+---
+apiversion: v1alpha1
+kind: KubeProxyConfig
+# The container image used to run the kube-proxy component.
+image: registry.k8s.io/kube-proxy:${kubernetes_version}
+---
+apiversion: v1alpha1
+kind: KubeControllerManagerConfig
+# The container image used to run the kube-controller-manager component.
+image: registry.k8s.io/kube-controller-manager:${kubernetes_version}
+---
+apiversion: v1alpha1
+kind: KubeSchedulerConfig
+# The container image used to run the kube-scheduler component.
+image: registry.k8s.io/kube-scheduler:${kubernetes_version}
+---
+apiversion: v1alpha1
+kind: KubeAPIServerConfig
+# The container image used to run the kube-apiserver component.
+image: registry.k8s.io/kube-apiserver:${kubernetes_version}
+# Extra certificate subject alternative names for the API server certificate.
+certSANs:
 %{ for san in cert_sans ~}
-      - ${san}
+  - ${san}
 %{ endfor ~}
-    disablePodSecurityPolicy: true
-    admissionControl:
-      - configuration:
-          apiVersion: pod-security.admission.config.k8s.io/v1alpha1
-          defaults:
-            audit: restricted
-            audit-version: latest
-            enforce: baseline
-            enforce-version: latest
-            warn: restricted
-            warn-version: latest
-          exemptions:
-            namespaces:
-              - argocd
-              - actions-runner
-              - datadog
-              - hass
-              - esphome
-              - reloader
-              - local-path-storage
-              - node-feature-discovery
-              - ser2net
-              - zigbee2mqtt
-              - tailscale
-              - longhorn-system
-              - default
-              - amdgpu-device-plugin
-            runtimeClasses: []
-            usernames: []
-          kind: PodSecurityConfiguration
-        name: PodSecurity
-    auditPolicy:
-      apiVersion: audit.k8s.io/v1
-      kind: Policy
-      rules:
-        - level: Metadata
-  discovery:
-    enabled: true
-    registries:
-      kubernetes:
-        disabled: true
-  extraManifests:
-    # Pinned: these are re-fetched on every node boot, so floating refs (main /
-    # latest) let upstream changes land unreviewed and let nodes disagree.
-    - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.11.0/deploy/standalone-install.yaml
-    - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.9.0/components.yaml
-  inlineManifests: []
+# Disable pod security policy.
+disablePodSecurityPolicy: true
+---
+apiversion: v1alpha1
+kind: KubeAdmissionControlConfig
+# Configuration for admission control.
+admissionControl:
+  - configuration:
+      apiVersion: pod-security.admission.config.k8s.io/v1alpha1
+      defaults:
+        audit: restricted
+        audit-version: latest
+        enforce: baseline
+        enforce-version: latest
+        warn: restricted
+        warn-version: latest
+      exemptions:
+        namespaces:
+          - argocd
+          - actions-runner
+          - datadog
+          - hass
+          - esphome
+          - reloader
+          - local-path-storage
+          - node-feature-discovery
+          - ser2net
+          - zigbee2mqtt
+          - tailscale
+          - longhorn-system
+          - default
+          - amdgpu-device-plugin
+        runtimeClasses: []
+        usernames: []
+      kind: PodSecurityConfiguration
+    name: PodSecurity
+---
+apiversion: v1alpha1
+kind: KubeAuditPolicyConfig
+# Audit policy configuration.
+auditPolicy:
+  apiVersion: audit.k8s.io/v1
+  kind: Policy
+  rules:
+    - level: Metadata
+---
+apiversion: v1alpha1
+kind: DiscoveryServiceConfig
+# Name of the discovery service configuration.
+name: default
+# Discovery service endpoint to use.
+endpoint: https://discovery.talos.dev/
+---
+apiversion: v1alpha1
+kind: DiscoveryIdentityConfig
+# Globally unique identifier for this cluster (base64 encoded random 32 bytes).
+clusterID: ${cluster_id}
+# Shared secret of cluster (base64 encoded random 32 bytes).
+clusterSecret: ${cluster_secret}
+---
+apiversion: v1alpha1
+kind: UnattendedInstallConfig
+# The installer describes the source of the installation.
+installer:
+  # Allows for supplying the image used to perform the installation.
+  image: ${talos_installer_image}
+# The provisioning describes how the installation disk should be provisioned.
+provisioning:
+  # Matches disks to initialize as physical volumes.
+  diskSelector:
+    # CEL expression matching a disk.
+    match: ${disk_selector}
+  # Indicates if the installation disk should be wiped at installation time.
+  wipe: false
+---
+apiversion: v1alpha1
+kind: ResolverConfig
+# Configuration for host DNS resolver.
+hostDNS:
+  enabled: true # Enable host DNS caching resolver.
+  forwardKubeDNSToHost: true # Use the host DNS resolver as upstream for Kubernetes CoreDNS pods.
+{{ if ne .dns_server "" }}
+externalDNS:
+  - ${dns_server} # External DNS servers to use.
+{{ end }}
+---
+apiversion: v1alpha1
+kind: KubeExternalManifestConfig
+# External manifests to apply to the cluster.
+manifests:
+  # Pinned: these are re-fetched on every node boot, so floating refs (main /
+  # latest) let upstream changes land unreviewed and let nodes disagree.
+  - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.11.0/deploy/standalone-install.yaml
+  - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.9.0/components.yaml

@@ -24,7 +24,17 @@ locals {
       talos_version         = try(node.talos_version, "") == "" ? local.talos_version : node.talos_version
       kubernetes_version    = try(node.kubernetes_version, "") == "" ? local.kubernetes_version : node.kubernetes_version
       network_hardware_addr = node.network_hardware_addr
+      network_interface     = node.network_interface
       cert_sans             = local.cert_sans
+      hostname              = node.hostname
+      cluster_name          = local.cluster_name
+      cluster_id            = local.machine_secrets.cluster.id
+      cluster_secret        = local.machine_secrets.cluster.secret
+      talos_installer_image = node.image
+      disk_selector         = try(node.longhorn_disk_selector, "disk.transport == \"nvme\"")
+      vip_ip                = local.cluster_endpoint
+      gateway_ip            = "192.168.1.254"
+      dns_server            = "10.96.0.10"
     }),
 
     templatefile("${path.module}/templates/extensionserviceconfig.yaml.tmpl", {
@@ -39,7 +49,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
   client_configuration        = local.client_configuration
   machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
 
-  for_each = local.node_data.controlplanes
+  for_each = local.node_data.controlpanels
 
   node = each.key
 
