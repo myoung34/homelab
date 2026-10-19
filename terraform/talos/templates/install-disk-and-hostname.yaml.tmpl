@@ -5,7 +5,7 @@ machine:
       - endpoint: "tcp://192.168.3.2:5046/"
         format: "json_lines"
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: KubeletConfig
 name: kubelet
 image: ghcr.io/siderolabs/kubelet:${kubernetes_version}
@@ -17,20 +17,20 @@ nodeIP:
   validSubnets:
     - 192.168.1.0/24
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: HostnameConfig
 name: hostname
 auto: off
 hostname: ${hostname}
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: LinkConfig
 name: links
 interfaces:
   - interface: tailscale0
     mtu: 1420
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: ResolverConfig
 name: resolver
 nameservers:
@@ -38,7 +38,7 @@ nameservers:
   - 45.90.28.103
   - 45.90.30.103
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: StaticHostConfig
 name: static-hosts
 hosts:
@@ -46,7 +46,7 @@ hosts:
     aliases:
       - controlplane.cluster.local
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: UnattendedInstallConfig
 name: unattended-install
 disk: ${install_disk}
@@ -58,7 +58,7 @@ extraKernelArgs:
   - reboot=k
   - selinux=0
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: TimeSyncConfig
 name: timesync
 disabled: false
@@ -66,7 +66,7 @@ servers:
   - time.cloudflare.com
   - time.windows.com
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: SysctlConfig
 name: sysctls
 sysctls:
@@ -75,7 +75,7 @@ sysctls:
   net.ipv4.ip_forward: "1"
   user.max_user_namespaces: "11255"
 ---
-apiversion: v1alpha1
+apiVersion: v1alpha1
 kind: KubeTalosAPIAccessConfig
 name: kube-talos-api-access
 rbac: true

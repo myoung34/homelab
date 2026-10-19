@@ -1,39 +1,11 @@
-# Machine config for nodes on the bare-metal image (bare.yaml); worker.tf
-# applies it only there, since these modules don't exist on the Pi images.
-# Today that's cluster41.
-#
-# NVIDIA: load the modules shipped by the nvidia-open-gpu-kernel-modules
-# extension.
-# https://docs.siderolabs.com/talos/v1.13/configure-your-talos-cluster/hardware-and-drivers/nvidia-gpu-proprietary
-#
-# Watchdog: on 2026-10-13 cluster41 hard-locked at 16:39 UTC (console
-# frozen, no ping, no Talos API, nothing in the kernel log) and sat dead for
-# over an hour until someone power-cycled it. sp5100_tco is the AMD chipset
-# (FCH) watchdog; it's a module in the Talos kernel (CONFIG_SP5100_TCO=m),
-# so it has to be loaded here. machined feeds it, and if Talos stops
-# responding for `timeout` the board resets itself. 2m rather than the 1m
-# default so a slow, memory-starved model load doesn't trip it.
-#
-# Kernel lockup detectors (softlockup_panic, hung_task_panic, nmi_watchdog)
-# would do nothing here: Talos's kernel is built without
-# CONFIG_SOFTLOCKUP_DETECTOR, CONFIG_HARDLOCKUP_DETECTOR and
-# CONFIG_DETECT_HUNG_TASK, and it already reboots immediately on a panic
-# (CONFIG_PANIC_TIMEOUT=-1). The hardware watchdog is the lever that works.
----
-apiversion: v1alpha1
-kind: KernelModuleConfig
-name: nvidia-modules
-modules:
-  - name: nvidia
-  - name: nvidia_uvm
-  - name: nvidia_drm
-  - name: nvidia_modeset
----
-apiversion: v1alpha1
-kind: KernelModuleConfig
-name: sp5100-tco
-modules:
-  - name: sp5100_tco
+# N/B: kernel modules are first-class documents in Talos v1.14
+# This is now a bare-metal worker schematic
+
+machine:
+  kernel:
+    modules:
+      - name: af_packet
+        enabled: true
 ---
 apiversion: v1alpha1
 kind: WatchdogTimerConfig

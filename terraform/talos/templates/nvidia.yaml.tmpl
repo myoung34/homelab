@@ -1,0 +1,18 @@
+machine:
+  token: ${machine_token}
+  logging:
+    destinations:
+      - endpoint: "tcp://192.168.3.2:5046/"
+        format: "json_lines"
+---
+apiversion: v1alpha1
+kind: UnattendedInstallConfig
+name: unattended-install
+disk: ${install_disk}
+image: ${image}
+bootloader: true
+wipe: true
+extraKernelArgs:
+  - talos.logging.kernel=tcp://192.168.3.2:5046/
+  - reboot=k
+  - selinux=0

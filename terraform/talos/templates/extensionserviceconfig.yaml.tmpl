@@ -1,8 +1,12 @@
----
-apiversion: v1alpha1
-kind: ExtensionServiceConfig
+# talosctl version v1.14.2
+# k8s version v1.37.2
 name: ${name}
-environment:
-%{ for key, value in env ~}
-  - ${key}=${value}
-  %{ endfor ~}
+namespace: ${namespace}
+serviceAccount:
+  automountServiceAccountToken: true
+env:
+  - name: EXTRA_SOURCES
+    value: "
+      - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/v0.11.0/deploy/standalone-install.yaml
+      - https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.9.0/components.yaml
+    "
