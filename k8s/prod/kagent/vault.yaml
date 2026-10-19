@@ -27,3 +27,31 @@ spec:
   kubernetes:
     role: kagent
     serviceAccount: default
+---
+# MinIO key for the agent-memory CronJob (agent-memory.yaml), scoped to the
+# agent-memory bucket. Its own ServiceAccount and role, so nothing else in
+# kagent can read it.
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: agent-memory
+spec:
+  vaultAuthRef: agent-memory
+  mount: secret/
+  type: kv-v2
+  path: agent-memory
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: agent-memory
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: agent-memory
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: agent-memory
+    serviceAccount: agent-memory

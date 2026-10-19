@@ -1,0 +1,117 @@
+# agent-memory: facts Mark keeps for the agents in his private Obsidian
+# vault, delivered without the text ever touching this public repo.
+#
+#   Obsidian Marc/Agents/*.md
+#     -> nomad/obsidian.hcl syncs them to s3://agent-memory on MinIO
+#     -> this CronJob copies the bucket into the agent-memory ConfigMap
+#     -> agents include it with promptTemplate:
+#          dataSources: [{name: agent-memory, alias: memory}]
+#          {{include "memory/shared"}}
+#
+# Each note becomes one key, named for the file without .md (shared.md ->
+# "shared"), so name notes with letters, digits, "-", "_" or ".". kagent
+# watches included ConfigMaps and rolls the agent when a key changes; an
+# unchanged sync is a no-op, so running hourly costs nothing.
+#
+# The ConfigMap is not in git, so Argo neither manages nor prunes it. An
+# agent that includes a missing ConfigMap or key fails to reconcile: create
+# the note before referencing its key, and keep it (empty is fine).
+#
+# The MinIO key is in Vault at secret/agent-memory and is scoped to the
+# agent-memory bucket only.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-memory
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-memory
+rules:
+# create can't be limited by name; server-side apply needs it the first time.
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["agent-memory"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-memory
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: agent-memory
+subjects:
+- kind: ServiceAccount
+  name: agent-memory
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: agent-memory
+spec:
+  schedule: "15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          serviceAccountName: agent-memory
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - name: sync
+            image: alpine/k8s:1.37.1
+            imagePullPolicy: IfNotPresent
+            env:
+            - {name: HOME, value: /tmp}
+            - {name: AWS_DEFAULT_REGION, value: us-east}
+            envFrom:
+            - secretRef:
+                name: agent-memory
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: ["ALL"]
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64M
+            command: ["bash", "-c"]
+            args:
+            - |
+              set -euo pipefail
+              dir=$(mktemp -d)
+              aws --endpoint-url http://192.168.3.2:9000 s3 sync \
+                s3://agent-memory/ "$dir/" --exclude '*' --include '*.md' \
+                --only-show-errors
+              shopt -s nullglob
+              files=("$dir"/*.md)
+              # An empty bucket means the export broke, not that every note
+              # was deleted; keep the last good ConfigMap.
+              if [ ${#files[@]} -eq 0 ]; then
+                echo "no notes in s3://agent-memory; leaving ConfigMap alone" >&2
+                exit 1
+              fi
+              args=()
+              for f in "${files[@]}"; do
+                args+=("--from-file=$(basename "$f" .md)=$f")
+              done
+              # Server-side apply drops keys whose notes are gone.
+              kubectl create configmap agent-memory "${args[@]}" \
+                --dry-run=client -o yaml |
+                kubectl apply --server-side --field-manager=agent-memory \
+                  --force-conflicts -f -

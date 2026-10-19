@@ -6,6 +6,7 @@ resources:
   - namespace.yaml
   - tailscale.yaml
   - vault.yaml
+  - agent-memory.yaml
   - mcp.yaml
   - modelconfig-qwen.yaml
   - modelconfig-lfm.yaml
