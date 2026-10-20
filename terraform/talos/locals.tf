@@ -11,8 +11,8 @@ locals {
   # 3. Update this file
   #
   # The IDs below are for the current production schematics.
-  baremetal_schematic = "b8e8fbbe1b520989e6c52c8dc8303070cb42095997e76e812fa8892393e1d176"
-  pi_schematic        = "9992b4ade979cf2fc812e6f07e264d1f240d11b0d1eb795ce78771f8647a316"
+  baremetal_schematic = "b8e8fbbe1b520989e6c52c8dc8303070cb42095997e76e812fa8892393e1d176" # pragma: allowlist secret
+  pi_schematic        = "9992b4ade979cf2fc812e6f07e264d1f240d11b0d1eb795ce78771f8647a316" # pragma: allowlist secret
 
   # Network configuration
   # The cluster uses a /24 subnet. The IP addresses are statically assigned.
