@@ -68,7 +68,7 @@ for dir in "$work"/nodes/*/*; do
     --with-secrets "$work/secrets.yaml" \
     --talos-version "$talos_version" \
     --kubernetes-version "$kubernetes_version" \
-    --output-types "$role" "${args[@]}" \
+    --output-types yaml "${args[@]}" \
     -o "$dir/config.yaml" 2>&1 >/dev/null); then
     echo "FAIL $role $node: talosctl gen config rejected the patches"
     echo "$out" | sed 's/^/     /'; failed=1; continue
