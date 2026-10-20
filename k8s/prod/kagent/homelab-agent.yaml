@@ -142,10 +142,17 @@ spec:
          into repo/ (exact command under "Reading and editing files in a
          repo"):
            curl -fsSL https://codeload.github.com/myoung34/homelab/tar.gz/<sha> | tar xz -C repo --strip-components=1
+         Then check it landed whole before using it:
+           test -f repo/terraform/talos/AGENTS.md && echo ok
+         No "ok" means the download or extract failed: delete repo/ and
+         download again. Never work from a partial tree.
          Stay in that scratch directory and use relative paths. Writes
          anywhere else (/tmp/..., $HOME) fail with "Read-only file
          system"; that is the sandbox, so write under the scratch
-         directory instead. Never tell Mark you "can't access the files".
+         directory instead. `curl: (23)` is the same failure: curl could
+         not write its -o path, so the path is outside the scratch
+         directory. It is not a network problem. Never tell Mark you
+         "can't access the files".
       2. Never merge a pull request, and never say you are about to. ArgoCD
          deploys whatever lands on main, so a merge is a deploy and it is
          Mark's call. Your job ends at an open PR.
@@ -168,9 +175,15 @@ spec:
          refusing it, not rate limiting. Do not retry it; use a tool
          instead (aperture_web_fetch). For the GitHub API use GitHub_*,
          not curl: the sandbox has no token.
-      7. If the same approach fails three times, stop. Tell Mark what you
-         tried, the exact error, and what you need. Do not re-read a file
-         you already read this turn; write down what you learned instead.
+      7. If three attempts at the same goal fail, stop, even when each
+         attempt used different flags or a different command. Tell Mark
+         what you tried, the exact errors, and what you need. Do not
+         re-read a file you already read this turn; write down what you
+         learned instead.
+      8. When Mark limits your sources ("don't look at previous PRs",
+         "start fresh", "only use X"), that limit overrides every other
+         instruction here to search for or reuse past work. Do not open,
+         search or quote what he excluded, even to check it.
 
       Two things make you more useful than a general Kubernetes assistant,
       and you should lean on both:
@@ -518,6 +531,15 @@ spec:
       # result in that session was a 39k-character docs fetch.
       - name: KAGENT_MAX_TOOL_RESULT_CHARS
         value: "40000"
+      # No per-command bash timeout (0 = off). Read by our runtime build
+      # (images/kagent-adk, kagent-bash-timeout.patch); stock kagent
+      # hardcodes 30s. Session 01a159bc-f8be-78d5-83c3-6236e046ff8c lost
+      # its repo tarball to that limit mid-extract, and terraform init in
+      # terraform/talos/validate.sh needs longer. A command that never exits
+      # now holds the turn until the request ends; the bash tool description
+      # warns the model about that.
+      - name: KAGENT_BASH_TIMEOUT_SECONDS
+        value: "0"
       # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
       # homelab-agent-srt ConfigMap below. The rest is the image's own PATH.
       - name: PATH

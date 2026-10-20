@@ -65,18 +65,47 @@ chmod +x talosctl
 
 ### Migrating templates to a new version
 
-- Each release moves more v1alpha1 fields into typed documents. A deprecated
-  field and its replacement document can't both be set, so rewrite every
-  moved field in `templates/` as its document. Look up each field in the
-  target version's document map:
-  `https://docs.siderolabs.com/talos/<version>/reference/configuration/document-map`.
-- When a field has no replacement document, stop and ask Mark before
-  migrating that template. Example: in 1.14, `.machine.kubelet.extraMounts`
-  can't be combined with `KubeletConfig`, and both Longhorn templates use it.
-- Read the release's "What's New" for documents the generator now emits by
-  default, and name each one in the PR body with whether you pin it. Example:
-  1.14 adds `SecurityProfileConfig` with `workloadIsolation: true`, which
-  blocks pods from the host iscsid that Longhorn's v1 engine uses.
+Run these in order. Each step ends on a command whose output decides it.
+
+1. Check for fields with no replacement document before editing anything:
+
+   ```sh
+   grep -rnE '^\s+extraMounts:' terraform/talos/templates/
+   ```
+
+   Any hit means stop and ask Mark how to migrate that template, then wait
+   for his answer. In 1.14, `.machine.kubelet.extraMounts` can't be combined
+   with `KubeletConfig`, and the Longhorn templates and
+   `worker-with-extra-disk.yaml.tmpl` use it. Do the same for any other field
+   step 2 finds no document for.
+
+1. Rewrite every moved v1alpha1 field in `templates/` as its typed document.
+   A deprecated field and its replacement document can't both be set. Take
+   each document's `kind` and field names from the target version's
+   document map, saved to disk so you can grep it:
+
+   ```sh
+   curl -fsSL -o docmap.html \
+     https://docs.siderolabs.com/talos/<minor, e.g. v1.14>/reference/configuration/document-map
+   grep -c '<code>SysctlConfig</code>' docmap.html   # 0: no such kind
+   ```
+
+   Run that grep for every `kind:` you write; each must print 1 or more.
+   Grep the `<code>` form: the page also names v1alpha1's internal types
+   (`*TimeConfig`, `*KernelConfig`, `*LoggingConfig`), which are not
+   documents. A kind from memory is a guess.
+
+1. Read the release's "What's New" for documents the generator now emits by
+   default, and name each one in the PR body with whether you pin it.
+   Example: 1.14 adds `SecurityProfileConfig` with `workloadIsolation: true`,
+   which blocks pods from the host iscsid that Longhorn's v1 engine uses.
+
+1. Run `terraform/talos/validate.sh` (see "Validate every change"). It passes
+   when it exits 0 with an `ok` line per node; any `FAIL` line is a
+   rejection. `talosctl validate --strict` rejects unknown kinds and
+   conflicting fields, so a `FAIL` means step 2 is wrong. Fix it and run
+   again. The PR is ready only when this run passes and the "Validate Talos
+   config" check on the PR is green.
 
 ## Keep every behaviour
 

@@ -165,6 +165,7 @@ data:
     takes `fields` for directory listings. For finding past work,
     `fields: ["number", "title", "state", "html_url", "updated_at"]` is
     enough, then read the one PR you want with GitHub_pull_request_read.
+    Skip past work entirely when the request says not to look at it.
     One unfiltered PR search here returned 327k characters - more than
     your whole context window - where the filtered one returns 1.6k.
 

@@ -249,7 +249,7 @@ helmCharts:
       goAgentImage:
         registry: ghcr.io
         repository: myoung34/homelab/golang-adk
-        tag: 0.10.3-a2a414v0-cap-compact-orphan-reinit
+        tag: 0.10.3-a2a414v0-cap-compact-orphan-reinit-bashto
       # Same image build, target skills-init: stock skills-init with a clone
       # that replaces what a failed earlier attempt left on the emptyDir,
       # instead of crashlooping on "already exists" (kagent#2646). Delete
@@ -257,7 +257,7 @@ helmCharts:
       skillsInitImage:
         registry: ghcr.io
         repository: myoung34/homelab/skills-init
-        tag: 0.10.3-a2a414v0-cap-compact-orphan-reinit
+        tag: 0.10.3-a2a414v0-cap-compact-orphan-reinit-bashto
     ui:
       resources:
         requests:

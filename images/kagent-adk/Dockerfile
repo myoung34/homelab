@@ -59,6 +59,17 @@
 # skills-init below), from the official skills-init:<v> with only the
 # binary replaced; controller.skillsInitImage points at it.
 #
+# kagent-bash-timeout.patch (ours, not upstream) reads
+# KAGENT_BASH_TIMEOUT_SECONDS for the skills bash tool: unset keeps stock's
+# 30s (60s if the command mentions python), a positive value replaces both,
+# and 0 turns the timeout off; the bash tool description tells the model
+# which applies. Stock 0.10.3 hardcodes 30s and has no per-call override
+# (kagent main added timeout_seconds later). Session
+# 01a159bc-f8be-78d5-83c3-6236e046ff8c (Talos 1.14.2) lost its first repo
+# tarball to it mid-extract, then spent ~40 turns on the half-extracted
+# tree; terraform init in terraform/talos/validate.sh does not fit in 30s
+# either.
+#
 # Only /app changes. Each variant starts from the official image named by
 # BASE: golang-adk:<v> for plain agents, golang-adk:<v>-full (sandbox
 # runtime for skills) for agents with spec.skills. The controller derives
@@ -78,7 +89,7 @@
 ARG KAGENT_VERSION=0.10.3
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
-ARG PATCHES=a2a414v0-cap-compact-orphan-reinit
+ARG PATCHES=a2a414v0-cap-compact-orphan-reinit-bashto
 ARG A2A_VERSION=2.5.0
 ARG A2A_V0_VERSION=0.3.15
 ARG BASE=ghcr.io/kagent-dev/kagent/golang-adk:${KAGENT_VERSION}
@@ -95,7 +106,7 @@ RUN git clone -q --depth 1 --branch v${A2A_VERSION} https://github.com/a2aprojec
  && git clone -q --depth 1 --branch v${KAGENT_VERSION} https://github.com/kagent-dev/kagent.git kagent
 COPY a2a-go-pr414.patch a2a-go-v0-stalled-subscriber.patch kagent-pr2791.patch \
      kagent-tool-result-cap.patch kagent-fail-inflight-on-shutdown.patch \
-     kagent-skills-init-reentrant.patch ./
+     kagent-skills-init-reentrant.patch kagent-bash-timeout.patch ./
 COPY wedge_test.go a2a/a2asrv/eventqueue/homelab_wedge_test.go
 COPY wedge_v0_test.go a2a-v0/a2asrv/eventqueue/homelab_wedge_test.go
 RUN git -C a2a apply ../a2a-go-pr414.patch \
@@ -103,7 +114,8 @@ RUN git -C a2a apply ../a2a-go-pr414.patch \
  && git -C kagent apply ../kagent-pr2791.patch \
  && git -C kagent apply ../kagent-tool-result-cap.patch \
  && git -C kagent apply ../kagent-fail-inflight-on-shutdown.patch \
- && git -C kagent apply ../kagent-skills-init-reentrant.patch
+ && git -C kagent apply ../kagent-skills-init-reentrant.patch \
+ && git -C kagent apply ../kagent-bash-timeout.patch
 # The patched queues' own tests plus the homelab repros (wedge_test.go,
 # wedge_v0_test.go), which fail on stock a2a-go. Native arch: this stage
 # runs on BUILDPLATFORM.
@@ -117,7 +129,8 @@ RUN test "$(go list -m -f '{{.Version}}' github.com/a2aproject/a2a-go/v2)" = "v$
  && go mod edit -replace github.com/a2aproject/a2a-go/v2=/src/a2a \
       -replace github.com/a2aproject/a2a-go=/src/a2a-v0 \
  && go test -count=1 ./adk/pkg/a2a/... ./adk/pkg/agent/... ./adk/pkg/runner/... \
-      ./adk/pkg/app/... ./adk/pkg/taskstore/... ./core/internal/skillsinit/...
+      ./adk/pkg/app/... ./adk/pkg/taskstore/... ./core/internal/skillsinit/... \
+ && go test -short -count=1 ./adk/pkg/skills/... ./adk/pkg/tools/...
 # Mirrors kagent's own build (go/Dockerfile): static, no CGO.
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath \
       -ldflags "-s -w -X github.com/kagent-dev/kagent/go/core/internal/version.Version=${KAGENT_VERSION}-${PATCHES}" \

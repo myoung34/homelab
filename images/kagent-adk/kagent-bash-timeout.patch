@@ -1,0 +1,221 @@
+diff --git a/go/adk/pkg/skills/shell.go b/go/adk/pkg/skills/shell.go
+index d69ffe6..b34b3f1 100644
+--- a/go/adk/pkg/skills/shell.go
++++ b/go/adk/pkg/skills/shell.go
+@@ -9,7 +9,6 @@ import (
+ 	"os/exec"
+ 	"path/filepath"
+ 	"strings"
+-	"time"
+ )
+
+ const srtSettingsPathEnv = "KAGENT_SRT_SETTINGS_PATH"
+@@ -126,14 +125,13 @@ func NewCommandExecutorFromEnv() (*CommandExecutor, error) {
+
+ // ExecuteCommand executes a shell command.
+ func (e *CommandExecutor) ExecuteCommand(ctx context.Context, command string, workingDir string) (string, error) {
+-	timeout := 30 * time.Second
+-	if strings.Contains(command, "python") {
+-		timeout = 60 * time.Second
++	timeout := CommandTimeout(command)
++	if timeout > 0 {
++		var cancel context.CancelFunc
++		ctx, cancel = context.WithTimeout(ctx, timeout)
++		defer cancel()
+ 	}
+
+-	ctx, cancel := context.WithTimeout(ctx, timeout)
+-	defer cancel()
+-
+ 	args := append(append([]string{}, e.srtArgs...), "bash", "-c", command)
+ 	cmd := exec.CommandContext(ctx, "srt", args...)
+ 	cmd.Dir = workingDir
+diff --git a/go/adk/pkg/skills/timeout.go b/go/adk/pkg/skills/timeout.go
+new file mode 100644
+index 0000000..53b556c
+--- /dev/null
++++ b/go/adk/pkg/skills/timeout.go
+@@ -0,0 +1,48 @@
++package skills
++
++import (
++	"fmt"
++	"os"
++	"strconv"
++	"strings"
++	"time"
++)
++
++// bashTimeoutEnv overrides the bash tool's per-command timeout, in seconds.
++// Unset, invalid or negative keeps the stock 30s (60s for python); 0 turns
++// the timeout off, leaving only the caller's context to stop a command.
++const bashTimeoutEnv = "KAGENT_BASH_TIMEOUT_SECONDS"
++
++// envTimeout reports the override from bashTimeoutEnv, if one is set.
++func envTimeout() (time.Duration, bool) {
++	n, err := strconv.Atoi(strings.TrimSpace(os.Getenv(bashTimeoutEnv)))
++	if err != nil || n < 0 {
++		return 0, false
++	}
++	return time.Duration(n) * time.Second, true
++}
++
++// CommandTimeout returns how long command may run; 0 means no limit.
++func CommandTimeout(command string) time.Duration {
++	if d, ok := envTimeout(); ok {
++		return d
++	}
++	if strings.Contains(command, "python") {
++		return 60 * time.Second
++	}
++	return 30 * time.Second
++}
++
++// TimeoutDescription is the Timeouts section of the bash tool description,
++// so the model is told the limit it actually runs under.
++func TimeoutDescription() string {
++	d, ok := envTimeout()
++	switch {
++	case !ok:
++		return "Timeouts:\n- python scripts: 60s\n- other commands: 30s"
++	case d == 0:
++		return "Timeouts:\n- no timeout: commands run until they finish, so do not start anything that waits for input or never exits"
++	default:
++		return fmt.Sprintf("Timeouts:\n- every command: %v", d)
++	}
++}
+diff --git a/go/adk/pkg/skills/timeout_test.go b/go/adk/pkg/skills/timeout_test.go
+new file mode 100644
+index 0000000..eb8e504
+--- /dev/null
++++ b/go/adk/pkg/skills/timeout_test.go
+@@ -0,0 +1,105 @@
++package skills
++
++import (
++	"context"
++	"strings"
++	"testing"
++	"time"
++)
++
++func TestCommandTimeout(t *testing.T) {
++	tests := []struct {
++		name    string
++		env     string
++		command string
++		want    time.Duration
++	}{
++		{"unset keeps stock default", "", "ls", 30 * time.Second},
++		{"unset keeps stock python default", "", "python3 x.py", 60 * time.Second},
++		{"zero disables", "0", "ls", 0},
++		{"zero disables for python too", "0", "python3 x.py", 0},
++		{"positive overrides both", "120", "python3 x.py", 120 * time.Second},
++		{"invalid keeps stock default", "soon", "ls", 30 * time.Second},
++		{"negative keeps stock default", "-5", "ls", 30 * time.Second},
++	}
++	for _, tt := range tests {
++		t.Run(tt.name, func(t *testing.T) {
++			t.Setenv(bashTimeoutEnv, tt.env)
++			if got := CommandTimeout(tt.command); got != tt.want {
++				t.Errorf("CommandTimeout(%q) with %s=%q = %v, want %v", tt.command, bashTimeoutEnv, tt.env, got, tt.want)
++			}
++		})
++	}
++}
++
++func TestExecuteCommand_TimeoutFromEnv(t *testing.T) {
++	tmpDir := createTempDir(t)
++	installFakeSRT(t)
++	t.Setenv(bashTimeoutEnv, "1")
++
++	executor, err := NewCommandExecutorFromEnv()
++	if err != nil {
++		t.Fatalf("NewCommandExecutorFromEnv() error = %v", err)
++	}
++	start := time.Now()
++	_, err = executor.ExecuteCommand(context.Background(), "sleep 5", tmpDir)
++	if err == nil || !strings.Contains(err.Error(), "timed out after 1s") {
++		t.Fatalf("want a 1s timeout error, got %v", err)
++	}
++	if elapsed := time.Since(start); elapsed > 4*time.Second {
++		t.Errorf("timeout took %v, want about 1s", elapsed)
++	}
++}
++
++func TestExecuteCommand_ZeroTimeoutRunsToCompletion(t *testing.T) {
++	tmpDir := createTempDir(t)
++	installFakeSRT(t)
++	t.Setenv(bashTimeoutEnv, "0")
++
++	executor, err := NewCommandExecutorFromEnv()
++	if err != nil {
++		t.Fatalf("NewCommandExecutorFromEnv() error = %v", err)
++	}
++	got, err := executor.ExecuteCommand(context.Background(), "sleep 1 && echo done", tmpDir)
++	if err != nil {
++		t.Fatalf("ExecuteCommand() error = %v", err)
++	}
++	if got != "done" {
++		t.Errorf("ExecuteCommand() = %q, want %q", got, "done")
++	}
++}
++
++func TestExecuteCommand_ZeroTimeoutStillHonoursCancel(t *testing.T) {
++	tmpDir := createTempDir(t)
++	installFakeSRT(t)
++	t.Setenv(bashTimeoutEnv, "0")
++
++	executor, err := NewCommandExecutorFromEnv()
++	if err != nil {
++		t.Fatalf("NewCommandExecutorFromEnv() error = %v", err)
++	}
++	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
++	defer cancel()
++	start := time.Now()
++	if _, err := executor.ExecuteCommand(ctx, "sleep 10", tmpDir); err == nil {
++		t.Fatal("want an error when the caller cancels, got nil")
++	}
++	if elapsed := time.Since(start); elapsed > 5*time.Second {
++		t.Errorf("cancel took %v, want about 1s", elapsed)
++	}
++}
++
++func TestTimeoutDescription(t *testing.T) {
++	t.Setenv(bashTimeoutEnv, "")
++	if d := TimeoutDescription(); !strings.Contains(d, "python scripts: 60s") || !strings.Contains(d, "other commands: 30s") {
++		t.Errorf("stock description = %q", d)
++	}
++	t.Setenv(bashTimeoutEnv, "0")
++	if d := TimeoutDescription(); !strings.Contains(d, "no timeout") || strings.Contains(d, "30s") {
++		t.Errorf("disabled description = %q", d)
++	}
++	t.Setenv(bashTimeoutEnv, "300")
++	if d := TimeoutDescription(); !strings.Contains(d, "5m0s") {
++		t.Errorf("override description = %q", d)
++	}
++}
+diff --git a/go/adk/pkg/tools/skills.go b/go/adk/pkg/tools/skills.go
+index d549781..482be68 100644
+--- a/go/adk/pkg/tools/skills.go
++++ b/go/adk/pkg/tools/skills.go
+@@ -64,9 +64,7 @@ Python Imports (CRITICAL):
+ For file operations:
+ - Use read_file, write_file, and edit_file for interacting with the filesystem.
+
+-Timeouts:
+-- python scripts: 60s
+-- other commands: 30s`
++`
+ )
+
+ type skillsInput struct {
+@@ -201,7 +199,7 @@ func NewSkillsTools(skillsDirectory string) ([]tool.Tool, error) {
+
+ 	bashTool, err := functiontool.New(functiontool.Config{
+ 		Name:        "bash",
+-		Description: bashDescription,
++		Description: bashDescription + skillruntime.TimeoutDescription(),
+ 	}, func(ctx adkagent.Context, in bashInput) (string, error) {
+ 		command := strings.TrimSpace(in.Command)
+ 		if command == "" {
