@@ -5,7 +5,7 @@ metadata:
   namespace: kagent
 spec:
   schedule: "0 3 * * *"
-  workflow: 
+  workflow:
     spec:
       serviceAccountName: argo
       entrypoint: etcd-snapshot
@@ -32,7 +32,7 @@ spec:
                 today=$(date +%Y-%m-%d)
                 snapshot_file="/backups/etcd-${today}.snapshot"
                 
-                echo "taking snapshot of etcd\"...
+                echo "taking snapshot of etcd\"..."
                 /usr/local/bin/talosctl --endpoints 192.168.1.22,192.168.1.24,192.168.1.25 etcd snapshot -o "${snapshot_file}"
                 
                 echo "snapshot saved to ${snapshot_file}"
