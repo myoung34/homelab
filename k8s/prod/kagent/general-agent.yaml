@@ -163,6 +163,8 @@ data:
   srt: |
     #!/bin/sh
     if [ "$1" = "--settings" ]; then shift 2; fi
+    # srt sets TMPDIR=/tmp/claude but never creates it, so mktemp fails.
+    mkdir -p /tmp/claude
     exec /usr/bin/srt --settings /opt/srt-shim/srt-settings.json "$@"
   # allowWrite is "." only; see homelab-agent.yaml's homelab-agent-srt
   # ConfigMap for why.
