@@ -1,0 +1,77 @@
+diff --git a/go/core/internal/skillsinit/git.go b/go/core/internal/skillsinit/git.go
+index 519a4d9..b55eb02 100644
+--- a/go/core/internal/skillsinit/git.go
++++ b/go/core/internal/skillsinit/git.go
+@@ -19,6 +19,13 @@ import (
+ // SubPath, if set, rewrites the destination so the final layout matches the
+ // requested in-repo subdirectory.
+ func CloneGit(ref GitRef) error {
++	// A restarted init container finds the previous attempt's destination
++	// on the pod's emptyDir (a partial clone, or a finished skill before a
++	// later ref failed). git refuses a non-empty destination, so without
++	// this one transient failure fails every restart. Start clean.
++	if err := os.RemoveAll(ref.Dest); err != nil {
++		return fmt.Errorf("remove previous %s: %w", ref.Dest, err)
++	}
+ 	if ref.Full {
+ 		if err := runGit("clone", "--", ref.URL, ref.Dest); err != nil {
+ 			return err
+diff --git a/go/core/internal/skillsinit/git_test.go b/go/core/internal/skillsinit/git_test.go
+index 6b8417d..ada76b0 100644
+--- a/go/core/internal/skillsinit/git_test.go
++++ b/go/core/internal/skillsinit/git_test.go
+@@ -2,6 +2,7 @@ package skillsinit
+
+ import (
+ 	"os"
++	"os/exec"
+ 	"path/filepath"
+ 	"testing"
+
+@@ -42,3 +43,46 @@ func Test_applySubPath_rejectsNonDir(t *testing.T) {
+ 	require.Error(t, err)
+ 	assert.Contains(t, err.Error(), "not a directory")
+ }
++
++// A skills-init restart (after a failed or stalled clone) finds the earlier
++// attempt's destination on the pod's emptyDir; the clone must replace it,
++// not fail with "already exists" on every restart.
++func TestCloneGitReplacesLeftoverDestination(t *testing.T) {
++	src := t.TempDir()
++	git := func(args ...string) {
++		cmd := exec.Command("git", args...)
++		cmd.Dir = src
++		out, err := cmd.CombinedOutput()
++		if err != nil {
++			t.Fatalf("git %v: %v\n%s", args, err, out)
++		}
++	}
++	git("init", "-q")
++	if err := os.MkdirAll(filepath.Join(src, "skills", "s"), 0o755); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(filepath.Join(src, "skills", "s", "SKILL.md"), []byte("x\n"), 0o644); err != nil {
++		t.Fatal(err)
++	}
++	git("add", ".")
++	git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "init")
++	git("tag", "v1")
++
++	dest := filepath.Join(t.TempDir(), "s")
++	if err := os.MkdirAll(filepath.Join(dest, ".git"), 0o755); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(filepath.Join(dest, "partial"), []byte("x"), 0o644); err != nil {
++		t.Fatal(err)
++	}
++
++	if err := CloneGit(GitRef{URL: "file://" + src, Ref: "v1", Dest: dest, SubPath: "skills/s"}); err != nil {
++		t.Fatalf("CloneGit: %v", err)
++	}
++	if _, err := os.Stat(filepath.Join(dest, "SKILL.md")); err != nil {
++		t.Fatalf("SKILL.md missing: %v", err)
++	}
++	if _, err := os.Stat(filepath.Join(dest, "partial")); !os.IsNotExist(err) {
++		t.Fatalf("leftover file survived: %v", err)
++	}
++}

@@ -146,6 +146,18 @@ patches:
             - url: https://github.com/obra/superpowers
               ref: v7.0.0
               path: skills/dispatching-parallel-agents
+          # An occasional clone from the cluster to GitHub stalls with sent
+          # bytes never ACKed (seen 2026-10-20: one in ~16, others take ~1s),
+          # and git has no timeout, so skills-init sat until the kernel gave
+          # up on the connection. Abort a transfer under 1KB/s for 20s
+          # instead; the init container restarts, and our skills-init
+          # (controller.skillsInitImage) re-clones over the leftovers.
+          initContainer:
+            env:
+              - name: GIT_HTTP_LOW_SPEED_LIMIT
+                value: "1000"
+              - name: GIT_HTTP_LOW_SPEED_TIME
+                value: "20"
 
 helmCharts:
 - name: kagent-crds
@@ -237,7 +249,15 @@ helmCharts:
       goAgentImage:
         registry: ghcr.io
         repository: myoung34/homelab/golang-adk
-        tag: 0.10.3-a2a414v0-cap-compact-orphan
+        tag: 0.10.3-a2a414v0-cap-compact-orphan-reinit
+      # Same image build, target skills-init: stock skills-init with a clone
+      # that replaces what a failed earlier attempt left on the emptyDir,
+      # instead of crashlooping on "already exists" (kagent#2646). Delete
+      # with goAgentImage.
+      skillsInitImage:
+        registry: ghcr.io
+        repository: myoung34/homelab/skills-init
+        tag: 0.10.3-a2a414v0-cap-compact-orphan-reinit
     ui:
       resources:
         requests:
