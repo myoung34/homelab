@@ -49,6 +49,16 @@
 # tasks, and after the HTTP server's shutdown timeout it saves them as
 # failed with a "send your message again" note and rejects late saves.
 #
+# kagent-skills-init-reentrant.patch (ours; upstream's #2655 for #2646 went
+# stale) makes skills-init clear a destination before cloning into it. A
+# restarted init container finds the last attempt's clones on the pod's
+# emptyDir and `git clone` refuses a non-empty directory, so one stalled
+# GitHub clone left homelab-agent in Init:CrashLoopBackOff for 32h
+# (2026-10-19, "destination path '/skills/ponytail' already exists").
+# Built as a second image, ghcr.io/myoung34/homelab/skills-init (target
+# skills-init below), from the official skills-init:<v> with only the
+# binary replaced; controller.skillsInitImage points at it.
+#
 # Only /app changes. Each variant starts from the official image named by
 # BASE: golang-adk:<v> for plain agents, golang-adk:<v>-full (sandbox
 # runtime for skills) for agents with spec.skills. The controller derives
@@ -56,7 +66,8 @@
 #
 # DELETE THIS once a kagent release runs its server on an a2a-go that
 # includes #414 (or a v0 equivalent), then drop the renovate.json hold:
-# drop controller.goAgentImage from k8s/prod/kagent/kustomization.yaml and
+# drop controller.goAgentImage and controller.skillsInitImage from
+# k8s/prod/kagent/kustomization.yaml and
 # remove images/kagent-adk plus .github/workflows/kagent-adk-image.yaml.
 # Until then a kagent bump needs KAGENT_VERSION and A2A_VERSION updated
 # here (A2A_VERSION = the a2a-go/v2 version in kagent's go/go.mod, after
@@ -67,7 +78,7 @@
 ARG KAGENT_VERSION=0.10.3
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
-ARG PATCHES=a2a414v0-cap-compact-orphan
+ARG PATCHES=a2a414v0-cap-compact-orphan-reinit
 ARG A2A_VERSION=2.5.0
 ARG A2A_V0_VERSION=0.3.15
 ARG BASE=ghcr.io/kagent-dev/kagent/golang-adk:${KAGENT_VERSION}
@@ -83,14 +94,16 @@ RUN git clone -q --depth 1 --branch v${A2A_VERSION} https://github.com/a2aprojec
  && git clone -q --depth 1 --branch v${A2A_V0_VERSION} https://github.com/a2aproject/a2a-go.git a2a-v0 \
  && git clone -q --depth 1 --branch v${KAGENT_VERSION} https://github.com/kagent-dev/kagent.git kagent
 COPY a2a-go-pr414.patch a2a-go-v0-stalled-subscriber.patch kagent-pr2791.patch \
-     kagent-tool-result-cap.patch kagent-fail-inflight-on-shutdown.patch ./
+     kagent-tool-result-cap.patch kagent-fail-inflight-on-shutdown.patch \
+     kagent-skills-init-reentrant.patch ./
 COPY wedge_test.go a2a/a2asrv/eventqueue/homelab_wedge_test.go
 COPY wedge_v0_test.go a2a-v0/a2asrv/eventqueue/homelab_wedge_test.go
 RUN git -C a2a apply ../a2a-go-pr414.patch \
  && git -C a2a-v0 apply ../a2a-go-v0-stalled-subscriber.patch \
  && git -C kagent apply ../kagent-pr2791.patch \
  && git -C kagent apply ../kagent-tool-result-cap.patch \
- && git -C kagent apply ../kagent-fail-inflight-on-shutdown.patch
+ && git -C kagent apply ../kagent-fail-inflight-on-shutdown.patch \
+ && git -C kagent apply ../kagent-skills-init-reentrant.patch
 # The patched queues' own tests plus the homelab repros (wedge_test.go,
 # wedge_v0_test.go), which fail on stock a2a-go. Native arch: this stage
 # runs on BUILDPLATFORM.
@@ -104,14 +117,21 @@ RUN test "$(go list -m -f '{{.Version}}' github.com/a2aproject/a2a-go/v2)" = "v$
  && go mod edit -replace github.com/a2aproject/a2a-go/v2=/src/a2a \
       -replace github.com/a2aproject/a2a-go=/src/a2a-v0 \
  && go test -count=1 ./adk/pkg/a2a/... ./adk/pkg/agent/... ./adk/pkg/runner/... \
-      ./adk/pkg/app/... ./adk/pkg/taskstore/...
+      ./adk/pkg/app/... ./adk/pkg/taskstore/... ./core/internal/skillsinit/...
 # Mirrors kagent's own build (go/Dockerfile): static, no CGO.
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath \
       -ldflags "-s -w -X github.com/kagent-dev/kagent/go/core/internal/version.Version=${KAGENT_VERSION}-${PATCHES}" \
       -o /app ./adk/cmd \
  && go version -m /app | grep -A1 -E 'dep\s+github.com/a2aproject/a2a-go\s' | grep -q '=>\s/src/a2a-v0\s' \
  && go version -m /app | grep -A1 -E 'dep\s+github.com/a2aproject/a2a-go/v2\s' | grep -q '=>\s/src/a2a\s'
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath -ldflags "-s -w" \
+      -o /skills-init ./core/cmd/skills-init
 
+FROM ghcr.io/kagent-dev/kagent/skills-init:${KAGENT_VERSION} AS skills-init
+LABEL org.opencontainers.image.source=https://github.com/myoung34/homelab
+COPY --from=build /skills-init /usr/local/bin/skills-init
+
+# Last stage, so the default build target stays the agent image.
 FROM ${BASE}
 LABEL org.opencontainers.image.source=https://github.com/myoung34/homelab
 COPY --from=build /app /app

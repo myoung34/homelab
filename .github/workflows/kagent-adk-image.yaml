@@ -3,7 +3,9 @@
 # the image, so the tags exist before the PR that uses them is merged.
 #
 # Two variants, matching what the kagent controller asks for: <tag> for plain
-# agents and <tag>-full for agents with spec.skills. Both architectures,
+# agents and <tag>-full for agents with spec.skills. Plus the patched
+# skills-init (target skills-init) as ghcr.io/myoung34/homelab/skills-init,
+# same <tag>. All in both architectures,
 # since agents land on the arm64 Pis and on cluster41 (amd64). No QEMU: the
 # Go stage cross-compiles on the runner and the final stage only COPYs.
 name: kagent-adk image
@@ -24,7 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        variant: ["", "-full"]
+        include:
+          - {image: golang-adk, target: "", variant: ""}
+          - {image: golang-adk, target: "", variant: "-full"}
+          - {image: skills-init, target: skills-init, variant: ""}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -44,8 +49,9 @@ jobs:
           pull: true
           push: true
           platforms: linux/amd64,linux/arm64
+          target: ${{ matrix.target }}
           build-args: |
             BASE=ghcr.io/kagent-dev/kagent/golang-adk:${{ steps.v.outputs.version }}${{ matrix.variant }}
-          tags: ghcr.io/${{ github.repository }}/golang-adk:${{ steps.v.outputs.version }}-${{ steps.v.outputs.patches }}${{ matrix.variant }}
-          cache-from: type=gha,scope=kagent-adk${{ matrix.variant }}
-          cache-to: type=gha,mode=max,scope=kagent-adk${{ matrix.variant }}
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.image }}:${{ steps.v.outputs.version }}-${{ steps.v.outputs.patches }}${{ matrix.variant }}
+          cache-from: type=gha,scope=kagent-adk-${{ matrix.image }}${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=kagent-adk-${{ matrix.image }}${{ matrix.variant }}
