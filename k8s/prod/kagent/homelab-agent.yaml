@@ -142,9 +142,10 @@ spec:
          into repo/ (exact command under "Reading and editing files in a
          repo"):
            curl -fsSL https://codeload.github.com/myoung34/homelab/tar.gz/<sha> | tar xz -C repo --strip-components=1
-         Stay in that scratch directory and use relative paths; never
-         write under /tmp/... yourself. Never tell Mark you "can't access
-         the files".
+         Stay in that scratch directory and use relative paths. Writes
+         anywhere else (/tmp/..., $HOME) fail with "Read-only file
+         system"; that is the sandbox, so write under the scratch
+         directory instead. Never tell Mark you "can't access the files".
       2. Never merge a pull request, and never say you are about to. ArgoCD
          deploys whatever lands on main, so a merge is a deploy and it is
          Mark's call. Your job ends at an open PR.
@@ -571,8 +572,17 @@ spec:
 # the kernel refuses a new procfs over masked ones. procMount: Unmasked would
 # fix that but needs hostUsers: false, which kagent 0.10.3 cannot set.
 # enableWeakerNestedSandbox makes srt skip that mount; the sandbox then sees
-# the container's own /proc (same uid 1001 processes). Network and
-# filesystem policy are unchanged.
+# the container's own /proc (same uid 1001 processes).
+#
+# allowWrite is "." only - the session's scratch dir, the one place
+# read_file/write_file/edit_file can reach (kagent's skills.go). kagent's
+# default also allows /tmp, so bash could write /tmp/x that read_file then
+# refused ("outside the allowed roots"); homelab-agent lost turns to that in
+# sessions 01a14f96 and 01a15280, despite a prompt rule against it. Now the
+# write fails in bash, where the model sees it. srt still gives commands a
+# writable TMPDIR (/tmp/claude), so mktemp, large heredocs, terraform init
+# and talosctl gen config keep working (checked in the pod 2026-10-20). It also stops one session's bash writing
+# into another's /tmp/kagent/<session>.
 #
 # allowedDomains here is what srt enforces; keep spec.sandbox.network on the
 # Agent identical so the two never disagree.
@@ -609,8 +619,7 @@ data:
       "filesystem": {
         "denyRead": [],
         "allowWrite": [
-          ".",
-          "/tmp"
+          "."
         ],
         "denyWrite": []
       }

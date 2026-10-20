@@ -164,6 +164,8 @@ data:
     #!/bin/sh
     if [ "$1" = "--settings" ]; then shift 2; fi
     exec /usr/bin/srt --settings /opt/srt-shim/srt-settings.json "$@"
+  # allowWrite is "." only; see homelab-agent.yaml's homelab-agent-srt
+  # ConfigMap for why.
   srt-settings.json: |
     {
       "enableWeakerNestedSandbox": true,
@@ -174,8 +176,7 @@ data:
       "filesystem": {
         "denyRead": [],
         "allowWrite": [
-          ".",
-          "/tmp"
+          "."
         ],
         "denyWrite": []
       }
