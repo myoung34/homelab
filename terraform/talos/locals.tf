@@ -1,197 +1,24 @@
 locals {
-  cluster_name       = "prod"
-  cluster_endpoint   = "https://192.168.1.254:6443"
-  talos_version      = "v1.14.2"
-  kubernetes_version = "v1.37.2"
+  talos_version = "1.8.1"
 
-  rpi_overlay_sha   = "8c0ab3c46bd174822da61ad52d4f014b05dc7e7d7dd8910bd2b57b0811086d1e" # pragma: allowlist secret
-  rpi_overlay_image = "factory.talos.dev/installer/${local.rpi_overlay_sha}:${local.talos_version}"
+  # Schematic IDs
+  # These are the schematic IDs for the Talos nodes. They are the same for all
+  # nodes of a given type.
+  #
+  # To update a schematic ID:
+  # 1. Update the schematic in the Talos dashboard
+  # 2. Copy the new ID from the dashboard
+  # 3. Update this file
+  #
+  # The IDs below are for the current production schematics.
+  baremetal_schematic = "b8e8fbbe1b520989e6c52c8dc8303070cb42095997e76e812fa8892393e1d176"
+  pi_schematic        = "9992b4ade979cf2fc812e6f07e264d1f240d11b0d1eb795ce78771f8647a316"
 
-  rpi5_overlay_sha   = "0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791" # pragma: allowlist secret
-  rpi5_overlay_image = "factory.talos.dev/installer/${local.rpi5_overlay_sha}:${local.talos_version}"
-
-  # Bare-metal amd64 + Radeon (amdgpu) schematic from bare.yaml. No overlay on
-  # amd64; siderolabs/amdgpu ships both the firmware and kernel modules the
-  # Radeon AI PRO R9700 / gfx1201 needs; siderolabs/amd-ucode is CPU microcode
-  # for the Ryzen 5 5500. The nvidia-* pair drives the RTX 2070 SUPER next to
-  # it (open kernel modules: Turing is the oldest arch they support, and NVIDIA
-  # recommends them from Turing on); both must stay on the same driver branch
-  # (-production). Their modules are loaded by templates/bare-metal.yaml.tmpl.
-  # Regenerate via:
-  #   curl -X POST --data-binary @bare.yaml https://factory.talos.dev/schematics
-  # and drop the returned "id" in below.
-  bare_metal_sha   = "c74594ca0d5f8b6fe7e6a73c1258da7dd48cf8278684f4d40b996a248635fb95" # pragma: allowlist secret
-  bare_metal_image = "factory.talos.dev/installer/${local.bare_metal_sha}:${local.talos_version}"
-
-  extensions = {
-    tailscale = {
-      env = {
-        TS_AUTHKEY = data.vault_generic_secret.talos.data["tailscale_authkey"]
-      }
-    }
-  }
-
-  temp_cert_sans = [] # useful when migrating controlplane nodes and having to add then remove
-  cert_sans      = setunion(keys(local.node_data.controlplanes), local.temp_cert_sans)
-
-  node_data = {
-    controlplanes = {
-      "192.168.1.22" = {
-        hostname              = "cluster13"
-        install_disk          = "/dev/sda"
-        image                 = local.rpi_overlay_image
-        network_hardware_addr = "dc*"
-        kubernetes_version    = ""
-      },
-      "192.168.1.25" = {
-        hostname              = "cluster22"
-        install_disk          = "/dev/sda"
-        image                 = local.rpi_overlay_image
-        network_hardware_addr = "e4*"
-        kubernetes_version    = ""
-      },
-      # cluster21 took over from cluster23 on 2026-10-15. cluster23 is a 4GB
-      # Pi 4 and kube-apiserver alone uses ~2.1GB here, so it lived at
-      # 0.4-1.4GB usable and thrashed (load 21, 93% IO pressure) whenever it
-      # held the VIP. Every control plane needs 8GB. 2c* is the newer Raspberry
-      # Pi OUI (2c:cf:67), not the e4* the other boards carry.
-      "192.168.1.24" = {
-        hostname              = "cluster21"
-        install_disk          = "/dev/sda"
-        image                 = local.rpi_overlay_image
-        network_hardware_addr = "2c*"
-        kubernetes_version    = ""
-      },
-    }
-    workers = {
-      "192.168.1.19" = {
-        hostname               = "cluster11"
-        install_disk           = "/dev/sda"
-        image                  = local.rpi_overlay_image
-        kubernetes_version     = ""
-        extra_device           = ""
-        mount_point            = ""
-        longhorn_disk_selector = ""
-        ephemeral_max_size     = ""
-        longhorn_min_size      = ""
-        #network_hardware_addr = "00:e0*"
-      },
-      "192.168.1.21" = {
-        hostname               = "cluster12"
-        install_disk           = "/dev/sda"
-        image                  = local.rpi_overlay_image
-        kubernetes_version     = ""
-        extra_device           = ""
-        mount_point            = ""
-        longhorn_disk_selector = ""
-        ephemeral_max_size     = ""
-        longhorn_min_size      = ""
-      },
-      "192.168.1.23" = {
-        hostname               = "cluster14"
-        install_disk           = "/dev/sda"
-        image                  = local.rpi_overlay_image
-        kubernetes_version     = ""
-        extra_device           = ""
-        mount_point            = ""
-        longhorn_disk_selector = ""
-        ephemeral_max_size     = ""
-        longhorn_min_size      = ""
-
-      },
-      # A 4GB Pi 4 (worker only, see the controlplanes note on cluster21).
-      "192.168.1.26" = {
-        hostname               = "cluster23"
-        install_disk           = "/dev/sda"
-        image                  = local.rpi_overlay_image
-        kubernetes_version     = ""
-        extra_device           = ""
-        mount_point            = ""
-        longhorn_disk_selector = ""
-        ephemeral_max_size     = ""
-        longhorn_min_size      = ""
-      },
-      "192.168.1.27" = {
-        hostname               = "cluster24"
-        install_disk           = "/dev/sda"
-        image                  = local.rpi_overlay_image
-        kubernetes_version     = ""
-        extra_device           = ""
-        mount_point            = ""
-        longhorn_disk_selector = ""
-        ephemeral_max_size     = ""
-        longhorn_min_size      = ""
-      },
-      "192.168.1.69" = {
-        hostname               = "klipper"
-        install_disk           = "/dev/nvme0n1"
-        image                  = local.rpi5_overlay_image
-        kubernetes_version     = ""
-        extra_device           = ""
-        mount_point            = ""
-        longhorn_disk_selector = "disk.transport == \"nvme\""
-        ephemeral_max_size     = "64GB"
-        longhorn_min_size      = "50GB"
-      },
-      "192.168.1.32" = {
-        hostname           = "cluster41"
-        install_disk       = "/dev/nvme0n1"
-        image              = local.bare_metal_image
-        kubernetes_version = ""
-        extra_device       = ""
-        mount_point        = ""
-        # cluster{row}{column}: this 4U sits alone on row 4.
-        # Radeon AI PRO R9700 32GB + RTX 2070 SUPER 8GB. 1TB NVMe, single-disk: same disk serves
-        # EPHEMERAL (capped at 64GB) and the "longhorn" UserVolumeConfig
-        # (floor of 900GB, grows to fill whatever's left). Disk is targeted by
-        # selector, not device path, in case NVMe names aren't stable across
-        # reboots. Longhorn uses /var/mnt/longhorn directly as its disk; see
-        # templates/longhorn-dedicated-volume.yaml.tmpl.
-        longhorn_disk_selector = "disk.transport == \"nvme\""
-        ephemeral_max_size     = "64GB"
-        longhorn_min_size      = "900GB"
-      },
-    }
-  }
-
-  machine_secrets = {
-    certs = {
-      etcd = {
-        cert = data.vault_generic_secret.talos.data["etcd.cert"]
-        key  = data.vault_generic_secret.talos.data["etcd.key"]
-      }
-      k8s = {
-        cert = data.vault_generic_secret.talos.data["k8s.cert"]
-        key  = data.vault_generic_secret.talos.data["k8s.key"]
-      }
-      k8s_aggregator = {
-        cert = data.vault_generic_secret.talos.data["k8s_aggregator.cert"]
-        key  = data.vault_generic_secret.talos.data["k8s_aggregator.key"]
-      }
-      k8s_serviceaccount = {
-        key = data.vault_generic_secret.talos.data["k8s_serviceaccount.key"]
-      }
-      os = {
-        cert = data.vault_generic_secret.talos.data["os.cert"]
-        key  = data.vault_generic_secret.talos.data["os.key"]
-      }
-    }
-    cluster = {
-      id     = data.vault_generic_secret.talos.data["cluster.id"]
-      secret = data.vault_generic_secret.talos.data["cluster.secret"]
-    }
-    secrets = {
-      machine_token               = data.vault_generic_secret.talos.data["machine.token"]
-      bootstrap_token             = data.vault_generic_secret.talos.data["secrets.bootstrap_token"]
-      secretbox_encryption_secret = data.vault_generic_secret.talos.data["secrets.secretbox_encryption_secret"]
-    }
-    trustdinfo = {
-      token = ""
-    }
-  }
-  client_configuration = {
-    ca_certificate     = data.vault_generic_secret.talos.data["client_configuration.ca_certificate"]
-    client_certificate = data.vault_generic_secret.talos.data["client_configuration.client_certificate"]
-    client_key         = data.vault_generic_secret.talos.data["client_configuration.client_key"]
-  }
+  # Network configuration
+  # The cluster uses a /24 subnet. The IP addresses are statically assigned.
+  #
+  # The control-plane nodes use the first three IPs in the subnet.
+  # The workers use the remaining IPs.
+  network_cidr = "192.168.1.0/24"
+  gateway_ip   = "192.168.1.1"
 }
