@@ -1,0 +1,33 @@
+diff --git a/server/sched.go b/server/sched.go
+index 5f5cb51..026bfd5 100644
+--- a/server/sched.go
++++ b/server/sched.go
+@@ -141,6 +141,13 @@ func resolveContextShift(shift *bool, m *Model) bool {
+ 		return *shift
+ 	}
+
++	// OLLAMA_CONTEXT_SHIFT=false: a full context fails the request instead of
++	// llama-server discarding the oldest half of it (system prompt included)
++	// and generating on. The OpenAI-compatible endpoints can't send shift.
++	if os.Getenv("OLLAMA_CONTEXT_SHIFT") == "false" {
++		return false
++	}
++
+ 	return supportsContextShift(m)
+ }
+
+diff --git a/server/sched_test.go b/server/sched_test.go
+index b16686b..9987eb7 100644
+--- a/server/sched_test.go
++++ b/server/sched_test.go
+@@ -2296,3 +2296,10 @@ func TestSchedulerTracksMultipleLoadedRunners(t *testing.T) {
+ 	expectedFree := uint64(24*format.GigaByte) - uint64(8*format.GigaByte) - uint64(4*format.GigaByte)
+ 	require.Equal(t, expectedFree, gpus[0].FreeMemory)
+ }
++
++func TestResolveContextShiftEnvOff(t *testing.T) {
++	t.Setenv("OLLAMA_CONTEXT_SHIFT", "false")
++	require.False(t, resolveContextShift(nil, &Model{}))
++	on := true
++	require.True(t, resolveContextShift(&on, &Model{}))
++}
