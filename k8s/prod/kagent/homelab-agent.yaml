@@ -518,6 +518,15 @@ spec:
       # result in that session was a 39k-character docs fetch.
       - name: KAGENT_MAX_TOOL_RESULT_CHARS
         value: "40000"
+      # No per-command bash timeout (0 = off). Read by our runtime build
+      # (images/kagent-adk, kagent-bash-timeout.patch); stock kagent
+      # hardcodes 30s. Session 01a159bc-f8be-78d5-83c3-6236e046ff8c lost
+      # its repo tarball to that limit mid-extract, and terraform init in
+      # terraform/talos/validate.sh needs longer. A command that never exits
+      # now holds the turn until the request ends; the bash tool description
+      # warns the model about that.
+      - name: KAGENT_BASH_TIMEOUT_SECONDS
+        value: "0"
       # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
       # homelab-agent-srt ConfigMap below. The rest is the image's own PATH.
       - name: PATH
