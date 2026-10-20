@@ -61,12 +61,13 @@ spec:
         feature.node.kubernetes.io/amd-gpu: "true"
       initContainers:
       - name: pull-model
-        # Patched Ollama (images/ollama): stock 0.40.3-rocm + ollama/ollama#18433.
+        # Patched Ollama (images/ollama): stock 0.40.3-rocm + ollama/ollama#18433,
+        # plus an OLLAMA_CONTEXT_SHIFT off switch (set on the ollama container).
         # Stock 0.40.3 rendered kagent's tool list in a different order on
         # every request, so qwen's prompt cache never hit and every agent
         # turn re-read ~128k tokens (~130s). Back to the official image once
         # a release includes the fix; see images/ollama/Dockerfile.
-        image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433"
+        image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433-noshift"
         imagePullPolicy: IfNotPresent
         env:
         # Default splits each blob into many concurrent chunk downloads: fine
@@ -105,6 +106,10 @@ spec:
         #     1024  2218 / 65  100% GPU
         #     2048  2517 / 65  100% GPU
         #     4096  2304 / 59  2.3GB spilled to CPU by the bigger buffer
+        # num_predict 16384 - caps one reply. Agent replies are short (p50
+        #   114, p99 2468 tokens, 2026-10-15..20), but one degenerate reply
+        #   ran 85k+ tokens until the 30m client timeout failed the turn
+        #   (2026-10-20). 16k ends a runaway in ~6m at ~47 tok/s.
         #
         # qwen3:4b was a GPU smoke test with no consumers; it's removed so a
         # stray request can't evict the coder model (MAX_LOADED_MODELS=1).
@@ -129,6 +134,7 @@ spec:
           PARAMETER use_mmap false
           PARAMETER num_ctx 131072
           PARAMETER num_batch 2048
+          PARAMETER num_predict 16384
           EOF
           ollama create qwen3-coder-next:agent -f /tmp/Modelfile
           # One rm per model: a multi-arg rm stops at the first missing one.
@@ -149,7 +155,7 @@ spec:
       containers:
       - name: ollama
         # Same patched image as pull-model above.
-        image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433"
+        image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433-noshift"
         imagePullPolicy: IfNotPresent
         # Serve, then preload qwen3-coder-next:agent in the background so the
         # ~90-220s load happens at pod start instead of on the first agent
@@ -192,6 +198,13 @@ spec:
         # reload at a different size.
         - name: OLLAMA_CONTEXT_LENGTH
           value: "131072"
+        # Patched-in (images/ollama/context-shift.patch). When a request fills
+        # num_ctx, fail it instead of letting llama-server drop the oldest
+        # 65533 tokens - system prompt and user request included - and
+        # generate on with no instructions. That happened 45 times in long
+        # homelab-agent turns on 2026-10-19/20 and produced #2263.
+        - name: OLLAMA_CONTEXT_SHIFT
+          value: "false"
         # Load-stall timeout (default 5m). A cold load reads 28.5GB off the
         # PVC; give a slow disk or busy node headroom rather than failing.
         - name: OLLAMA_LOAD_TIMEOUT

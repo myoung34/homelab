@@ -1,4 +1,5 @@
-# Builds images/ollama (stock Ollama + ollama/ollama#18433) and pushes it to
+# Builds images/ollama (stock Ollama + ollama/ollama#18433 + context-shift
+# off switch) and pushes it to
 # ghcr.io/myoung34/homelab/ollama. Runs on any branch that touches the
 # image, so the tag exists before the PR that uses it is merged.
 name: ollama image
@@ -34,6 +35,6 @@ jobs:
           pull: true
           push: true
           platforms: linux/amd64
-          tags: ghcr.io/${{ github.repository }}/ollama:${{ steps.v.outputs.version }}-rocm-pr18433
+          tags: ghcr.io/${{ github.repository }}/ollama:${{ steps.v.outputs.version }}-rocm-pr18433-noshift
           cache-from: type=gha
           cache-to: type=gha,mode=max
