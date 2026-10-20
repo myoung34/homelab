@@ -228,10 +228,11 @@ data:
     download again at the new SHA rather than trusting local copies.
 
     Stay in the directory your shell starts in (and repo/ under it). Use
-    relative paths only and never write to /tmp/...: read_file and
-    edit_file refuse anything outside that directory. Use read_file/
-    edit_file, or python3 for mechanical edits. Never retype a file from
-    memory, and never rebuild one by replaying commit patches.
+    relative paths only: bash can't write outside that directory
+    ("Read-only file system") and read_file/edit_file refuse anything
+    outside it. Use read_file/edit_file, or python3 for mechanical
+    edits. Never retype a file from memory, and never rebuild one by
+    replaying commit patches.
 
     For a single file, raw.githubusercontent.com also works:
       curl -fsSL -o <name> https://raw.githubusercontent.com/myoung34/homelab/<sha>/<path>

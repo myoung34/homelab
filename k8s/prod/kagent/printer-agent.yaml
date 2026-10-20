@@ -142,8 +142,10 @@ spec:
 # the kernel refuses a new procfs over masked ones. procMount: Unmasked would
 # fix that but needs hostUsers: false, which kagent 0.10.3 cannot set.
 # enableWeakerNestedSandbox makes srt skip that mount; the sandbox then sees
-# the container's own /proc (same uid 1001 processes). Network and
-# filesystem policy are unchanged.
+# the container's own /proc (same uid 1001 processes).
+#
+# allowWrite is "." only (no /tmp); see the homelab-agent-srt ConfigMap in
+# homelab-agent.yaml for why.
 #
 # allowedDomains here is what srt enforces; keep spec.sandbox.network on the
 # Agent identical so the two never disagree.
@@ -173,8 +175,7 @@ data:
       "filesystem": {
         "denyRead": [],
         "allowWrite": [
-          ".",
-          "/tmp"
+          "."
         ],
         "denyWrite": []
       }
