@@ -68,7 +68,7 @@ spec:
       runtimeClassName: nvidia
       initContainers:
       - name: pull-model
-        image: "ollama/ollama:0.40.6"
+        image: "ollama/ollama:0.40.7"
         imagePullPolicy: IfNotPresent
         env:
         - name: OLLAMA_MAX_TRANSFER_STREAMS
@@ -128,7 +128,7 @@ spec:
             nvidia.com/gpu: 1
       containers:
       - name: ollama
-        image: "ollama/ollama:0.40.6"
+        image: "ollama/ollama:0.40.7"
         imagePullPolicy: IfNotPresent
         # Same serve-then-preload pattern as ollama.yaml.
         command:
