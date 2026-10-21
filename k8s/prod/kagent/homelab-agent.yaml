@@ -310,7 +310,13 @@ spec:
 
         curl -fsSL -o tf.zip \
           https://releases.hashicorp.com/terraform/<version>/terraform_<version>_linux_amd64.zip
-        unzip tf.zip terraform && PATH=$PWD:$PATH
+        rm -f terraform && unzip tf.zip terraform && ./terraform version
+        PATH=$PWD:$PATH
+
+      Take <version> from terraform/talos/.terraform-version. If
+      `terraform version` doesn't print that version, the unzip failed:
+      unzip won't overwrite an existing file without asking, and there is
+      no one to answer it.
 
       The Talos role is os:reader. Verified working: version, services,
       dmesg, logs <service>, get <resource> (members, extensions, ...),
@@ -606,6 +612,14 @@ spec:
 # and talosctl gen config keep working (checked in the pod 2026-10-20). It also stops one session's bash writing
 # into another's /tmp/kagent/<session>.
 #
+# allowAllUnixSockets: srt's Linux seccomp filter otherwise blocks creating
+# any Unix socket, and terraform reaches every provider over one (go-plugin),
+# so validate.sh died at init with "Failed to read any lines from plugin's
+# stdout" (session 01a15a9c-085e-7b4b-b585-88ac6b9342d8; with the flag it
+# runs to per-node ok/FAIL, checked in the pod 2026-10-21). Low risk: the
+# pod mounts no host sockets, and abstract sockets stay inside srt's own
+# network namespace.
+#
 # allowedDomains here is what srt enforces; keep spec.sandbox.network on the
 # Agent identical so the two never disagree.
 apiVersion: v1
@@ -626,6 +640,7 @@ data:
     {
       "enableWeakerNestedSandbox": true,
       "network": {
+        "allowAllUnixSockets": true,
         "allowedDomains": [
           "192.168.1.254",
           "github.com",
