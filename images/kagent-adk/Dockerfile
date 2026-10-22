@@ -86,7 +86,7 @@
 # version there), the patches re-checked, and the tag in
 # kustomization.yaml updated by hand. Drop kagent-pr2791.patch once the
 # kagent release includes #2790/#2791.
-ARG KAGENT_VERSION=0.10.3
+ARG KAGENT_VERSION=0.10.4
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
 ARG PATCHES=a2a414v0-cap-compact-orphan-reinit-bashto
