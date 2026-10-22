@@ -41,3 +41,14 @@ spec:
   apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
   openAI:
     baseUrl: "http://aperture.kagent.svc.cluster.local/v1"
+    # Caps one reply at ~2.3 min at qwen's ~60 tok/s, under the 3m0s at
+    # which something on the Aperture path cuts a stream (Ollama logged
+    # "200 | 3m0s" for the cut reply). Session 01a15ef1 ran a 10.5k-token
+    # runaway into that cut; kagent never saw the stream end and failed the
+    # turn at its 30m default timeout. Ollama's num_predict 16384
+    # (k8s/prod/ollama/ollama.yaml) takes ~4.5 min at this speed, so it
+    # never fires first. Agent replies: p50 114, p99 2468 tokens.
+    maxTokens: 8192
+    # Fail a stuck request in 4 min instead of kagent's 30m default
+    # (go/adk/pkg/models/base.go defaultTimeout).
+    timeout: 240
