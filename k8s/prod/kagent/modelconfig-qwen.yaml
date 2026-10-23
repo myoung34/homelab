@@ -1,21 +1,21 @@
-# Local qwen3-coder-next on cluster41's R9700 (k8s/prod/ollama), reached
-# through Aperture like every other model so usage shows up in one place.
-# The chart-generated default-model-config (Claude via Aperture) stays as
-# is: the UI wizard hands it out, and switching an agent back is a one-line
-# modelConfig change.
+# Local qwen3-coder-next on cluster41's R9700 (k8s/prod/ollama), called
+# straight at the in-cluster Ollama Service. The chart-generated
+# default-model-config (Claude via Aperture) stays as is: the UI wizard hands
+# it out, and switching an agent back is a one-line modelConfig change.
 #
-# Path: kagent -> aperture.kagent.svc (tailscale.yaml) -> Aperture's
-# "ollama" provider -> https://ollama.king-gila.ts.net (tailscale Ingress)
-# -> Ollama. Aperture (tag:ai) needs the tag:ai -> tag:k8s:443 grant in
-# terraform/tailscale/acl.tf to reach that Ingress; without it Aperture
-# answers 502 after a 10s connect timeout.
+# Not through Aperture any more. That path was kagent -> Aperture ->
+# https://ollama.king-gila.ts.net (tailscale Ingress) -> Ollama, and it lost
+# two homelab-agent turns in two sessions while Ollama itself was fine:
+# 01a15ef1 had a stream cut at exactly 3m0s that kagent never saw end, and
+# 01a1643c sent a request (2026-10-22 15:45:59) that neither Aperture's
+# captures nor Ollama's log ever recorded. Which hop drops them is unknown.
+# The cost: qwen usage no longer shows in Aperture. MCP tools still go
+# through Aperture (mcp.yaml); only model calls skip it.
 #
-# OpenAI provider because Aperture exposes this model on
-# /v1/chat/completions only (openai_chat). Unlike the Anthropic client,
-# the OpenAI client wants /v1 in baseUrl. Aperture authenticates by tailnet
-# identity and ignores the key, but the client insists on one, so this
-# reuses the chart's placeholder Secret (its key name is ANTHROPIC_API_KEY;
-# the value is a dummy either way).
+# OpenAI provider on Ollama's OpenAI-compatible /v1/chat/completions; the
+# OpenAI client wants /v1 in baseUrl. Ollama ignores the key, but the client
+# insists on one, so this reuses the chart's placeholder Secret (its key
+# name is ANTHROPIC_API_KEY; the value is a dummy either way).
 #
 # Model is the :agent tag, which carries use_mmap=false, num_ctx=131072
 # and num_batch=4096. The bare tag would load with mmap and time out.
@@ -40,12 +40,10 @@ spec:
   apiKeySecret: aperture-model-key  # pragma: allowlist secret
   apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
   openAI:
-    baseUrl: "http://aperture.kagent.svc.cluster.local/v1"
-    # Caps one reply at ~2.3 min at qwen's ~60 tok/s, under the 3m0s at
-    # which something on the Aperture path cuts a stream (Ollama logged
-    # "200 | 3m0s" for the cut reply). Session 01a15ef1 ran a 10.5k-token
-    # runaway into that cut; kagent never saw the stream end and failed the
-    # turn at its 30m default timeout. Ollama's num_predict 16384
+    baseUrl: "http://ollama.ollama.svc.cluster.local:11434/v1"
+    # Caps one reply at ~2.3 min at qwen's ~60 tok/s. Session 01a15ef1 ran a
+    # 10.5k-token runaway into the old Aperture path's 3m0s cut; kagent never
+    # saw the stream end and failed the turn at its 30m default timeout. Ollama's num_predict 16384
     # (k8s/prod/ollama/ollama.yaml) takes ~4.5 min at this speed, so it
     # never fires first. Agent replies: p50 114, p99 2468 tokens.
     maxTokens: 8192

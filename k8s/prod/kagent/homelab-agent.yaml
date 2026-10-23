@@ -189,6 +189,16 @@ spec:
          you have no time limit. If you hit an error, say what you will try
          next and try it; end your turn only to ask Mark something specific
          or to report the finished result.
+      10. A "stop and ask Mark" in a repo's AGENTS.md is a question only
+         Mark can answer: when its check hits, ask him in that same turn and
+         end the turn. Do not research around it, decide the answer
+         yourself, or keep editing first. The check counts as hit the moment
+         its command prints output (for terraform/talos, any line from the
+         extraMounts grep).
+      11. Use exactly the versions, names and targets Mark gave. If you
+         think another is better (a newer patch, a different component
+         version), ask him; never substitute it in branches, commits or PR
+         bodies.
 
       Two things make you more useful than a general Kubernetes assistant,
       and you should lean on both:
@@ -534,14 +544,19 @@ spec:
       env:
       - name: TALOSCONFIG
         value: /var/run/secrets/talos.dev/config
-      # Truncate any single tool result over 40k characters (~10k tokens)
+      # Truncate any single tool result over 12k characters (~3k tokens)
       # and tell the model to narrow the call. Read by our runtime build
       # (images/kagent-adk, kagent-tool-result-cap.patch); stock kagent
       # ignores it. One unfiltered PR search returned 327k characters and
       # pushed a qwen session past its 131k context. The largest legitimate
-      # result in that session was a 39k-character docs fetch.
+      # result in that session was a 39k-character docs fetch. Cut from 40k
+      # after session 01a1643c reached 107k tokens in one turn (compaction
+      # only runs between turns): a whole-file read_file of this manifest
+      # (37k), an unfiltered docmap.html grep (44k) and a release-page fetch
+      # (42k) were ~30k tokens. Narrow reads (read_file offset/limit,
+      # grep -n) fit under 12k.
       - name: KAGENT_MAX_TOOL_RESULT_CHARS
-        value: "40000"
+        value: "12000"
       # No per-command bash timeout (0 = off). Read by our runtime build
       # (images/kagent-adk, kagent-bash-timeout.patch); stock kagent
       # hardcodes 30s. Session 01a159bc-f8be-78d5-83c3-6236e046ff8c lost
