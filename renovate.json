@@ -24,7 +24,6 @@
       "matchManagers": [
         "github-actions"
       ],
-      "versioning": "digest",
       "matchPackageNames": [
         "/.*/"
       ],
