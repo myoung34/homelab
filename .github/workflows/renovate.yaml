@@ -1,0 +1,23 @@
+name: Validate Renovate config
+
+# Runs renovate-config-validator on renovate.json. Renovate pauses itself
+# (no PRs, no automerge) on an invalid config and only says so in an issue:
+# #2287 sat for days after hosted Renovate started rejecting a setting it
+# used to accept. renovate@latest on purpose, to match the hosted app, so a
+# newly rejected setting fails here instead of silently stopping Renovate.
+on:
+  push:
+    paths:
+      - renovate.json
+      - .github/workflows/renovate.yaml
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # renovate needs node ^24.11.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: npx --yes --package renovate@latest -- renovate-config-validator --strict renovate.json
