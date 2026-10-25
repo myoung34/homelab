@@ -38,6 +38,11 @@ metadata:
 spec:
   schedule: "*/2 * * * *"
   concurrencyPolicy: Forbid
+  # Only start a run within 60s of its slot. Without a deadline the
+  # controller counts every missed slot and, past 100, logs
+  # TooManyMissedTimes every 2 minutes (317 of them during the cluster41
+  # outage, 2026-10-24). Doesn't unblock a run stuck on a dead node.
+  startingDeadlineSeconds: 60
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
   jobTemplate:
