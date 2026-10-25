@@ -28,16 +28,17 @@ $ cd k8s/prod
 $ for i in $(find . -type d -maxdepth 1); do cd ${_maindir}/k8s/prod/${i}; kustomize build --enable-helm | k apply -f -; done
 ```
 
-To upgrade:
+To upgrade (see AGENTS.md for the full order). Nodes first, one at a time,
+on each node's schematic from locals.tf:
 
-```
-$ curl -X POST --data-binary @bare-metal.yaml https://factory.talos.dev/schematics
-{"id":"b8e8fbbe1b520989e6c52c8dc8303070cb42095997e76e812fa8892393e1d176"}
+```sh
+# Pi 4s (rpi_overlay_sha)
+$ talosctl upgrade --nodes 192.168.1.19 --image factory.talos.dev/installer/8c0ab3c46bd174822da61ad52d4f014b05dc7e7d7dd8910bd2b57b0811086d1e:v1.14.2
+# klipper, Pi 5 (rpi5_overlay_sha)
+$ talosctl upgrade --nodes 192.168.1.69 --image factory.talos.dev/installer/0f774a083686a512e4f912ade768ab366351b3d457fdbcb188c6cf7223cc5791:v1.14.2
+# cluster41, bare metal (bare_metal_sha)
+$ talosctl upgrade --nodes 192.168.1.32 --image factory.talos.dev/installer/c74594ca0d5f8b6fe7e6a73c1258da7dd48cf8278684f4d40b996a248635fb95:v1.14.2
 
-$ talosctl upgrade --nodes 192.168.1.19,192.168.1.24 --image factory.talos.dev/metal-installer/b8e8fbbe1b520989e6c52c8dc8303070cb42095997e76e812fa8892393e1d176:v1.10.6
-
-$ curl -X POST --data-binary @pi.yaml https://factory.talos.dev/schematics
-{"id":"9992b4ade979cf2fc812e6f07e264d1f240d11b0d1eb795ce78771f8647a316"}
-
-$ talosctl upgrade --nodes 192.168.1.21,192.168.1.22,192.168.1.23,192.168.1.25,192.168.1.26 --image factory.talos.dev/metal-installer/9992b4ade979cf2fc812e6f07e264d1f240d11b0d1eb795ce78771f8647a316:v1.10.6
+# then Kubernetes
+$ talosctl upgrade-k8s --nodes 192.168.1.22 --to v1.37.2
 ```
