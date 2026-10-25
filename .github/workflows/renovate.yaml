@@ -1,0 +1,24 @@
+name: Validate Renovate config
+
+# Runs renovate-config-validator on renovate.json. Renovate pauses itself
+# (no PRs, no automerge) on an invalid config and only says so in an issue:
+# #2287 sat for days after hosted Renovate started rejecting a setting it
+# used to accept. The image is pinned by digest (renovate npm ships no
+# lockfile, so npx would float transitive deps); Renovate bumps it, keeping
+# it close to the hosted app.
+on:
+  push:
+    paths:
+      - renovate.json
+      - .github/workflows/renovate.yaml
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/renovatebot/renovate:44.181.5@sha256:611eac05a6ee11c06d23157ae2ca11364f5b4a096c12d7f82a65aec2b6ec8a48
+      # image runs as uid 12021; checkout needs to write the workspace
+      options: --user root
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: renovate-config-validator --strict renovate.json
