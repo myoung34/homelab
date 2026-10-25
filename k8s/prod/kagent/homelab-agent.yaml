@@ -89,7 +89,15 @@ spec:
     # k8s_* schemas, ~6.5k of prompts (measured 2026-10-15). Back to
     # default-model-config (Claude) if sessions start running out of room.
     modelConfig: qwen3-coder-next
-    stream: true
+    # Off: with streaming, every token chunk is an A2A event, and a
+    # subscriber that falls behind blocks the agent's read of the model
+    # stream (a2a-go v0 queue holds 32 events; our patch waits up to 5m per
+    # subscriber, longer than the 240s model timeout in modelconfig-qwen).
+    # Sessions 01a1643c and 01a169aa each lost a reply the server had
+    # finished (~1k tokens of text, Aperture capture / Ollama log) and failed
+    # with "context deadline exceeded ... while reading body". Cost: the
+    # chat shows each step whole instead of token by token.
+    stream: false
     # Bounds long chats on qwen's 131k context. After a turn whose prompt
     # reached tokenThreshold, everything but the last eventRetentionSize
     # events is folded into one rolling summary (tail retention; ADK seeds
