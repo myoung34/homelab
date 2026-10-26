@@ -40,5 +40,5 @@ $ talosctl upgrade --nodes 192.168.1.69 --image factory.talos.dev/installer/0f77
 $ talosctl upgrade --nodes 192.168.1.32 --image factory.talos.dev/installer/c74594ca0d5f8b6fe7e6a73c1258da7dd48cf8278684f4d40b996a248635fb95:v1.14.2
 
 # then Kubernetes
-$ talosctl upgrade-k8s --nodes 192.168.1.22 --to v1.37.2
+$ talosctl upgrade-k8s --nodes 192.168.1.22 --to v1.37.1
 ```
