@@ -74,10 +74,10 @@ Run these in order. Each step ends on a command whose output decides it.
    ```
 
    Any hit means stop and ask Mark how to migrate that template, then wait
-   for his answer. In 1.14, `.machine.kubelet.extraMounts` can't be combined
-   with `KubeletConfig`, and the Longhorn templates and
-   `worker-with-extra-disk.yaml.tmpl` use it. Do the same for any other field
-   step 2 finds no document for.
+   for his answer. Do the same for any other field step 2 finds no document
+   for. Example: 1.14 has no replacement for `.machine.kubelet.extraMounts`,
+   so Mark chose to drop the Longhorn templates' `/var/lib/longhorn` kubelet
+   binds when moving to 1.14 (canary-tested on one node first).
 
 1. Rewrite every moved v1alpha1 field in `templates/` as its typed document.
    A deprecated field and its replacement document can't both be set. Take
@@ -129,4 +129,5 @@ Known pins:
 - `k8s/prod/kagent/homelab-agent.yaml`: the `ghcr.io/siderolabs/talosctl`
   image volume
 - `k8s/prod/workflows/etcdsnapshot.yaml`: the talosctl download URL
+- `k8s/prod/workflows/talos.yaml`: the talosctl download URL
 - `README.md` in this directory: the upgrade example

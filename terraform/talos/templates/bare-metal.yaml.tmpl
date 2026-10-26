@@ -4,7 +4,7 @@
 #
 # NVIDIA: load the modules shipped by the nvidia-open-gpu-kernel-modules
 # extension.
-# https://docs.siderolabs.com/talos/v1.13/configure-your-talos-cluster/hardware-and-drivers/nvidia-gpu-proprietary
+# https://docs.siderolabs.com/talos/v1.14/configure-your-talos-cluster/hardware-and-drivers/nvidia-gpu-proprietary
 #
 # Watchdog: on 2026-10-13 cluster41 hard-locked at 16:39 UTC (console
 # frozen, no ping, no Talos API, nothing in the kernel log) and sat dead for
@@ -19,14 +19,25 @@
 # CONFIG_SOFTLOCKUP_DETECTOR, CONFIG_HARDLOCKUP_DETECTOR and
 # CONFIG_DETECT_HUNG_TASK, and it already reboots immediately on a panic
 # (CONFIG_PANIC_TIMEOUT=-1). The hardware watchdog is the lever that works.
-machine:
-  kernel:
-    modules:
-      - name: nvidia
-      - name: nvidia_uvm
-      - name: nvidia_drm
-      - name: nvidia_modeset
-      - name: sp5100_tco
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia_uvm
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia_drm
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: nvidia_modeset
+---
+apiVersion: v1alpha1
+kind: KernelModuleConfig
+name: sp5100_tco
 ---
 apiVersion: v1alpha1
 kind: WatchdogTimerConfig

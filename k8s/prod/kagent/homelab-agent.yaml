@@ -596,7 +596,7 @@ spec:
       # version (terraform/talos/locals.tf).
       - name: talosctl
         image:
-          reference: ghcr.io/siderolabs/talosctl:v1.13.7
+          reference: ghcr.io/siderolabs/talosctl:v1.14.2
           pullPolicy: IfNotPresent
       # srt shim and settings; see the homelab-agent-srt ConfigMap below.
       - name: srt-shim

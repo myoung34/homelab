@@ -2,15 +2,11 @@
 # data path (/var/lib/longhorn) when the node registers. Required since
 # createDefaultDiskLabeledNodes is on (k8s/prod/longhorn), otherwise a fresh
 # node would get no disk.
-machine:
-  nodeLabels:
-    node.longhorn.io/create-default-disk: "true"
-  kubelet:
-    extraMounts:
-      - destination: /var/lib/longhorn
-        type: bind
-        source: /var/lib/longhorn
-        options:
-          - bind
-          - rshared
-          - rw
+#
+# No kubelet bind of /var/lib/longhorn any more: Talos 1.14 has no
+# replacement for .machine.kubelet.extraMounts, and it can't be set next to
+# the KubeletConfig document the 1.14 generator emits.
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+labels:
+  node.longhorn.io/create-default-disk: "true"
