@@ -50,8 +50,11 @@ spec:
     # never fires first. Agent replies: p50 114, p99 2468 tokens.
     #
     # 81920 while testing Mellum2.1 Thinking: its reasoning counts against
-    # this, and 81920 is the model card's example. Back to 8192 with qwen.
+    # this, and 81920 is the model card's example. Matches the tag's
+    # num_predict. Back to 8192 with qwen.
     maxTokens: 81920
-    # Fail a stuck request in 4 min instead of kagent's 30m default
-    # (go/adk/pkg/models/base.go defaultTimeout).
-    timeout: 240
+    # Fail a stuck request in 15 min instead of kagent's 30m default
+    # (go/adk/pkg/models/base.go defaultTimeout). Mellum generates ~105
+    # tok/s at 77k context and reads a full 128k prompt in ~30s, so 900s
+    # covers ~90k tokens: a full 81920-token reply fits. Back to 240 with qwen.
+    timeout: 900

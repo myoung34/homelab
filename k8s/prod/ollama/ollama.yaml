@@ -145,23 +145,41 @@ spec:
           # <think>, hermes JSON <tool_call>), which the qwen3-vl-thinking
           # renderer reproduces. That renderer prefills <think>; the
           # qwen3-thinking parser accepts output with or without its own
-          # opening tag. Sampling is JetBrains' recommended (model card).
-          # Q8_0, not the card's Q4_K_M: it's near-lossless (KLD 0.008 vs
-          # 0.075) and still fits the card with room to spare. The `mellum`
-          # arch is in llama.cpp since b9482; this image ships b11351.
+          # opening tag. The `mellum` arch is in llama.cpp since b9482; this
+          # image ships b11351.
+          #
+          # Measured 2026-10-27 (20k-token prompt tok/s reading / generating):
+          #   Q8_0   b1024  6320 / 125
+          #   Q8_0   b2048  6860 / 124   13GB, 100% GPU, loads in 23s
+          #   Q8_0   b4096  6580 / 121
+          #   Q4_K_M b2048  6200 / 140
+          # At 77k tokens: 4155 / 105. Q8_0 over the card's Q4_K_M: same
+          # speed class and near-lossless (KLD 0.008 vs 0.075).
+          #
+          # temperature 0.1, not the card's 0.6: the model mangles
+          # identifiers it has to copy into tool arguments when sampled hot.
+          # `myoung34` (tokens my/ou/ng/3/4) came back as young34 or
+          # youngoung34 in 7/12 calls at 0.6 and 1/12 at 0.1 - the same on
+          # BF16, Q4_K_M and Ollama 0.40.11 (b11845), so it's the model, not
+          # the quant or this llama.cpp. At 0.1: 20/20 tool calls, 4/4
+          # reasoning prompts right, no loops. top_k/top_p from the card.
+          #
+          # num_predict 81920 - the card's max_tokens. Reasoning counts
+          #   against it; a runaway now ends in ~13m at ~105 tok/s.
+          # num_batch 2048 - fastest prompt reading above.
           ollama pull hf.co/JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF:Q8_0
           cat > /tmp/Modelfile <<'EOF'
           FROM hf.co/JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF:Q8_0
           TEMPLATE {{ .Prompt }}
           RENDERER qwen3-vl-thinking
           PARSER qwen3-thinking
-          PARAMETER temperature 0.6
+          PARAMETER temperature 0.1
           PARAMETER top_k 20
           PARAMETER top_p 0.95
           PARAMETER use_mmap false
           PARAMETER num_ctx 131072
           PARAMETER num_batch 2048
-          PARAMETER num_predict 16384
+          PARAMETER num_predict 81920
           EOF
           ollama create mellum2.1-thinking:agent -f /tmp/Modelfile
           # One rm per model: a multi-arg rm stops at the first missing one.
