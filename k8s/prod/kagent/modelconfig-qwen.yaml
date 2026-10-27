@@ -48,7 +48,10 @@ spec:
     # saw the stream end and failed the turn at its 30m default timeout. Ollama's num_predict 16384
     # (k8s/prod/ollama/ollama.yaml) takes ~4.5 min at this speed, so it
     # never fires first. Agent replies: p50 114, p99 2468 tokens.
-    maxTokens: 8192
+    #
+    # 81920 while testing Mellum2.1 Thinking: its reasoning counts against
+    # this, and 81920 is the model card's example. Back to 8192 with qwen.
+    maxTokens: 81920
     # Fail a stuck request in 4 min instead of kagent's 30m default
     # (go/adk/pkg/models/base.go defaultTimeout).
     timeout: 240
