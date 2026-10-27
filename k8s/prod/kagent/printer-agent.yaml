@@ -37,8 +37,8 @@ spec:
       - raw.githubusercontent.com
       - codeload.github.com
   declarative:
-    # Local qwen3-coder-next (modelconfig-qwen.yaml).
-    modelConfig: qwen3-coder-next
+    # Local Qwen3.8-27B (modelconfig-qwen.yaml).
+    modelConfig: qwen
     stream: true
     promptTemplate:
       dataSources:
