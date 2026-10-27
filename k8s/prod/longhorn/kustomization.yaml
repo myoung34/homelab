@@ -52,11 +52,15 @@ helmCharts:
   valuesInline:
     longhornUI:
       replicas: 1
+    # 2, not 1: longhorn-manager puts a minAvailable: 1 PDB on each CSI
+    # sidecar Deployment, so with 1 replica no drain can evict it and
+    # `talosctl upgrade` / `kubectl drain` hang on whichever node holds it
+    # (Talos 1.14 rollout, 2026-10-25). Each pod is ~11-17Mi, no requests.
     csi:
-      resizerReplicaCount: 1
-      snapshotterReplicaCount: 1
-      provisionerReplicaCount: 1
-      attacherReplicaCount: 1
+      resizerReplicaCount: 2
+      snapshotterReplicaCount: 2
+      provisionerReplicaCount: 2
+      attacherReplicaCount: 2
     persistence:
       defaultDataLocality: "best-effort"
     defaultSettings:
