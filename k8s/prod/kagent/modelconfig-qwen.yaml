@@ -36,7 +36,9 @@ metadata:
   namespace: kagent
 spec:
   provider: OpenAI
-  model: "qwen3-coder-next:agent"
+  # Temporarily Mellum2.1 Thinking (k8s/prod/ollama/ollama.yaml); the name
+  # stays so the agents don't change. Back: "qwen3-coder-next:agent".
+  model: "mellum2.1-thinking:agent"
   apiKeySecret: aperture-model-key  # pragma: allowlist secret
   apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
   openAI:

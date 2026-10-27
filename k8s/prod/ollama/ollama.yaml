@@ -45,6 +45,10 @@ spec:
       # num_batch 2048 it fits entirely in the 32GB card. Clients should use
       # the tuned `qwen3-coder-next:agent` tag built by pull-model below.
       #
+      # For now the agents use mellum2.1-thinking:agent instead (JetBrains'
+      # Mellum2.1-12B-A2.5B-Thinking, Q8_0, 12.9GB). Both tags are built, so
+      # switching back is the preload below plus kagent's modelconfig-qwen.yaml.
+      #
       # GPU offload (AMD Radeon AI PRO R9700 32GB / gfx1201 via ROCm): requesting
       # amd.com/gpu below requires the siderolabs/amdgpu Talos extension on
       # the node plus the ROCm/k8s-device-plugin DaemonSet running in the
@@ -137,6 +141,29 @@ spec:
           PARAMETER num_predict 16384
           EOF
           ollama create qwen3-coder-next:agent -f /tmp/Modelfile
+          # Mellum2.1 Thinking. Its chat template is Qwen3-Thinking's (ChatML,
+          # <think>, hermes JSON <tool_call>), which the qwen3-vl-thinking
+          # renderer reproduces. That renderer prefills <think>; the
+          # qwen3-thinking parser accepts output with or without its own
+          # opening tag. Sampling is JetBrains' recommended (model card).
+          # Q8_0, not the card's Q4_K_M: it's near-lossless (KLD 0.008 vs
+          # 0.075) and still fits the card with room to spare. The `mellum`
+          # arch is in llama.cpp since b9482; this image ships b11351.
+          ollama pull hf.co/JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF:Q8_0
+          cat > /tmp/Modelfile <<'EOF'
+          FROM hf.co/JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF:Q8_0
+          TEMPLATE {{ .Prompt }}
+          RENDERER qwen3-vl-thinking
+          PARSER qwen3-thinking
+          PARAMETER temperature 0.6
+          PARAMETER top_k 20
+          PARAMETER top_p 0.95
+          PARAMETER use_mmap false
+          PARAMETER num_ctx 131072
+          PARAMETER num_batch 2048
+          PARAMETER num_predict 16384
+          EOF
+          ollama create mellum2.1-thinking:agent -f /tmp/Modelfile
           # One rm per model: a multi-arg rm stops at the first missing one.
           for m in qwen3:4b qwen3:8b qwen3-coder-next:latest; do
             ollama rm "$m" 2>/dev/null || true
@@ -157,7 +184,7 @@ spec:
         # Same patched image as pull-model above.
         image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433-noshift"
         imagePullPolicy: IfNotPresent
-        # Serve, then preload qwen3-coder-next:agent in the background so the
+        # Serve, then preload the agents' model in the background so the
         # ~90-220s load happens at pod start instead of on the first agent
         # request. `ollama run <model> ""` is Ollama's documented preload;
         # with KEEP_ALIVE=-1 it then stays resident. The trap forwards
@@ -171,7 +198,7 @@ spec:
           trap 'kill -TERM $pid' TERM INT
           (
             until ollama list >/dev/null 2>&1; do sleep 1; done
-            ollama run qwen3-coder-next:agent "" >/dev/null 2>&1 || true
+            ollama run mellum2.1-thinking:agent "" >/dev/null 2>&1 || true
           ) &
           wait $pid
         env:
