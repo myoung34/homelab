@@ -60,10 +60,10 @@ helmCharts:
         - secretRef:
             name: datadog
     agents:
+      # tracefs (/sys/kernel/tracing, RW for system-probe's kprobe_events)
+      # used to be added here; the chart mounts it itself since 3.261.0, and
+      # a second copy breaks ArgoCD's diff (duplicate volume/mountPath).
       volumes:
-        - hostPath:
-            path: /sys/kernel/tracing
-          name: tracefs
         # Lets the agent tail log files that apps write to their own volumes
         # instead of stdout - klippy.log, on each printer's Longhorn PVC (see
         # the ad.datadoghq.com/klipper.logs annotation in k8s/prod/klipper).
@@ -73,10 +73,6 @@ helmCharts:
             path: /var/lib/kubelet/pods
           name: kubelet-pods
       volumeMounts:
-        - mountPath: /sys/kernel/tracing
-          mountPropagation: None
-          name: tracefs
-          readOnly: false # Need RW for kprobe_events
         - mountPath: /host/var/lib/kubelet/pods
           mountPropagation: HostToContainer
           name: kubelet-pods
