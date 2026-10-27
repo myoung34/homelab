@@ -27,7 +27,7 @@ spec:
   dataLocality: best-effort
   frontend: blockdev
   numberOfReplicas: 1
-  # 100Gi: qwen3-coder-next (52GB q4_K_M) plus headroom for a re-pull.
+  # 100Gi: room for the 17GB qwen3.8 plus test pulls and a re-pull.
   size: "107374182400"
   staleReplicaTimeout: 30
 ---

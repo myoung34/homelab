@@ -1,4 +1,4 @@
-# Local qwen3-coder-next on cluster41's R9700 (k8s/prod/ollama), called
+# Local Qwen3.8-27B on cluster41's R9700 (k8s/prod/ollama), called
 # straight at the in-cluster Ollama Service. The chart-generated
 # default-model-config (Claude via Aperture) stays as is: the UI wizard hands
 # it out, and switching an agent back is a one-line modelConfig change.
@@ -17,36 +17,34 @@
 # insists on one, so this reuses the chart's placeholder Secret (its key
 # name is ANTHROPIC_API_KEY; the value is a dummy either way).
 #
-# Model is the :agent tag, which carries use_mmap=false, num_ctx=131072
-# and num_batch=4096. The bare tag would load with mmap and time out.
-# Sampling comes from the model (Qwen's recommended temperature 1.0,
-# top_p 0.95, top_k 40), so none is set here.
+# Model is the :agent tag, which carries use_mmap=false, num_ctx=131072,
+# num_batch=2048 and num_predict=32768. Sampling comes from the model
+# (Qwen's thinking-mode recommendation: temperature 1.0, top_p 0.95,
+# top_k 20), so none is set here.
 #
 # Context budget: homelab-agent's tool schemas are ~23k tokens since its
 # Aperture tools were allowlisted (homelab-agent.yaml; ~82k before, which
 # pinned sessions at the 128k limit) and its prompts ~4k, so ~100k is left
-# for the conversation. The first turn reads everything (~11s at
-# ~2500 tok/s); later turns should reuse llama-server's prompt cache, which
-# needs the patched Ollama in images/ollama (stock 0.40.3 renders tools in
-# a random order and never hits) and only one agent talking to qwen.
+# for the conversation. The first turn reads everything (~30s at
+# ~1000 tok/s); later turns reuse llama-server's prompt cache (3-7s per
+# turn measured with two agents alternating).
 apiVersion: kagent.dev/v1alpha2
 kind: ModelConfig
 metadata:
-  name: qwen3-coder-next
+  name: qwen
   namespace: kagent
 spec:
   provider: OpenAI
-  model: "qwen3-coder-next:agent"
+  model: "qwen3.8:agent"
   apiKeySecret: aperture-model-key  # pragma: allowlist secret
   apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
   openAI:
     baseUrl: "http://ollama.ollama.svc.cluster.local:11434/v1"
-    # Caps one reply at ~2.3 min at qwen's ~60 tok/s. Session 01a15ef1 ran a
-    # 10.5k-token runaway into the old Aperture path's 3m0s cut; kagent never
-    # saw the stream end and failed the turn at its 30m default timeout. Ollama's num_predict 16384
-    # (k8s/prod/ollama/ollama.yaml) takes ~4.5 min at this speed, so it
-    # never fires first. Agent replies: p50 114, p99 2468 tokens.
-    maxTokens: 8192
-    # Fail a stuck request in 4 min instead of kagent's 30m default
-    # (go/adk/pkg/models/base.go defaultTimeout).
-    timeout: 240
+    # Caps one reply, thinking included. Matches the tag's num_predict
+    # 32768; at ~38 tok/s that's ~14 min. Agent replies with coder-next
+    # were p50 114, p99 2468 tokens; a thinking model writes more.
+    maxTokens: 32768
+    # Fail a stuck request in 20 min instead of kagent's 30m default
+    # (go/adk/pkg/models/base.go defaultTimeout). Covers a full 32768-token
+    # reply (~14 min) after reading a full 128k prompt (~3 min at 765 tok/s).
+    timeout: 1200

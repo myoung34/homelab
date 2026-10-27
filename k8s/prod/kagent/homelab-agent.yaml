@@ -84,15 +84,15 @@ spec:
     Talos cluster with the k8s_* tools and ships fixes as pull requests
     against myoung34/homelab, with web, GitHub and Datadog through Aperture.
   declarative:
-    # Local qwen3-coder-next (modelconfig-qwen.yaml). Fixed cost is ~31k of
+    # Local Qwen3.8-27B (modelconfig-qwen.yaml). Fixed cost is ~31k of
     # the 131k context per request: ~21k of Aperture tool schemas, ~3k of
     # k8s_* schemas, ~6.5k of prompts (measured 2026-10-15). Back to
     # default-model-config (Claude) if sessions start running out of room.
-    modelConfig: qwen3-coder-next
+    modelConfig: qwen
     # Off: with streaming, every token chunk is an A2A event, and a
     # subscriber that falls behind blocks the agent's read of the model
     # stream (a2a-go v0 queue holds 32 events; our patch waits up to 5m per
-    # subscriber, longer than the 240s model timeout in modelconfig-qwen).
+    # subscriber, shorter than the 1200s model timeout in modelconfig-qwen).
     # Sessions 01a1643c and 01a169aa each lost a reply the server had
     # finished (~1k tokens of text, Aperture capture / Ollama log) and failed
     # with "context deadline exceeded ... while reading body". Cost: the

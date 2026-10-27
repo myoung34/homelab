@@ -40,10 +40,9 @@ spec:
         app.kubernetes.io/name: ollama
     spec:
       automountServiceAccountToken: true
-      # Serves qwen3-coder-next (80B MoE, ~3B active) for async coding
-      # agents, as unsloth's UD-IQ3_XXS GGUF (28.5GB). At 128k context and
-      # num_batch 2048 it fits entirely in the 32GB card. Clients should use
-      # the tuned `qwen3-coder-next:agent` tag built by pull-model below.
+      # Serves Qwen3.8-27B for async coding agents. At 128k context it fits
+      # entirely in the 32GB card. Clients should use the tuned
+      # `qwen3.8:agent` tag built by pull-model below.
       #
       # GPU offload (AMD Radeon AI PRO R9700 32GB / gfx1201 via ROCm): requesting
       # amd.com/gpu below requires the siderolabs/amdgpu Talos extension on
@@ -81,39 +80,50 @@ spec:
         # this to a supported target to force recognition:
         # - name: HSA_OVERRIDE_GFX_VERSION
         #   value: "11.0.0"
-        # Builds qwen3-coder-next:agent from unsloth's UD-IQ3_XXS GGUF. The
-        # TEMPLATE/RENDERER/PARSER and sampling (Qwen's temperature 1.0,
-        # top_p 0.95, top_k 40) are copied from the library model's
-        # Modelfile; the qwen3-coder renderer is what images/ollama patches.
+        # Builds qwen3.8:agent from the library qwen3.8:27b (Qwen3.8-27B,
+        # dense, Q4_K_M with an MTP head, 16.8GB). It replaced
+        # qwen3-coder-next (80B MoE, ~3B active), which kept fumbling agent
+        # turns: in session 01a17af2 it searched author:renovate-bot, said
+        # no Renovate PRs were open, then rewrote three PR bodies via
+        # update_pull_request. Qwen reports SWE-bench Pro 61.7 vs 44.3.
         #
-        # Quant, measured 2026-10-14 (18k-token prompt tok/s reading /
-        # generating; HumanEval+ and MBPP+ pass@1, greedy, evalplus):
-        #   Q4_K_M (library) 48.5GB 44% CPU 1190 / 28  HE+ 88.4  MBPP+ 74.6
-        #   UD-IQ4_XS        38.4GB 27% CPU 1807 / 33  HE+ 87.8
-        #   UD-Q3_K_XL       36.3GB 24% CPU 1920 / 37  HE+ 89.0
-        #   UD-IQ3_XXS       28.5GB  0% CPU 2517 / 65  HE+ 88.4  MBPP+ 75.4
-        # (IQ3_XXS row at num_batch 2048, the others at 4096.) Every quant
-        # scored within noise of Q4_K_M and passed 20/20 tool calls, so the
-        # one that fits on the GPU wins: 2.1x prompt reading, 2.3x
-        # generation, and ~24GB of node RAM back.
+        # Measured 2026-10-27 against coder-next on mocked replays with
+        # homelab-agent's real system prompt (renovate session above, and
+        # a CrashLoopBackOff whose log says "No space left on device"):
+        #   coder-next  renovate 4/5 (1x "no Renovate PRs open")
+        #               crash    1/3 (2x still calling tools after 20
+        #                        steps, often ones it doesn't have)
+        #   qwen3.8 Q4  renovate 14/16 (1x offered to merge, never did;
+        #                        1x refused without listing them)
+        #               crash    5/5 (full PVC named, fix proposed)
+        #   qwen3.8 Q6  renovate 11/11, crash 5/5
+        # No GitHub writes from qwen3.8 in any run. Q6 (unsloth UD-Q6_K,
+        # 22GB, no MTP head) was no better on these but half the speed.
         #
-        # use_mmap false - kept from Q4_K_M, where the 51GB model didn't fit
-        #   in RAM and mmap'd loads stalled re-reading from Longhorn.
-        # num_ctx 131072 - agent sessions run long. KV is cheap on this
-        #   arch (only 12 of 48 layers are full attention): 3GB f16 at 128k.
+        # Speed, prompt tok/s reading / generating:
+        #   coder-next IQ3_XXS     2517 / 65  (20k)
+        #   qwen3.8 Q4 + MTP        965 / 42  (20k)   765 / 38 (75k)
+        #   qwen3.8 Q4, no MTP     1035 / 27
+        #   qwen3.8 Q6 / Q5         825 / 22  /  900 / 23
+        # Slower, but turns are mostly cached: two agents alternating on
+        # ~17k-token prompts re-read in 3-7s after the first turn.
+        #
+        # TEMPLATE/RENDERER/PARSER match the library model. Sampling and
+        # draft_num_predict 4 (MTP speculative decoding, 27 -> 42 tok/s;
+        # 2, 3 and 6 were within noise) are the library defaults, which are
+        # Qwen's thinking-mode recommendation: temperature 1.0, top_p 0.95,
+        # top_k 20, presence_penalty 0.
+        #
+        # use_mmap false - mmap'd loads stalled re-reading from Longhorn.
+        # num_ctx 131072 - agent sessions run long. 16 of 64 layers are
+        #   full attention, so KV is ~8.6GB f16 at 128k; 17-18GB loaded.
         #   Clients sending a different num_ctx force a reload.
-        # num_batch 2048 - sets llama-server -b/-ub. On IQ3_XXS:
-        #     1024  2218 / 65  100% GPU
-        #     2048  2517 / 65  100% GPU
-        #     4096  2304 / 59  2.3GB spilled to CPU by the bigger buffer
-        # num_predict 16384 - caps one reply. Agent replies are short (p50
-        #   114, p99 2468 tokens, 2026-10-15..20), but one degenerate reply
-        #   ran 85k+ tokens until the 30m client timeout failed the turn
-        #   (2026-10-20). 16k ends a runaway in ~6m at ~47 tok/s.
+        # num_batch 2048 - 512, 1024 and 4096 were all within 3%.
+        # num_predict 32768 - caps one reply, thinking included. Thinking
+        #   counts against the 131k context, so leave room for the prompt:
+        #   ~31k fixed cost plus a compaction threshold of 70k.
         #
-        # qwen3:4b was a GPU smoke test with no consumers; it's removed so a
-        # stray request can't evict the coder model (MAX_LOADED_MODELS=1).
-        # The old library Q4_K_M is removed too (48.5GB of the 100Gi PVC).
+        # qwen3-coder-next and its blob are removed (28GB of the 100Gi PVC).
         command:
         - /bin/sh
         - -c
@@ -122,23 +132,29 @@ spec:
           ollama serve &
           pid=$!
           until ollama list >/dev/null 2>&1; do sleep 1; done
-          ollama pull hf.co/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS
+          ollama pull qwen3.8:27b
           cat > /tmp/Modelfile <<'EOF'
-          FROM hf.co/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS
+          FROM qwen3.8:27b
           TEMPLATE {{ .Prompt }}
-          RENDERER qwen3-coder
-          PARSER qwen3-coder
+          RENDERER qwen3.8
+          PARSER qwen3.5
           PARAMETER temperature 1
-          PARAMETER top_k 40
+          PARAMETER top_k 20
           PARAMETER top_p 0.95
+          PARAMETER min_p 0
+          PARAMETER presence_penalty 0
+          PARAMETER repeat_penalty 1
+          PARAMETER draft_num_predict 4
           PARAMETER use_mmap false
           PARAMETER num_ctx 131072
           PARAMETER num_batch 2048
-          PARAMETER num_predict 16384
+          PARAMETER num_predict 32768
           EOF
-          ollama create qwen3-coder-next:agent -f /tmp/Modelfile
+          ollama create qwen3.8:agent -f /tmp/Modelfile
           # One rm per model: a multi-arg rm stops at the first missing one.
-          for m in qwen3:4b qwen3:8b qwen3-coder-next:latest; do
+          for m in qwen3:4b qwen3:8b qwen3-coder-next:latest \
+              qwen3-coder-next:agent hf.co/unsloth/Qwen3-Coder-Next-GGUF:UD-IQ3_XXS \
+              hf.co/JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF:Q8_0; do
             ollama rm "$m" 2>/dev/null || true
           done
           kill $pid
@@ -157,8 +173,8 @@ spec:
         # Same patched image as pull-model above.
         image: "ghcr.io/myoung34/homelab/ollama:0.40.3-rocm-pr18433-noshift"
         imagePullPolicy: IfNotPresent
-        # Serve, then preload qwen3-coder-next:agent in the background so the
-        # ~90-220s load happens at pod start instead of on the first agent
+        # Serve, then preload qwen3.8:agent in the background so the
+        # ~10-30s load happens at pod start instead of on the first agent
         # request. `ollama run <model> ""` is Ollama's documented preload;
         # with KEEP_ALIVE=-1 it then stays resident. The trap forwards
         # SIGTERM, since sh as PID 1 would otherwise ignore it.
@@ -171,7 +187,7 @@ spec:
           trap 'kill -TERM $pid' TERM INT
           (
             until ollama list >/dev/null 2>&1; do sleep 1; done
-            ollama run qwen3-coder-next:agent "" >/dev/null 2>&1 || true
+            ollama run qwen3.8:agent "" >/dev/null 2>&1 || true
           ) &
           wait $pid
         env:
@@ -179,7 +195,7 @@ spec:
           value: "0.0.0.0:11434"
         - name: OLLAMA_MAX_TRANSFER_STREAMS
           value: "1"
-        # Default (5m) unloads the model between requests, paying a ~90-220s
+        # Default (5m) unloads the model between requests, paying a ~10-30s
         # reload on the next one. This node's dedicated to Ollama, so keep
         # the coder model resident.
         - name: OLLAMA_KEEP_ALIVE
@@ -205,7 +221,7 @@ spec:
         # homelab-agent turns on 2026-10-19/20 and produced #2263.
         - name: OLLAMA_CONTEXT_SHIFT
           value: "false"
-        # Load-stall timeout (default 5m). A cold load reads 28.5GB off the
+        # Load-stall timeout (default 5m). A cold load reads 17GB off the
         # PVC; give a slow disk or busy node headroom rather than failing.
         - name: OLLAMA_LOAD_TIMEOUT
           value: "15m"
