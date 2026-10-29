@@ -79,7 +79,7 @@ EOH
         data = <<EOH
 logs:
   - type: file
-    path: /var/log/nomad.log
+    path: /opt/nomad-logs/nomad.log
     source: custom
     service: nomad
 
@@ -219,6 +219,18 @@ EOH
             type     = "bind"
             source   = "/var/log"
             target   = "/opt/logs"
+            readonly = false
+          },
+          {
+            type     = "bind"
+            source   = "/volume1/@appdata/nomad/log"
+            target   = "/opt/nomad-logs"
+            readonly = true
+          },
+          {
+            type     = "bind"
+            source   = "/volume1/@appdata/datadog/run"
+            target   = "/opt/datadog-agent/run"
             readonly = false
           },
           {
