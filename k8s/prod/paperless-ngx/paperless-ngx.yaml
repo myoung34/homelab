@@ -88,7 +88,7 @@ spec:
         envFrom:
         - secretRef:
             name: paperless-ngx
-        image: "ghcr.io/paperless-ngx/paperless-ngx:3.3"
+        image: "ghcr.io/paperless-ngx/paperless-ngx:3.4"
         imagePullPolicy: IfNotPresent
         resources:
           requests:
