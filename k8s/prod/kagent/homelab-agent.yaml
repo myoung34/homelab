@@ -392,6 +392,12 @@ spec:
         apiGroup: kagent.dev
         kind: RemoteMCPServer
         name: kagent-tool-server
+        # Pauses for a human approve/reject (kagent UI, or a Slack thread reply
+        # via kagent-slack-bridge). RBAC already denies deletes (readOnly in
+        # kustomization.yaml), so approving only yields Forbidden: this is the
+        # one live tool that exercises the approval path end to end.
+        requireApproval:
+        - k8s_delete_resource
         toolNames:
         - k8s_check_service_connectivity
         - k8s_patch_resource
