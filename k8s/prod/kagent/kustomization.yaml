@@ -15,6 +15,7 @@ resources:
   - printer-agent-prompt.yaml
   - printer-agent.yaml
   - general-agent.yaml
+  - router-agent.yaml
   - talos.yaml
 
 patches:
