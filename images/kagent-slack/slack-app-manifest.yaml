@@ -1,0 +1,32 @@
+# Slack app for the kagent bridge. Create it at https://api.slack.com/apps ->
+# Create New App -> From a manifest, then:
+#   - Install to the workspace; copy the Bot User OAuth Token (xoxb-).
+#   - Basic Information -> App-Level Tokens -> generate one with
+#     connections:write (xapp-).
+#   - vault kv put secret/kagent-slack SLACK_BOT_TOKEN=xoxb-... \
+#       SLACK_APP_TOKEN=xapp-... ALLOWED_USER_IDS=U...
+display_information:
+  name: kagent
+  description: Ask the homelab agents
+features:
+  app_home:
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: kagent
+    always_online: true
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - chat:write
+      - im:history
+      - reactions:write
+settings:
+  event_subscriptions:
+    bot_events:
+      - app_mention
+      - message.im
+  socket_mode_enabled: true
+  org_deploy_enabled: false
+  token_rotation_enabled: false

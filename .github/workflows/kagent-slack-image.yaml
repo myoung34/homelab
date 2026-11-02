@@ -1,0 +1,45 @@
+# Builds images/kagent-slack (the Slack bridge for kagent, bot.py) and pushes
+# ghcr.io/myoung34/homelab/kagent-slack:<VERSION>. Runs on any branch that
+# touches the image, so the tag exists before the PR that uses it is merged.
+# Bump images/kagent-slack/VERSION with every change, and the tag in
+# k8s/prod/kagent/slack-bot.yaml with it.
+#
+# Both architectures: the bot can land on an arm64 Pi or on cluster41
+# (amd64). QEMU runs the arm64 pip install; every dependency is pure Python.
+name: kagent-slack image
+
+on:
+  push:
+    paths:
+      - images/kagent-slack/**
+      - .github/workflows/kagent-slack-image.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read VERSION
+        id: v
+        run: echo "version=$(cat images/kagent-slack/VERSION)" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: images/kagent-slack
+          pull: true
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/${{ github.repository }}/kagent-slack:${{ steps.v.outputs.version }}
+          cache-from: type=gha,scope=kagent-slack
+          cache-to: type=gha,mode=max,scope=kagent-slack
