@@ -1,6 +1,7 @@
 # Slack bridge to router-agent (router-agent.yaml): @mention the bot in a
 # channel, or DM it, and it asks router-agent over A2A and replies in the
-# thread. Source and tests: images/kagent-slack.
+# thread. Source and tests: github.com/myoung34/kagent-slack-bridge;
+# Renovate bumps the image tag. Slack app: slack-app-manifest.yaml there.
 #
 # Socket Mode, so no ingress: the pod dials out to Slack. One replica - two
 # would each hold a socket and Slack would spread events across them, which
@@ -49,7 +50,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: bot
-        image: ghcr.io/myoung34/homelab/kagent-slack:0.1.0
+        image: ghcr.io/myoung34/kagent-slack-bridge:0.1.0
         env:
         - name: KAGENT_A2A_URL
           value: http://kagent-controller.kagent:8083/api/a2a/kagent/router-agent/
