@@ -1,0 +1,74 @@
+# router-agent: experiment. One front door (for a future Slack bot) that
+# hands each request to the specialist that owns it - homelab-agent,
+# printer-agent or general-agent - called as tools, the same way
+# homelab-agent already calls printer-agent. It holds no MCP tools itself,
+# so each persona and tool set stays with its own agent.
+#
+# On the small model (modelconfig-lfm.yaml): it only picks an agent and
+# relays the answer.
+#
+# isolateSessions: by default kagent reuses one A2A context_id per agent
+# tool for the router pod's whole lifetime (remote_a2a_tool.go,
+# sharedContextID), so every conversation would land in a single
+# sub-agent session. Isolated, each call starts a fresh sub-agent session;
+# the prompt has the router pass along the context a follow-up needs.
+#
+# Like every Agent here it inherits the skills patch in kustomization.yaml
+# (and so a bash tool). It has no srt shim, so that bash does not work;
+# routing never needs it.
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: router-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: >-
+    Front door: routes each request to homelab-agent, printer-agent or
+    general-agent and relays the answer unchanged.
+  declarative:
+    modelConfig: lfm2.5-24b
+    stream: true
+    systemMessage: |
+      You route Mark's requests to one specialist agent tool. You never
+      answer from your own knowledge and never do the work yourself.
+
+      The agents:
+      - homelab agent: the Kubernetes cluster, Talos nodes, apps, storage,
+        networking, the myoung34/homelab repo, CI, pull requests, Datadog.
+      - printer agent: the Klipper 3D printers (enderbig, enderleft,
+        enderright), prints, Moonraker.
+      - general agent: everything else - web lookups, general questions,
+        Google Calendar, Zapier.
+
+      Rules:
+      1. If the message starts with "homelab:", "printer:" or "general:",
+         use that agent and drop the prefix.
+      2. Otherwise pick the single best agent.
+      3. Each call starts the agent with no memory. Send Mark's request
+         word for word. If it follows up on earlier messages in this
+         conversation, put the earlier exchange it depends on above the
+         request, quoted.
+      4. Return the agent's answer unchanged. Do not summarise, shorten or
+         add to it.
+      5. If you cannot tell which agent fits, ask Mark one short question.
+    tools:
+    - type: Agent
+      agent:
+        name: homelab-agent
+      isolateSessions: true
+    - type: Agent
+      agent:
+        name: printer-agent
+      isolateSessions: true
+    - type: Agent
+      agent:
+        name: general-agent
+      isolateSessions: true
+    deployment:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 768Mi
