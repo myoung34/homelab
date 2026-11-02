@@ -1,0 +1,73 @@
+# Slack bridge to router-agent (router-agent.yaml): @mention the bot in a
+# channel, or DM it, and it asks router-agent over A2A and replies in the
+# thread. Source and tests: github.com/myoung34/kagent-slack-bridge;
+# Renovate bumps the image tag. Slack app: slack-app-manifest.yaml there.
+#
+# Socket Mode, so no ingress: the pod dials out to Slack. One replica - two
+# would each hold a socket and Slack would spread events across them, which
+# is harmless but buys nothing.
+#
+# Only Slack user IDs in ALLOWED_USER_IDS (Vault) get an answer; router-agent
+# can reach homelab-agent, which opens PRs, and general-agent, which edits
+# the calendar.
+#
+# Each Slack thread is one kagent session (id derived from the thread), so
+# it also shows in the kagent UI. When a sub-agent stops to ask something
+# (ask_user), the bot links that UI session; answering in Slack is not
+# supported yet.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kagent-slack
+  namespace: kagent
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kagent-slack
+  namespace: kagent
+  annotations:
+    secret.reloader.stakater.com/reload: kagent-slack
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kagent-slack
+  template:
+    metadata:
+      labels:
+        app: kagent-slack
+    spec:
+      serviceAccountName: kagent-slack
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: bot
+        image: ghcr.io/myoung34/kagent-slack-bridge:0.1.0
+        env:
+        - name: KAGENT_A2A_URL
+          value: http://kagent-controller.kagent:8083/api/a2a/kagent/router-agent/
+        - name: KAGENT_UI_CHAT_URL
+          value: https://kagent.king-gila.ts.net/agents/kagent/router-agent/chat
+        # SLACK_BOT_TOKEN, SLACK_APP_TOKEN, ALLOWED_USER_IDS
+        envFrom:
+        - secretRef:
+            name: kagent-slack
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 128Mi

@@ -55,3 +55,32 @@ spec:
   kubernetes:
     role: agent-memory
     serviceAccount: agent-memory
+---
+# Slack tokens for the kagent-slack bridge (slack-bot.yaml): SLACK_BOT_TOKEN
+# (xoxb-), SLACK_APP_TOKEN (xapp-, connections:write) and ALLOWED_USER_IDS
+# (comma-separated Slack member IDs). Own ServiceAccount and role, so nothing
+# else in kagent can read it.
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: kagent-slack
+spec:
+  vaultAuthRef: kagent-slack
+  mount: secret/
+  type: kv-v2
+  path: kagent-slack
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: kagent-slack
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: kagent-slack
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: kagent-slack
+    serviceAccount: kagent-slack

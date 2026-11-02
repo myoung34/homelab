@@ -16,6 +16,7 @@ resources:
   - printer-agent.yaml
   - general-agent.yaml
   - router-agent.yaml
+  - slack-bot.yaml
   - talos.yaml
 
 patches:
