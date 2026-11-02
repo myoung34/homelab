@@ -44,7 +44,7 @@ data:
 
     Networking is a UniFi UDM Pro, a 24-port PoE switch and Flex Minis, all
     managed from `terraform/unifi`. Other terraform roots: `talos` (nodes),
-    `tailscale` (ACLs), `cloudflare` (DNS), `fastly`, `coder`.
+    `tailscale` (ACLs), `cloudflare` (DNS), `fastly`.
 
     ## The apps, grouped by what they are for
 
