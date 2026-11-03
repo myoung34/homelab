@@ -27,7 +27,7 @@
 # .github/workflows/ollama-image.yaml. Until then Renovate can't bump
 # qwen's Ollama: bump OLLAMA_VERSION here, check the patches still apply,
 # and update the tag in ollama.yaml by hand.
-ARG OLLAMA_VERSION=0.40.3
+ARG OLLAMA_VERSION=0.40.14
 ARG BASE=ollama/ollama:${OLLAMA_VERSION}-rocm
 
 FROM golang:1.27-bookworm AS build
