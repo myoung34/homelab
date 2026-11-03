@@ -16,7 +16,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/renovatebot/renovate:44.205.0@sha256:f6893d3af853d0dc239358d311797599e34896daec604c1ee70e3e2c2af8e07c
+      image: ghcr.io/renovatebot/renovate:44.206.3@sha256:083de4a4d079cdafc89d2a8781890fa30aef0f1bdb15fc3284638f9e01443af0
       # image runs as uid 12021; checkout needs to write the workspace
       options: --user root
     steps:
