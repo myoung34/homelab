@@ -9,8 +9,8 @@
 #
 # #414 bounds how long the broker waits on one subscriber (5m) and isolates
 # stalled subscribers from registration. a2a-go-pr414.patch is #414's diff,
-# unmodified, applied to a2a-go v2.5.0 (the version kagent-pr2791.patch
-# moves kagent to; stock kagent 0.10.3 pins v2.3.1).
+# unmodified, applied to a2a-go v2.5.0 (the version kagent 0.10.5 pins;
+# stock kagent 0.10.3 pinned v2.3.1).
 #
 # But kagent 0.10.3 links two a2a-go modules, and its A2A server (a2asrv,
 # taskexec, eventqueue) runs on the old one, github.com/a2aproject/a2a-go
@@ -28,8 +28,10 @@
 # kagent-pr2791.patch is kagent-dev/kagent#2791 (open backport to
 # release/v0.10.x of #2790, merged on main): the Go runtime honours
 # spec.declarative.context.compaction, which stock 0.10.3 ignores. Agent code
-# plus go.mod/go.sum only (google.golang.org/adk/v2 2.1.0 -> 2.3.0, which
-# carries session/compaction, and a2a-go/v2 2.3.1 -> 2.5.0). The 0.10.3
+# only: #2791 also bumped google.golang.org/adk/v2 2.1.0 -> 2.3.0 (which
+# carries session/compaction) and a2a-go/v2 2.3.1 -> 2.5.0, but kagent 0.10.5
+# (kagent-dev/kagent#3522) ships both, so the go.mod/go.sum hunks are
+# dropped here; they no longer apply. The 0.10.3
 # controller already writes the compaction settings into the agent config;
 # it just labels them "ignored" in the UnsupportedFeatures condition.
 #
@@ -81,8 +83,8 @@
 # k8s/prod/kagent/kustomization.yaml and
 # remove images/kagent-adk plus .github/workflows/kagent-adk-image.yaml.
 # Until then a kagent bump needs KAGENT_VERSION and A2A_VERSION updated
-# here (A2A_VERSION = the a2a-go/v2 version in kagent's go/go.mod, after
-# kagent-pr2791.patch; A2A_V0_VERSION = the github.com/a2aproject/a2a-go
+# here (A2A_VERSION = the a2a-go/v2 version in kagent's go/go.mod;
+# A2A_V0_VERSION = the github.com/a2aproject/a2a-go
 # version there), the patches re-checked, and the tag in
 # kustomization.yaml updated by hand. Drop kagent-pr2791.patch once the
 # kagent release includes #2790/#2791.
