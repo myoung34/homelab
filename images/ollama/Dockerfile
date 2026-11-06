@@ -24,9 +24,10 @@
 # DELETE THIS once an Ollama release includes #18433 and a server-wide way
 # to turn context shift off: point ollama.yaml back at the official
 # ollama/ollama:<version>-rocm image and remove images/ollama plus
-# .github/workflows/ollama-image.yaml. Until then Renovate can't bump
-# qwen's Ollama: bump OLLAMA_VERSION here, check the patches still apply,
-# and update the tag in ollama.yaml by hand.
+# .github/workflows/ollama-image.yaml, plus the ollama customManagers and
+# packageRules in renovate.json. Until then Renovate bumps OLLAMA_VERSION
+# and the tag in ollama.yaml together; if a patch stops applying, the
+# ollama-image build fails and the PR stays open.
 ARG OLLAMA_VERSION=0.40.14
 ARG BASE=ollama/ollama:${OLLAMA_VERSION}-rocm
 
