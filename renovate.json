@@ -88,9 +88,47 @@
         "kagent-crds"
       ],
       "enabled": false
+    },
+    {
+      "description": "Our patched Ollama image (images/ollama) only has the tags we build; the customManagers below bump it from ollama/ollama instead",
+      "matchPackageNames": [
+        "ghcr.io/myoung34/homelab/ollama"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "An ollama/ollama bump also bumps the patched qwen image, whose tag only exists once ollama-image builds it. That check isn't required, so Renovate merges itself after all checks pass, not GitHub after the required ones",
+      "matchPackageNames": [
+        "ollama/ollama"
+      ],
+      "platformAutomerge": false
     }
   ],
   "customManagers": [
+    {
+      "description": "Ollama version the patched qwen image (images/ollama) is built from",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/images/ollama/Dockerfile$/"
+      ],
+      "matchStrings": [
+        "ARG OLLAMA_VERSION=(?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "ollama/ollama",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Patched qwen image tag; bumped with OLLAMA_VERSION so both land in one PR",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/k8s/prod/ollama/ollama\\.yaml$/"
+      ],
+      "matchStrings": [
+        "ghcr\\.io/myoung34/homelab/ollama:(?<currentValue>[0-9.]+)-rocm-pr18433-noshift"
+      ],
+      "depNameTemplate": "ollama/ollama",
+      "datasourceTemplate": "docker"
+    },
     {
       "description": "Agent skill repos pinned by git tag in spec.skills.gitRefs",
       "customType": "regex",
