@@ -35,12 +35,19 @@ See "Keep every behaviour".
    `talosctl upgrade --image <schematic>:<version>` on every node. An older
    node rejects config documents it doesn't know (see the comment in
    `worker.tf`), so `terraform apply` has to wait.
+
+   On cluster41 the drain always fails, because Longhorn's instance-manager
+   PDB guards the only replicas of the ollama volumes. talosctl 1.14+ then
+   skips the reboot and leaves the node cordoned on the old version. Once
+   only DaemonSet pods and that instance-manager are left on the node
+   (`kubectl get pods -A --field-selector spec.nodeName=cluster41`), re-run
+   the same upgrade with `--drain=false`.
 1. Upgrade Kubernetes with `talosctl upgrade-k8s --to <version>`. Take the
    version from the "Component Updates" section of that Talos release's notes
    and state the mapping in the PR.
 1. In one PR, bump `talos_version` and `kubernetes_version` in `locals.tf`,
-   migrate the templates, and update the pins listed below. Apply it after
-   merge.
+   migrate the templates, and update the pins listed below. Apply it as in
+   "Apply without state".
 
 Every apply regenerates the whole config from the new contract, so the
 target is what the new version generates, not what a node runs today:
@@ -106,6 +113,40 @@ Run these in order. Each step ends on a command whose output decides it.
    conflicting fields, so a `FAIL` means step 2 is wrong. Fix it and run
    again. The PR is ready only when this run passes and the "Validate Talos
    config" check on the PR is green.
+
+## Apply without state
+
+This root keeps no Terraform state. Talos already holds each node's real
+config, and a local `terraform.tfstate` only went stale (it once tracked 1 of
+10 nodes). So every plan lists every node as "will be created", and every
+apply pushes each node's full config with `apply-config --mode auto`, which
+reboots a node if the change needs it. Read the change from the nodes, not
+the plan:
+
+```sh
+cd terraform/talos
+s=$(mktemp -d)   # throwaway state and plan; holds machine secrets
+terraform plan -state="$s/tfstate" -out="$s/plan"
+terraform show -json "$s/plan" | python3 -c '
+import json, pathlib, sys
+for rc in json.load(sys.stdin)["resource_changes"]:
+    if rc["type"] == "talos_machine_configuration_apply":
+        mc = rc["change"]["after"]["machine_configuration"]
+        pathlib.Path(sys.argv[1], rc["index"] + ".yaml").write_text(mc)
+' "$s"
+for f in "$s"/*.yaml; do
+  talosctl -n "$(basename "$f" .yaml)" apply-config --dry-run --mode auto -f "$f"
+done
+```
+
+Run the dry runs with a talosctl matching the nodes' Talos version. Each must
+say "without a reboot" and show only the diff you meant to make. Then apply
+that exact plan and delete the directory:
+
+```sh
+terraform apply -state="$s/tfstate" "$s/plan"
+rm -rf "$s"
+```
 
 ## Keep every behaviour
 
