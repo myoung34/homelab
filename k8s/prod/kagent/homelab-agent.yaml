@@ -103,7 +103,7 @@ spec:
     # events is folded into one rolling summary (tail retention; ADK seeds
     # each summary with the previous one, so it never grows). The summary is
     # written by this agent's own model with ADK's default prompt. Needs our
-    # runtime build (images/kagent-adk, kagent-pr2791.patch); stock 0.10.3
+    # runtime build (images/kagent-adk, kagent-pr2791.patch); stock 0.10.6
     # ignores this block, and the Agent's UnsupportedFeatures condition still
     # says so - with our image that message is out of date.
     #
@@ -636,7 +636,7 @@ spec:
 # bwrap's fresh /proc mount fails in a container ("Can't mount proc on
 # /proc") because the runtime masks paths under the container's /proc and
 # the kernel refuses a new procfs over masked ones. procMount: Unmasked would
-# fix that but needs hostUsers: false, which kagent 0.10.3 cannot set.
+# fix that but needs hostUsers: false, which kagent 0.10.6 cannot set.
 # enableWeakerNestedSandbox makes srt skip that mount; the sandbox then sees
 # the container's own /proc (same uid 1001 processes).
 #
