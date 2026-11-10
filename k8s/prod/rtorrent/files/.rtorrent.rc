@@ -1,0 +1,36 @@
+# Copied over /data/rtorrent/.rtorrent.rc on every pod start, so this file
+# is the whole user config. It starts from the image's /tpls/.rtorrent.rc
+# (crazymax/rtorrent-rutorrent 5.3.18-0.16.25); check that file for upstream
+# changes when Renovate bumps the image.
+
+throttle.min_peers.normal.set = 1
+throttle.max_peers.normal.set = 100
+throttle.min_peers.seed.set = 1
+throttle.max_peers.seed.set = 50
+throttle.max_uploads.set = 15
+throttle.global_down.max_rate.set_kb = 0
+throttle.global_up.max_rate.set_kb = 0
+dht.mode.set = auto
+protocol.pex.set = yes
+pieces.hash.on_completion.set = yes
+protocol.encryption.set = allow_incoming,try_outgoing,enable_retry
+system.umask.set = 0022
+
+directory.watch.added = (cat,(cfg.watch)), load.start
+schedule = untied_directory, 5, 5, (cat,"stop_untied=",(cfg.watch),"*.torrent")
+schedule = monitor_diskspace, 15, 60, ((close_low_diskspace,1000M))
+
+# The tunnel only carries IPv4. Without this, announces to dual-stack
+# trackers try AAAA first and time out.
+network.block.ipv6.set = yes
+
+# Download onto the NAS share at the same path radarr mounts it, so radarr
+# needs no remote path mapping and imports are hardlinks. The image's own
+# /downloads/{temp,complete} stay unused.
+directory.default.set = /media/torrents/temp/
+
+# Finished torrents move to complete/<label>; radarr sets the label
+# (d.custom1) to its category. Same mount, so this is a rename, not a copy.
+method.insert = d.get_finished_dir, simple, "cat=/media/torrents/complete/,$d.custom1="
+method.insert = d.move_to_complete, simple, "d.directory.set=$argument.1=; execute=mkdir,-p,$argument.1=; execute=mv,-u,$argument.0=,$argument.1=; d.save_full_session="
+method.set_key = event.download.finished,move_complete,"d.move_to_complete=$d.data_path=,$d.get_finished_dir="

@@ -1,0 +1,9 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: rtorrent
+  labels:
+    name: rtorrent
+    # gluetun needs NET_ADMIN to bring up wireguard and its kill-switch
+    pod-security.kubernetes.io/enforce: privileged

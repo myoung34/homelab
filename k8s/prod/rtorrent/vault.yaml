@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: rtorrent
+spec:
+  vaultAuthRef: rtorrent
+  mount: secret/
+  type: kv-v2
+  path: rtorrent
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: rtorrent
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: rtorrent
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: rtorrent
+    serviceAccount: default
