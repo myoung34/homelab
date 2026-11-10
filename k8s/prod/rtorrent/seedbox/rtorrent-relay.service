@@ -1,0 +1,11 @@
+[Unit]
+Description=Relay public :47123 to rtorrent in k8s over PulsedMedia wireguard
+
+[Service]
+# 10.90.90.155 is the tunnel address PMSS assigned to the key gluetun uses.
+ExecStart=/usr/bin/python3 %h/bin/rtorrent-relay.py 47123 10.90.90.155 47123
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

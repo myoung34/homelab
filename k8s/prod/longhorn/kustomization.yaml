@@ -16,6 +16,9 @@ resources:
   - paperless.yaml
   - network-optimizer.yaml
   - ollama.yaml
+  - prowlarr.yaml
+  - radarr.yaml
+  - rtorrent.yaml
   #- klipper-enderright.yaml
   - klipper-enderleft.yaml
   - klipper-enderbig.yaml

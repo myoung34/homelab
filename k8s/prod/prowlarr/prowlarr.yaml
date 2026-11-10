@@ -19,8 +19,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    secret.reloader.stakater.com/reload: prowlarr
   labels:
     app.kubernetes.io/instance: prowlarr
     app.kubernetes.io/name: prowlarr
@@ -42,47 +40,6 @@ spec:
       automountServiceAccountToken: true
       serviceAccountName: default
       containers:
-      # Prowlarr needs no port forwarded in - it needs its *outbound* indexer
-      # traffic to leave from the seedbox. Trackers see the announce from the
-      # seedbox IP and the search from a residential IP otherwise, which some
-      # private trackers treat as account sharing. -D gives a local SOCKS5
-      # proxy; Prowlarr's global proxy setting points at it.
-      - name: seedbox-tunnel
-        image: alpine:3.24.2
-        command:
-        - sh
-        - '-c'
-        - |
-          set -eu
-          apk add --no-cache openssh-client autossh >/dev/null
-
-          install -d -m 0700 /run/ssh
-          install -m 0600 /vault/SEEDBOX_SSH_KEY /run/ssh/id_ed25519
-
-          cat > /run/ssh/known_hosts <<'EOF'
-          lt5-1-87vecchio.pulsedmedia.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkMoxFptrdr+HNzOtfNQP8GakBqEwd57uXt8fMXLpmj
-          EOF
-
-          exec autossh -M 0 -N -T \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=3 \
-            -o ExitOnForwardFailure=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile=/run/ssh/known_hosts \
-            -o IdentitiesOnly=yes \
-            -i /run/ssh/id_ed25519 \
-            -D 127.0.0.1:1080 \
-            vilpengu@lt5-1-87vecchio.pulsedmedia.com
-        resources:
-          requests:
-            cpu: 10m
-            memory: 32Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-        volumeMounts:
-        - mountPath: /vault
-          name: vault
-          readOnly: true
       - name: prowlarr
         image: lscr.io/linuxserver/prowlarr:2.6.5
         imagePullPolicy: IfNotPresent
@@ -134,7 +91,3 @@ spec:
       - name: config
         persistentVolumeClaim:
           claimName: prowlarr-config
-      - name: vault
-        secret:
-          secretName: prowlarr # pragma: allowlist secret
-          defaultMode: 0400

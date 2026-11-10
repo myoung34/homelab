@@ -1,0 +1,227 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: rtorrent
+    app.kubernetes.io/name: rtorrent
+  name: rtorrent
+spec:
+  ports:
+  # radarr's download client
+  - name: xmlrpc
+    port: 8000
+    protocol: TCP
+    targetPort: xmlrpc
+  # ruTorrent, on the tailnet via tailscale.yaml
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: http
+  # gluetun's HTTP proxy, so prowlarr's indexer traffic exits from the seedbox
+  - name: proxy
+    port: 8888
+    protocol: TCP
+    targetPort: proxy
+  selector:
+    app.kubernetes.io/instance: rtorrent
+    app.kubernetes.io/name: rtorrent
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    secret.reloader.stakater.com/reload: rtorrent
+  labels:
+    app.kubernetes.io/instance: rtorrent
+    app.kubernetes.io/name: rtorrent
+  name: rtorrent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: rtorrent
+      app.kubernetes.io/name: rtorrent
+  # One wireguard key, one tunnel address. Two pods holding the same key at
+  # once would steal the peer from each other, so never overlap.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: rtorrent
+        app.kubernetes.io/name: rtorrent
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: default
+      initContainers:
+      # The image chowns/chmods /passwd and .rtorrent.rc at startup and treats
+      # a failure as fatal, so read-only secret/configMap mounts can't sit
+      # there. Copy them into writable volumes on every start instead; git
+      # stays the source of truth because the copy is overwritten each time.
+      - name: seed-config
+        image: crazymax/rtorrent-rutorrent:5.3.18-0.16.25
+        command:
+        - sh
+        - -c
+        - |
+          set -eu
+          cp /secret/rpc.htpasswd /secret/rutorrent.htpasswd /secret/webdav.htpasswd /passwd/
+          mkdir -p /data/rtorrent
+          cp /rc/.rtorrent.rc /data/rtorrent/.rtorrent.rc
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+        volumeMounts:
+        - mountPath: /secret
+          name: htpasswd-secret
+          readOnly: true
+        - mountPath: /passwd
+          name: htpasswd
+        - mountPath: /rc
+          name: rtorrent-rc
+          readOnly: true
+        - mountPath: /data
+          name: config
+      # Native sidecar: rtorrent does not start until the startupProbe sees
+      # the tunnel pass gluetun's healthcheck, so its firewall is already
+      # dropping everything that is not wireguard before rtorrent's first
+      # packet. If the tunnel drops later, traffic is blocked, not leaked.
+      - name: gluetun
+        image: qmcgaw/gluetun:v3.41.3
+        restartPolicy: Always
+        envFrom:
+        - secretRef:
+            name: rtorrent  # WIREGUARD_PRIVATE_KEY, HTTPPROXY_USER, HTTPPROXY_PASSWORD
+        env:
+        # PulsedMedia's per-user wireguard, from ~/wireguard.txt on the seedbox.
+        # Egress NATs out of the seedbox IP; there is no inbound forwarding.
+        - name: VPN_SERVICE_PROVIDER
+          value: custom
+        - name: VPN_TYPE
+          value: wireguard
+        - name: VPN_ENDPOINT_IP
+          value: 185.148.1.87
+        - name: VPN_ENDPOINT_PORT
+          value: "51820"
+        - name: WIREGUARD_PUBLIC_KEY
+          value: 1YCff79vTkrOW3UyfQIp5wu8prqPeLmGd4CnM+B2HlM=
+        - name: WIREGUARD_ADDRESSES
+          value: 10.90.90.155/32
+        # wireguard.txt says 1420, but flannel's pod MTU is 1450 and wireguard
+        # over IPv4 adds 60 bytes. 1420 fragments every full packet.
+        - name: WIREGUARD_MTU
+          value: "1390"
+        # Peers reach rtorrent through a TCP relay on the seedbox's public
+        # :47123 (see README), which dials this tunnel address.
+        - name: FIREWALL_VPN_INPUT_PORTS
+          value: "47123"
+        # Lets pods (radarr, prowlarr, the tailscale ingress) reach this pod
+        # and get replies routed back over eth0 instead of into the tunnel.
+        # gluetun accepts every port from these subnets, so anything listening
+        # is cluster-reachable: XMLRPC, ruTorrent and WebDAV all sit behind
+        # htpasswd, and the proxy behind HTTPPROXY_USER/HTTPPROXY_PASSWORD.
+        - name: FIREWALL_OUTBOUND_SUBNETS
+          value: "10.244.0.0/16"
+        - name: HTTPPROXY
+          value: "on"
+        # Unauthenticated, and PUT /v1/vpn/status can stop the tunnel, so keep
+        # it off the pod IP. (The image's XMLRPC nginx owns :8000/:8001.)
+        - name: HTTP_CONTROL_SERVER_ADDRESS
+          value: "127.0.0.1:8010"
+        - name: TZ
+          value: "America/Chicago"
+        ports:
+        - containerPort: 8888
+          name: proxy
+          protocol: TCP
+        startupProbe:
+          exec:
+            command: ["/gluetun-entrypoint", "healthcheck"]
+          failureThreshold: 30
+          periodSeconds: 5
+          timeoutSeconds: 5
+        livenessProbe:
+          exec:
+            command: ["/gluetun-entrypoint", "healthcheck"]
+          failureThreshold: 10
+          periodSeconds: 30
+          timeoutSeconds: 10
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+      containers:
+      - name: rtorrent
+        image: crazymax/rtorrent-rutorrent:5.3.18-0.16.25
+        imagePullPolicy: IfNotPresent
+        env:
+        # Matches myoung:users. The share squashes every write to admin:users
+        # anyway, so this only matters if that squash is ever turned off.
+        - name: PUID
+          value: "1026"
+        - name: PGID
+          value: "100"
+        - name: RT_INC_PORT
+          value: "47123"
+        # What trackers are told to hand out: the seedbox relay, not us.
+        - name: WAN_IP
+          value: 185.148.1.87
+        - name: TZ
+          value: "America/Chicago"
+        ports:
+        - containerPort: 8000
+          name: xmlrpc
+          protocol: TCP
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command: ["/usr/local/bin/healthcheck"]
+          failureThreshold: 3
+          periodSeconds: 30
+          timeoutSeconds: 20
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        volumeMounts:
+        - mountPath: /data
+          name: config
+        - mountPath: /media
+          name: media
+        - mountPath: /passwd
+          name: htpasswd
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: rtorrent-config
+      - name: rtorrent-rc
+        configMap:
+          name: rtorrent
+      # Same export, same mount path as radarr. torrents/ and movies/ have to
+      # share one mount for radarr's import to be a hardlink.
+      - name: media
+        nfs:
+          server: 192.168.3.2
+          path: /volume1/Media
+      - name: htpasswd
+        emptyDir: {}
+      # XMLRPC can run arbitrary commands as rtorrent, and flannel enforces no
+      # NetworkPolicy, so every endpoint sits behind the same basic auth.
+      - name: htpasswd-secret
+        secret:
+          secretName: rtorrent # pragma: allowlist secret
+          defaultMode: 0444
+          items:
+          - key: HTPASSWD
+            path: rpc.htpasswd
+          - key: HTPASSWD
+            path: rutorrent.htpasswd
+          - key: HTPASSWD
+            path: webdav.htpasswd

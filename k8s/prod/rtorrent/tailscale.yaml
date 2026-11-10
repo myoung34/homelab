@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rtorrent
+  namespace: rtorrent
+spec:
+  defaultBackend:
+    service:
+      name: rtorrent
+      port:
+        number: 8080
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - rtorrent

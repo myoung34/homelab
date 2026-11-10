@@ -1,9 +1,24 @@
 Prowlarr
 ========
 
-Indexer manager for the -arr stack. Setup, tunnel rationale, and the Vault /
-NFS prerequisites are documented in one place: `k8s/prod/radarr/README.md`.
+Indexer manager for the -arr stack. The design is documented in
+`k8s/prod/rtorrent/README.md`.
 
-The short version: the `seedbox-tunnel` sidecar runs `autossh -D 127.0.0.1:1080`
-to the seedbox, and Prowlarr's global proxy (Settings → General → Proxy) points
-at it, so indexer searches leave from the seedbox IP rather than from home.
+Indexer searches must leave from the seedbox IP, the same IP rtorrent
+announces from. Private trackers that see searches from home and announces
+from the seedbox can treat it as account sharing.
+
+## Prowlarr UI
+
+- **Settings → General → Proxy**: enabled, type `HTTP(S)`, host
+  `rtorrent.rtorrent.svc.cluster.local`, port `8888`, username and password
+  from `HTTPPROXY_USER` / `HTTPPROXY_PASSWORD` in `secret/rtorrent`. Leave
+  `Bypass Proxy for Local Addresses` on so Prowlarr still reaches Radarr
+  directly.
+- **Settings → Apps → + → Radarr**: Prowlarr server
+  `http://prowlarr.prowlarr.svc.cluster.local:9696`, Radarr server
+  `http://radarr.radarr.svc.cluster.local:7878`, plus Radarr's API key from
+  Radarr's Settings → General.
+- Re-add the indexers from the seedbox Prowlarr; its config is not migrated.
+  Once they are in, stop the seedbox copy:
+  `ssh seedbox tmux kill-session -t prowlarr`.

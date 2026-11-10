@@ -9,4 +9,3 @@ resources:
   - etcdsnapshot.yaml
   - psql-hass.yaml
   - psql-paperless.yaml
-  - seedbox-sync.yaml
