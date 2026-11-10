@@ -15,6 +15,15 @@
       "automerge": true
     },
     {
+      "description": "Let a minor/patch release soak before automerge so a pulled release never reaches ArgoCD. Digests carry no release timestamp, so a missing one doesn't block",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
       "matchDepTypes": [
         "devDependencies"
       ],
@@ -46,7 +55,6 @@
       "matchFileNames": [
         "k8s/prod/datadog/**"
       ],
-      "automerge": true,
       "matchUpdateTypes": [
         "patch"
       ],
@@ -111,6 +119,35 @@
         "ollama/ollama"
       ],
       "platformAutomerge": false
+    },
+    {
+      "description": "Nomad jobs deploy by hand with `nomad job run`, not on merge, so a bump waits for whoever runs it",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "nomad/**"
+      ],
+      "automerge": false
+    },
+    {
+      "description": "silo tags are RELEASE.<date>T<time>Z, which docker versioning can't order",
+      "matchPackageNames": [
+        "pgsty/silo"
+      ],
+      "versioning": "regex:^RELEASE\\.(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})T(?<build>\\d{2})-\\d{2}-\\d{2}Z$"
+    },
+    {
+      "description": "Talos and Kubernetes pins change only after the nodes are upgraded (terraform/talos/AGENTS.md), so they land together in one reviewed PR",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "siderolabs/talos",
+        "kubernetes/kubernetes"
+      ],
+      "groupName": "talos",
+      "automerge": false
     }
   ],
   "customManagers": [
@@ -148,14 +185,57 @@
         "url: https://github\\.com/(?<depName>[^\\s/]+/[^\\s/]+)\\s+ref: (?<currentValue>v\\S+)"
       ],
       "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "Nomad job images; Renovate has no Nomad manager",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^nomad/.+\\.hcl$/"
+      ],
+      "matchStrings": [
+        "image\\s*=\\s*\"(?<depName>[^\\s\":@]+):(?<currentValue>[^\\s\"@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Talos version and the pins that follow it (terraform/talos/AGENTS.md, 'Pins that follow talos_version')",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^terraform/talos/(locals\\.tf|README\\.md)$/",
+        "/^k8s/prod/kagent/homelab-agent\\.yaml$/",
+        "/^k8s/prod/workflows/(etcdsnapshot|talos)\\.yaml$/",
+        "/^nomad/netbootxyz\\.hcl$/"
+      ],
+      "matchStrings": [
+        "talos_version\\s*=\\s*\"(?<currentValue>v[^\"]+)\"",
+        "ghcr\\.io/siderolabs/talosctl:(?<currentValue>v[^\\s\"]+)",
+        "siderolabs/talos/releases/download/(?<currentValue>v[^/]+)/",
+        "factory\\.talos\\.dev/(?:installer/[0-9a-f]+:|image/[0-9a-f]+/)(?<currentValue>v[0-9][^/\\s]*)"
+      ],
+      "depNameTemplate": "siderolabs/talos",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Kubernetes version Talos runs",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^terraform/talos/(locals\\.tf|README\\.md)$/"
+      ],
+      "matchStrings": [
+        "kubernetes_version\\s*=\\s*\"(?<currentValue>v[^\"]+)\"",
+        "upgrade-k8s .*--to (?<currentValue>v\\S+)"
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "kubernetes": {
     "managerFilePatterns": [
       "/k8s/argo/.+\\.yaml$/",
       "/k8s/prod/.+\\.yaml$/"
-    ],
-    "automerge": true
+    ]
   },
-  "platformAutomerge": true
+  "pre-commit": {
+    "enabled": true
+  }
 }
