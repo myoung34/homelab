@@ -54,6 +54,14 @@ spec:
     spec:
       automountServiceAccountToken: true
       serviceAccountName: default
+      # gluetun's DNS server answers every query in this pod, and it lets
+      # *.cluster.local search-domain queries time out. With the default
+      # ndots:5, every tracker and peer hostname walks three search domains
+      # first, so each lookup took 10-12s. Nothing here needs cluster DNS.
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
       initContainers:
       # The image chowns/chmods /passwd and .rtorrent.rc at startup and treats
       # a failure as fatal, so read-only secret/configMap mounts can't sit

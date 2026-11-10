@@ -52,6 +52,11 @@ spec:
           value: "002"
         - name: TZ
           value: "America/Chicago"
+        # No login in the app: it is only reachable on the tailnet and inside
+        # the cluster. "External" means "auth is someone else's job", which
+        # also stops the first-run "Authentication Required" dialog.
+        - name: PROWLARR__AUTH__METHOD
+          value: External
         ports:
         - containerPort: 9696
           name: http

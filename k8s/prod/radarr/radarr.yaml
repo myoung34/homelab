@@ -54,6 +54,11 @@ spec:
           value: "002"
         - name: TZ
           value: "America/Chicago"
+        # No login in the app: it is only reachable on the tailnet and inside
+        # the cluster. "External" means "auth is someone else's job", which
+        # also stops the first-run "Authentication Required" dialog.
+        - name: RADARR__AUTH__METHOD
+          value: External
         ports:
         - containerPort: 7878
           name: http
