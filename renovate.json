@@ -97,6 +97,15 @@
       "enabled": false
     },
     {
+      "description": "mkuf tags are v<release>-<commits>-g<sha> (git describe), which docker versioning reads as an incompatible suffix. A bump recreates the printer pod, killing any print in progress, so it waits for review",
+      "matchPackageNames": [
+        "mkuf/klipper",
+        "mkuf/moonraker"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:-(?<build>\\d+)-g[0-9a-f]+)?$",
+      "automerge": false
+    },
+    {
       "description": "An ollama/ollama bump also bumps the patched qwen image, whose tag only exists once ollama-image builds it. That check isn't required, so Renovate merges itself after all checks pass, not GitHub after the required ones",
       "matchPackageNames": [
         "ollama/ollama"

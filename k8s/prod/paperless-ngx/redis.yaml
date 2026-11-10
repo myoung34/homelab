@@ -42,7 +42,7 @@ spec:
       - env:
         - name: PUID
           value: "1000"
-        image: "redis:8-alpine"
+        image: "redis:8.10.3-alpine"
         imagePullPolicy: IfNotPresent
         resources:
           requests:

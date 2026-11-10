@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: runner
-        image: myoung34/github-runner:latest
+        image: myoung34/github-runner:2.338.2
         env:
         - name: RUNNER_SCOPE
           value: "org"

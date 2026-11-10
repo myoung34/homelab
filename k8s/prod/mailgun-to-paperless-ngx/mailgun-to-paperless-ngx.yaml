@@ -47,7 +47,7 @@ spec:
         envFrom:
         - secretRef:
             name: mailgun-to-paperless-ngx
-        image: "ghcr.io/myoung34/mailgun-to-paperless-ngx:latest"
+        image: "ghcr.io/myoung34/mailgun-to-paperless-ngx:latest@sha256:6ee74064f4f7abd0315cf7310356c8a45d5a259c356837a0c3c03f050b8f4ccc"
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3

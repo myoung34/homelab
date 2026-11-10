@@ -12,7 +12,7 @@ spec:
         - name: talos_directory
         - name: minio_path
       script:
-        image: alpine:latest
+        image: alpine:3.24.4
         command:
         - sh
         - -c

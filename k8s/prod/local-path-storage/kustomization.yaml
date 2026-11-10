@@ -31,7 +31,7 @@ patches:
             spec:
               containers:
               - name: helper-pod
-                image: busybox
+                image: busybox:1.38
                 imagePullPolicy: IfNotPresent
           setup: |-
             #!/bin/sh

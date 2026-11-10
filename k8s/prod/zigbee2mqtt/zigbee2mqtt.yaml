@@ -54,7 +54,7 @@ spec:
         - /bin/sh
         - -c
         - cp /configs/configuration.yaml /data/;echo $SECRETS_YAML | base64 -d >/data/secrets.yaml;
-        image: alpine:latest
+        image: alpine:3.24.4
         imagePullPolicy: IfNotPresent
         env:
         - name: SECRETS_YAML

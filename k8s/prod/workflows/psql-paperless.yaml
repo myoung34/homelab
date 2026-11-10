@@ -35,7 +35,7 @@ spec:
 
               cat run.sh
               bash run.sh
-          image: alpine:latest
+          image: alpine:3.24.4
           env:
           - name: ZAPIER_WEBHOOK_URL
             valueFrom:
