@@ -92,7 +92,7 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           requests:
-            cpu: 15m
+            cpu: 250m
             memory: 1313M
         livenessProbe:
           failureThreshold: 3
@@ -114,7 +114,7 @@ spec:
             port: 8000
           timeoutSeconds: 1
         startupProbe:
-          failureThreshold: 30
+          failureThreshold: 120
           initialDelaySeconds: 120
           periodSeconds: 5
           tcpSocket:
