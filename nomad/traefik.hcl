@@ -32,7 +32,7 @@ job "traefik" {
           "--entryPoints.https.address=:443/tcp",
           "--entryPoints.traefik.address=:8888/tcp",
         ]
-        image = "traefik:v3.2"
+        image = "traefik:v3.7"
         privileged = true
       }
     }
