@@ -56,8 +56,27 @@ commands, and flannel enforces no NetworkPolicy, so it is not optional.
 Create the policy and kubernetes auth role from `vault.yaml`:
 
 ```bash
-cd k8s/prod/rtorrent && ../../../nomad/restore-vault-acl.sh
+vault policy write rtorrent - <<'EOF'
+path "secret/data/rtorrent" {
+  capabilities = ["read"]
+}
+
+path "secret/metadata/rtorrent" {
+  capabilities = ["read", "list"]
+}
+EOF
+vault write auth/kubernetes/role/rtorrent \
+  bound_service_account_names=default \
+  bound_service_account_namespaces=rtorrent \
+  policies=rtorrent \
+  token_policies=rtorrent \
+  ttl=24h
 ```
+
+This is what `nomad/restore-vault-acl.sh` writes. Don't run that script from
+inside this directory: it takes the namespace from the `vault.yaml` file's
+folder name, which comes out as `.` there. From the repo root it works, but it
+re-applies every app's roles.
 
 ### 2. Seedbox relay
 
