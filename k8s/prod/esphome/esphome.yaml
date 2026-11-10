@@ -114,7 +114,7 @@ spec:
             secretKeyRef:
               key: secrets
               name: esphome
-        image: alpine:latest
+        image: alpine:3.24.4
         imagePullPolicy: IfNotPresent
         name: copy
         volumeMounts:

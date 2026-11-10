@@ -49,7 +49,7 @@ spec:
         envFrom:
         - secretRef:
             name: http-to-mqtt
-        image: "ghcr.io/myoung34/http-to-mqtt:latest"
+        image: "ghcr.io/myoung34/http-to-mqtt:latest@sha256:10b374ba17b23ef863ddc97950407c896c5a38f5f67946c955ea92db53fc2e44"
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3

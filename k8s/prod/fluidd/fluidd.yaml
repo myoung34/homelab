@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: fluidd
-          image: ghcr.io/fluidd-core/fluidd:latest
+          image: ghcr.io/fluidd-core/fluidd:v1.37.7
           resources: {}
           ports:
             - containerPort: 80

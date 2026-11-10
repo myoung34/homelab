@@ -18,7 +18,7 @@ spec:
       - name: main
         inputs: {}
         script:
-          image: alpine:latest
+          image: alpine:3.24.4
           command:
           - sh
           - -c

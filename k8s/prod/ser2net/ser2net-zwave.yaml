@@ -53,7 +53,7 @@ spec:
     spec:
       containers:
         - name: ser2net-zwave
-          image: jippi/ser2net:latest
+          image: jippi/ser2net:4.6.8
           resources: {}
           securityContext:
             allowPrivilegeEscalation: true

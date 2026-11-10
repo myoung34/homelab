@@ -118,7 +118,7 @@ spec:
             secretKeyRef:
               key: service_account
               name: hass
-        image: alpine:latest
+        image: alpine:3.24.4
         imagePullPolicy: IfNotPresent
         name: copy
         volumeMounts:
