@@ -1,9 +1,0 @@
----
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: metallb
-  labels:
-    name: metallb
-    # speaker uses hostNetwork + NET_RAW to answer ARP for the VIPs
-    pod-security.kubernetes.io/enforce: privileged

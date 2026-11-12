@@ -43,7 +43,7 @@ spec:
       # and no GPU to spare (ollama holds both), so transcoding is CPU-only.
       # Preferred, not required: if cluster41 is down Jellyfin comes up on an
       # arm64 board instead (slow transcodes, direct play still fine). LAN
-      # clients reach it through traefik's MetalLB VIP, which doesn't care
+      # clients reach it through traefik's Cilium LB VIP, which doesn't care
       # which node this lands on.
       affinity:
         nodeAffinity:

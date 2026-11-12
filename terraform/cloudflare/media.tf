@@ -1,5 +1,5 @@
 # LAN name for Jellyfin, for devices not on Tailscale (the TV): traefik's
-# MetalLB VIP (k8s/prod/metallb/pool.yaml), so https://media.marcyoung.us.
+# Cilium LB VIP (k8s/prod/cilium/lb.yaml), so https://media.marcyoung.us.
 # Off-LAN, this resolves to a private address and goes nowhere; remote
 # viewers use https://media.king-gila.ts.net instead.
 resource "cloudflare_dns_record" "media" {

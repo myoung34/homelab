@@ -6,7 +6,8 @@ resources:
   - namespace.yaml
 
 # LAN ingress for devices that aren't on Tailscale (TVs). Serves
-# *.marcyoung.us names that resolve to the MetalLB VIP 192.168.1.50, with
+# *.marcyoung.us names that resolve to the Cilium LB VIP 192.168.1.50
+# (k8s/prod/cilium/lb.yaml, announced over L2), with
 # certs from cert-manager. The tailscale IngressClass is unchanged.
 helmCharts:
 - name: traefik
@@ -33,7 +34,7 @@ helmCharts:
               permanent: true
     service:
       annotations:
-        metallb.io/loadBalancerIPs: 192.168.1.50
+        lbipam.cilium.io/ips: 192.168.1.50
       spec:
         type: LoadBalancer
         # Keep client IPs, and ARP the VIP from the node running traefik.

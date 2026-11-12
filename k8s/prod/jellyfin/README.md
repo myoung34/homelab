@@ -6,7 +6,7 @@ at `/media`. Replaced Plex, whose off-network playback needs a paid pass.
 
 - **Public / tailnet:** `https://media.king-gila.ts.net` (Tailscale Funnel).
 - **LAN without Tailscale (TVs):** `https://media.marcyoung.us`, via traefik
-  on the MetalLB VIP `192.168.1.50` (`lan-ingress.yaml`). Not
+  on the Cilium LB VIP `192.168.1.50` (`lan-ingress.yaml`). Not
   `media.king-gila.ts.net`: off-tailnet that name goes out through Funnel
   at a few Mbit/s.
 - **Transcoding:** CPU only. Both GPUs on cluster41 are allocated to ollama.
