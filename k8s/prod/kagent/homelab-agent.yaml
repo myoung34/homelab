@@ -33,52 +33,6 @@ metadata:
   namespace: kagent
 spec:
   type: Declarative
-  # Outbound network for the bash sandbox (skills give this agent bash; see
-  # kustomization.yaml). srt denies everything not listed:
-  #   - the Talos API on the control-plane VIP, for talosctl - cluster reads
-  #     still go through the k8s_* tools. Not talos.default: gRPC resolves
-  #     names locally, which the sandbox cannot do, and apid's certificate
-  #     does not cover the ClusterIP.
-  #   - raw.githubusercontent.com, so the agent can read the exact bytes of
-  #     an existing file in a public repo. GitHub_get_file_contents cannot
-  #     (see the EmbeddedResource gotcha in mcp.yaml), which left it unable
-  #     to edit any existing file and therefore unable to open most PRs.
-  #     Read-only and unauthenticated: no token is in the sandbox, so this
-  #     reaches public content only; all writes still go through GitHub_*.
-  #   - codeload.github.com, for whole-repo tarballs. raw serves files only,
-  #     so session 01a14a23-a18a-76f2-8ede-c7c86a1ecfbc (PR #2232) spent
-  #     hours guessing paths, 404ing on directories and retrying
-  #     api.github.com, whose srt 403 it took for rate limiting. One tarball
-  #     gives it ls/grep/diff over the real tree. Public, unauthenticated.
-  #   - the rest of GitHub as wildcards (github.com, *.github.com,
-  #     *.githubusercontent.com), so a new redirect host doesn't break it;
-  #     release downloads land on release-assets.githubusercontent.com.
-  #     Session 01a14efd (Talos 1.14.2) needed the target release's
-  #     talosctl: the image volume pins the cluster's version, which can't
-  #     generate a newer release's config. No token in the sandbox, so
-  #     api.github.com is unauthenticated and rate limited; GitHub_* tools
-  #     stay the way to use the API.
-  #   - releases.hashicorp.com and registry.terraform.io, so it can fetch
-  #     terraform and run terraform/talos/validate.sh (the talos provider
-  #     itself downloads from GitHub releases).
-  #   - factory.talos.dev, *.siderolabs.com, dl.k8s.io and cdn.dl.k8s.io,
-  #     for schematic lookups, Talos docs and Kubernetes binaries.
-  # srt wildcards match subdomains only (*.github.com is not github.com),
-  # so list a base domain next to its wildcard when both are needed.
-  # Must match the homelab-agent-srt ConfigMap below, which is what srt reads.
-  sandbox:
-    network:
-      allowedDomains:
-      - 192.168.1.254
-      - github.com
-      - "*.github.com"
-      - "*.githubusercontent.com"
-      - releases.hashicorp.com
-      - registry.terraform.io
-      - factory.talos.dev
-      - "*.siderolabs.com"
-      - dl.k8s.io
-      - cdn.dl.k8s.io
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
@@ -154,13 +108,9 @@ spec:
            test -f repo/terraform/talos/AGENTS.md && echo ok
          No "ok" means the download or extract failed: delete repo/ and
          download again. Never work from a partial tree.
-         Stay in that scratch directory and use relative paths. Writes
-         anywhere else (/tmp/..., $HOME) fail with "Read-only file
-         system"; that is the sandbox, so write under the scratch
-         directory instead. `curl: (23)` is the same failure: curl could
-         not write its -o path, so the path is outside the scratch
-         directory. It is not a network problem. Never tell Mark you
-         "can't access the files".
+         Stay in that scratch directory and use relative paths:
+         read_file/write_file/edit_file reach nothing outside it. Never
+         tell Mark you "can't access the files".
       2. Never merge a pull request, and never say you are about to. ArgoCD
          deploys whatever lands on main, so a merge is a deploy and it is
          Mark's call. Your job ends at an open PR.
@@ -175,14 +125,8 @@ spec:
       5. Never say why CI failed, or that it "should pass", without reading
          the failed job's log with GitHubActions_get_job_logs. See "CI"
          below for how.
-      6. Your sandbox reaches only 192.168.1.254, GitHub (github.com and
-         its subdomains, *.githubusercontent.com), releases.hashicorp.com,
-         registry.terraform.io, factory.talos.dev, *.siderolabs.com,
-         dl.k8s.io and cdn.dl.k8s.io. Anything else (the web) fails with
-         "CONNECT tunnel failed, response 403": that is the sandbox
-         refusing it, not rate limiting. Do not retry it; use a tool
-         instead (aperture_web_fetch). For the GitHub API use GitHub_*,
-         not curl: the sandbox has no token.
+      6. bash has your pod's network, but no GitHub token: for the GitHub
+         API use GitHub_* and GitHubActions_*, not curl.
       7. If three attempts at the same goal fail, stop, even when each
          attempt used different flags or a different command. Tell Mark
          what you tried, the exact errors, and what you need. Do not
@@ -207,7 +151,7 @@ spec:
          think another is better (a newer patch, a different component
          version), ask him; never substitute it in branches, commits or PR
          bodies.
-      12. Your sandbox has no git, and you never need it. Branches, commits
+      12. Your bash has no git, and you never need it. Branches, commits
          and PRs go through GitHub_create_branch, GitHub_push_files and
          GitHub_create_pull_request (steps under "Reading and editing files
          in a repo"). Never tell Mark you can't open a PR for lack of git.
@@ -278,7 +222,7 @@ spec:
           review). No issue, release or merge tools.
         - GitHubActions_*: read-only CI. actions_list / actions_get for
           workflow runs and jobs, get_job_logs for job output. This is how
-          you see CI; your sandbox cannot reach api.github.com.
+          you see CI; bash has no GitHub token.
         - Datadog_*: logs and metrics only. Before a non-trivial query,
           call Datadog_load_datadog_skill with `datadog/logs` or
           `datadog/metrics`; the skill holds the query syntax you need.
@@ -310,18 +254,14 @@ spec:
 
       ## Your shell and talosctl
 
-      You have bash (with read_file/write_file/edit_file) in a sandbox inside
-      your own pod. Its network reaches the Talos API on the control-plane
-      VIP and the hosts in ground rule 6 (GitHub is how you read the repo;
-      see the GitHub section). Run talosctl exactly like this:
+      You have bash (with read_file/write_file/edit_file) inside your own
+      pod. GitHub is how you read the repo; see the GitHub section. Run
+      talosctl exactly like this:
 
-        unset NO_PROXY no_proxy
         /opt/talosctl/talosctl -e 192.168.1.254 -n <node-ip> <command>
 
-      The sandbox only has network through srt's proxy, and srt's default
-      NO_PROXY sends 192.168.x.x around it; `-e 192.168.1.254` avoids the
-      talos.default name in the generated talosconfig, which the sandbox cannot
-      resolve. Credentials are picked up from /var/run/secrets/talos.dev.
+      `-e 192.168.1.254` avoids the talos.default name in the generated
+      talosconfig, whose ClusterIP apid's certificate does not cover. Credentials are picked up from /var/run/secrets/talos.dev.
       Node IPs are in terraform/talos/locals.tf and `k8s_get_resources nodes`.
 
       /opt/talosctl/talosctl matches the cluster's Talos version. For a
@@ -584,8 +524,8 @@ spec:
       # warns the model about that.
       - name: KAGENT_BASH_TIMEOUT_SECONDS
         value: "0"
-      # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
-      # homelab-agent-srt ConfigMap below. The rest is the image's own PATH.
+      # /opt/srt-shim first so kagent's `srt` resolves to the passthrough in
+      # bash-shim.yaml. The rest is the image's own PATH.
       - name: PATH
         value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
       volumes:
@@ -604,10 +544,10 @@ spec:
         image:
           reference: ghcr.io/siderolabs/talosctl:v1.14.5
           pullPolicy: IfNotPresent
-      # srt shim and settings; see the homelab-agent-srt ConfigMap below.
+      # No-sandbox srt; see bash-shim.yaml.
       - name: srt-shim
         configMap:
-          name: homelab-agent-srt
+          name: agent-bash
           defaultMode: 0555
       volumeMounts:
       - name: talos-secrets
@@ -619,85 +559,3 @@ spec:
       - name: srt-shim
         mountPath: /opt/srt-shim
         readOnly: true
----
-# srt (the bash sandbox) settings for homelab-agent, plus an `srt` shim that
-# makes srt use them instead of the file kagent generates.
-#
-# How: kagent always runs `srt --settings $KAGENT_SRT_SETTINGS_PATH ...` and
-# sets that env var itself, after any of ours, so it cannot be overridden.
-# Mounting over /config/srt-settings.json with subPath does not work either:
-# /config is kagent's Secret volume, where the file is an atomic-writer
-# symlink, and runc refuses to bind-mount onto it ("not a directory"), so the
-# container never starts. Instead this ConfigMap is mounted at /opt/srt-shim,
-# which the Agent puts first on PATH; the shim drops kagent's --settings and
-# execs the real srt with this file.
-#
-# Why override: kagent's generated file only carries network/filesystem, and
-# bwrap's fresh /proc mount fails in a container ("Can't mount proc on
-# /proc") because the runtime masks paths under the container's /proc and
-# the kernel refuses a new procfs over masked ones. procMount: Unmasked would
-# fix that but needs hostUsers: false, which kagent 0.10.6 cannot set.
-# enableWeakerNestedSandbox makes srt skip that mount; the sandbox then sees
-# the container's own /proc (same uid 1001 processes).
-#
-# allowWrite is "." only - the session's scratch dir, the one place
-# read_file/write_file/edit_file can reach (kagent's skills.go). kagent's
-# default also allows /tmp, so bash could write /tmp/x that read_file then
-# refused ("outside the allowed roots"); homelab-agent lost turns to that in
-# sessions 01a14f96 and 01a15280, despite a prompt rule against it. Now the
-# write fails in bash, where the model sees it. srt still gives commands a
-# writable TMPDIR (/tmp/claude), so mktemp, large heredocs, terraform init
-# and talosctl gen config keep working (checked in the pod 2026-10-20). It also stops one session's bash writing
-# into another's /tmp/kagent/<session>.
-#
-# allowAllUnixSockets: srt's Linux seccomp filter otherwise blocks creating
-# any Unix socket, and terraform reaches every provider over one (go-plugin),
-# so validate.sh died at init with "Failed to read any lines from plugin's
-# stdout" (session 01a15a9c-085e-7b4b-b585-88ac6b9342d8; with the flag it
-# runs to per-node ok/FAIL, checked in the pod 2026-10-21). Low risk: the
-# pod mounts no host sockets, and abstract sockets stay inside srt's own
-# network namespace.
-#
-# allowedDomains here is what srt enforces; keep spec.sandbox.network on the
-# Agent identical so the two never disagree.
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: homelab-agent-srt
-  namespace: kagent
-data:
-  # kagent calls `srt --settings <its file> <command...>`; drop its
-  # --settings and use the file next to this script.
-  srt: |
-    #!/bin/sh
-    if [ "$1" = "--settings" ]; then shift 2; fi
-    # srt sets TMPDIR=/tmp/claude but never creates it, so mktemp fails.
-    mkdir -p /tmp/claude
-    exec /usr/bin/srt --settings /opt/srt-shim/srt-settings.json "$@"
-  srt-settings.json: |
-    {
-      "enableWeakerNestedSandbox": true,
-      "network": {
-        "allowAllUnixSockets": true,
-        "allowedDomains": [
-          "192.168.1.254",
-          "github.com",
-          "*.github.com",
-          "*.githubusercontent.com",
-          "releases.hashicorp.com",
-          "registry.terraform.io",
-          "factory.talos.dev",
-          "*.siderolabs.com",
-          "dl.k8s.io",
-          "cdn.dl.k8s.io"
-        ],
-        "deniedDomains": []
-      },
-      "filesystem": {
-        "denyRead": [],
-        "allowWrite": [
-          "."
-        ],
-        "denyWrite": []
-      }
-    }

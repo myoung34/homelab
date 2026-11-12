@@ -114,9 +114,9 @@ data:
     - Talos enforces PodSecurity `baseline` cluster-wide, so no privileged
       containers. Talos defaults `user.max_user_namespaces` to 0; this repo
       raises it to 11255 (terraform/talos/templates/
-      install-disk-and-hostname.yaml.tmpl) so agent bash sandboxes (srt /
-      bubblewrap) can unshare. Agent bash also needs the srt shim
-      ConfigMap (homelab-agent-srt in homelab-agent.yaml) to run at all.
+      install-disk-and-hostname.yaml.tmpl), left over from the agents' old
+      bash sandbox. Agent bash runs unsandboxed through the srt passthrough
+      in k8s/prod/kagent/bash-shim.yaml.
     - Talos and terraform: before you change anything under terraform/talos
       (a Talos or Kubernetes upgrade, a template, a node), curl
       terraform/talos/AGENTS.md and follow it. It holds the upgrade order,
@@ -229,9 +229,8 @@ data:
     download again at the new SHA rather than trusting local copies.
 
     Stay in the directory your shell starts in (and repo/ under it). Use
-    relative paths only: bash can't write outside that directory
-    ("Read-only file system") and read_file/edit_file refuse anything
-    outside it. Use read_file/edit_file, or python3 for mechanical
+    relative paths only: read_file/edit_file refuse anything outside
+    it. Use read_file/edit_file, or python3 for mechanical
     edits. Never retype a file from memory, and never rebuild one by
     replaying commit patches.
 
@@ -246,7 +245,7 @@ data:
          byte-for-byte intact. `diff -u` against a pristine copy shows
          exactly what you changed - that diff is what goes in the PR.
          Then run the repo's cheap pre-commit hooks yourself, since the
-         sandbox has no pre-commit: every file you push must end in a
+         shell has no pre-commit: every file you push must end in a
          newline, carry no trailing whitespace and no conflict markers.
            for f in <files>; do
              [ -s "$f" ] && [ -n "$(tail -c1 "$f")" ] && echo "$f: no final newline"
