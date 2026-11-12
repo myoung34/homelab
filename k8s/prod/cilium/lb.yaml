@@ -1,0 +1,28 @@
+# LAN VIPs for LoadBalancer Services, on the cluster VLAN: below the UniFi
+# DHCP pool (.100-.254) and above the node IPs. A Service gets one only when
+# it asks for a specific address (lbipam.cilium.io/ips annotation).
+#
+#   192.168.1.50  traefik (LAN ingress, *.marcyoung.us)
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: lan
+spec:
+  allowFirstLastIPs: "No"
+  blocks:
+  - start: 192.168.1.50
+    stop: 192.168.1.59
+  serviceSelector:
+    matchExpressions:
+    - key: lan-vip
+      operator: NotIn
+      values: ["disabled"]
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: lan
+spec:
+  interfaces:
+  - ^en.*
+  loadBalancerIPs: true
