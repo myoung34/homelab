@@ -69,6 +69,35 @@ input_number:
     initial: 72
 
 rest_command:
+  # Assist "download the movie {title}" (automations.yaml). hass is on the
+  # host network with ClusterFirstWithHostNet DNS, so the Service name works.
+  radarr_lookup:
+    url: "http://radarr.radarr.svc.cluster.local:7878/api/v3/movie/lookup?term={{ term | urlencode }}"
+    method: GET
+    headers:
+      X-Api-Key: !secret radarr_api_key
+    timeout: 20
+  radarr_add:
+    url: "http://radarr.radarr.svc.cluster.local:7878/api/v3/movie"
+    method: POST
+    content_type: application/json
+    headers:
+      X-Api-Key: !secret radarr_api_key
+    timeout: 20
+    # qualityProfileId 4 = HD-1080p (12 GiB cap); search right away.
+    payload: >
+      {
+        "title": {{ movie.title | to_json }},
+        "tmdbId": {{ movie.tmdbId }},
+        "year": {{ movie.year }},
+        "titleSlug": {{ movie.titleSlug | to_json }},
+        "images": {{ movie.images | to_json }},
+        "qualityProfileId": 4,
+        "rootFolderPath": "/media/movies",
+        "monitored": true,
+        "minimumAvailability": "released",
+        "addOptions": {"searchForMovie": true, "monitor": "movieOnly"}
+      }
   slack_notify:
     url: !secret slack_webhook_url
     method: POST
