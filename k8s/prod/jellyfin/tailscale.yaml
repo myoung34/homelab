@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jellyfin
+  namespace: jellyfin
+  annotations:
+    # Public via Funnel so apps work off-tailnet. Jellyfin enforces its own
+    # login; the home IP stays hidden behind Tailscale.
+    tailscale.com/funnel: "true"
+spec:
+  defaultBackend:
+    service:
+      name: jellyfin
+      port:
+        number: 8096
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - media

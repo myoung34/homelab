@@ -16,7 +16,7 @@ resources:
   - paperless.yaml
   - network-optimizer.yaml
   - ollama.yaml
-  - plex.yaml
+  - jellyfin.yaml
   - prowlarr.yaml
   - radarr.yaml
   - rtorrent.yaml
