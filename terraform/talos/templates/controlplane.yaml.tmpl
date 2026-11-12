@@ -47,9 +47,19 @@ apiVersion: v1alpha1
 kind: KubeSchedulerConfig
 image: registry.k8s.io/kube-scheduler:${kubernetes_version}
 ---
+# Cilium replaces kube-proxy (kubeProxyReplacement, k8s/prod/cilium).
 apiVersion: v1alpha1
 kind: KubeProxyConfig
+enabled: false
 image: registry.k8s.io/kube-proxy:${kubernetes_version}
+---
+# No Talos-managed CNI: the generator emits a KubeFlannelCNIConfig by
+# default and its presence is what deploys flannel. Cilium is the CNI
+# (k8s/prod/cilium). Talos doesn't delete the old flannel/kube-proxy
+# DaemonSets when these change; that's a manual step in the migration.
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+$patch: delete
 ---
 apiVersion: v1alpha1
 kind: KubeAdmissionControlConfig
