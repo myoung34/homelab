@@ -69,9 +69,12 @@ helmCharts:
     controller:
       metrics:
         enabled: true
+      # Same starvation as repoServer: at 75m on a saturated node the Lua CRD
+      # health checks (datadog/kagent/longhorn CRDs are huge) hit their
+      # deadline -> ComparisonError "context deadline exceeded", health Unknown.
       resources:
         requests:
-          cpu: 75m
+          cpu: 500m
           memory: 298M
     server:
       metrics:
