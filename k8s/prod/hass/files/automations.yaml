@@ -212,3 +212,48 @@
         entity_id:
           - switch.wall_1
           - switch.dnd_lights_lights
+
+# Assist: "download the movie Dune Part Two". Adds the top Radarr lookup match
+# under HD-1080p and searches; Prowlarr/rtorrent/Radarr/Jellyfin take it from
+# there. Say the year for ambiguous titles ("the movie The Mummy 2026").
+- alias: Assist Download Movie
+  id: assist_download_movie
+  mode: queued
+  trigger:
+    - platform: conversation
+      command:
+        - "download [the] movie {title}"
+        - "(get|grab) [the] movie {title}"
+  action:
+    - service: rest_command.radarr_lookup
+      data:
+        term: "{{ trigger.slots.title }}"
+      response_variable: lookup
+    - variables:
+        results: >
+          {{ lookup.content if lookup.status == 200 and lookup.content is list else [] }}
+        movie: "{{ results[0] if results | length > 0 else none }}"
+    - choose:
+        - conditions: "{{ movie is none }}"
+          sequence:
+            - set_conversation_response: >
+                I couldn't find a movie called {{ trigger.slots.title }}.
+        - conditions: "{{ (movie.id | default(0)) > 0 }}"
+          sequence:
+            - set_conversation_response: >
+                {{ movie.title }} ({{ movie.year }}) is already in Radarr.
+      default:
+        - service: rest_command.radarr_add
+          data:
+            movie: "{{ movie }}"
+          response_variable: added
+        - if: "{{ added.status == 201 }}"
+          then:
+            - set_conversation_response: >
+                Downloading {{ movie.title }} ({{ movie.year }}).
+            - service: rest_command.slack_notify
+              data:
+                message: "🎬 Assist added {{ movie.title }} ({{ movie.year }}) to Radarr"
+          else:
+            - set_conversation_response: >
+                Radarr couldn't add {{ movie.title }} (HTTP {{ added.status }}).
