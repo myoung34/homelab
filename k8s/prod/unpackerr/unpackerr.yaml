@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    secret.reloader.stakater.com/reload: unpackerr
+  labels:
+    app.kubernetes.io/instance: unpackerr
+    app.kubernetes.io/name: unpackerr
+  name: unpackerr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: unpackerr
+      app.kubernetes.io/name: unpackerr
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: unpackerr
+        app.kubernetes.io/name: unpackerr
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: default
+      containers:
+      # Scene releases arrive as .rar/.r00..; Radarr can't import those and
+      # sits at "Found archive file". Unpackerr polls Radarr's queue, extracts
+      # completed downloads next to the archive, waits for the import, then
+      # deletes the extracted copy. The library keeps it as a hardlink.
+      - name: unpackerr
+        image: golift/unpackerr:1.0.1
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: unpackerr  # UN_RADARR_0_API_KEY
+        env:
+        - name: TZ
+          value: "America/Chicago"
+        - name: UN_RADARR_0_URL
+          value: http://radarr.radarr.svc.cluster.local:7878
+        # Same mount path as rtorrent and Radarr, so the paths in Radarr's
+        # queue resolve here unchanged.
+        - name: UN_RADARR_0_PATHS_0
+          value: /media/torrents
+        - name: UN_RADARR_0_PROTOCOLS
+          value: torrent
+        # Keep the archives: the torrent is still seeding them.
+        - name: UN_RADARR_0_DELETE_ORIG
+          value: "false"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /media
+          name: media
+      volumes:
+      - name: media
+        nfs:
+          server: 192.168.3.2
+          path: /volume1/Media
