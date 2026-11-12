@@ -7,6 +7,8 @@ metadata:
     # Public via Funnel so apps work off-tailnet. Jellyfin enforces its own
     # login; the home IP stays hidden behind Tailscale.
     tailscale.com/funnel: "true"
+    # Streaming needs real CPU; see the "media" ProxyClass.
+    tailscale.com/proxy-class: media
 spec:
   defaultBackend:
     service:
