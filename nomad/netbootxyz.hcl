@@ -122,13 +122,13 @@ iseq ${os_arch} amd64 && goto amd64 ||
 iseq ${os_arch} arm64 && goto arm64 ||
 
 :amd64
-set talos_kernel https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.5/kernel-amd64
-set talos_initrd https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.5/initramfs-amd64.xz
+set talos_kernel https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.6/kernel-amd64
+set talos_initrd https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.14.6/initramfs-amd64.xz
 goto boot
 
 :arm64
-set talos_kernel https://pxe.factory.talos.dev/image/893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b/v1.14.5/kernel-arm64
-set talos_initrd https://pxe.factory.talos.dev/image/893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b/v1.14.5/initramfs-arm64.xz
+set talos_kernel https://pxe.factory.talos.dev/image/893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b/v1.14.6/kernel-arm64
+set talos_initrd https://pxe.factory.talos.dev/image/893f789f3385fd07de4a4024e736036339ebd80e4ee83946b6cff3e26549b22b/v1.14.6/initramfs-arm64.xz
 goto boot
 
 :boot
