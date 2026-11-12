@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: plex
+    app.kubernetes.io/name: plex
+  name: plex
+spec:
+  ports:
+  - name: http
+    port: 32400
+    protocol: TCP
+    targetPort: 32400
+  selector:
+    app.kubernetes.io/instance: plex
+    app.kubernetes.io/name: plex
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: plex
+    app.kubernetes.io/name: plex
+  name: plex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: plex
+      app.kubernetes.io/name: plex
+  # hostNetwork binds :32400 on the node, so two pods can't overlap.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: plex
+        app.kubernetes.io/name: plex
+    spec:
+      automountServiceAccountToken: false
+      # cluster41 is the only amd64 node with real CPU (12 cores, 32 GB);
+      # the rest are 4-8 GB arm64 boards. No GPU: ollama holds both the
+      # NVIDIA and AMD cards through the device plugins, so transcoding is
+      # CPU-only.
+      nodeSelector:
+        kubernetes.io/hostname: cluster41
+      # TVs and phones on the LAN find Plex by GDM broadcast and connect to
+      # 192.168.1.32:32400 directly, same pattern as hass.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: plex
+        image: lscr.io/linuxserver/plex:1.43.5
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PUID
+          value: "1026"
+        - name: PGID
+          value: "100"
+        - name: TZ
+          value: "America/Chicago"
+        # Renovate bumps the image; don't let Plex update itself in place.
+        - name: VERSION
+          value: docker
+        ports:
+        - containerPort: 32400
+          name: http
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /identity
+            port: 32400
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /identity
+            port: 32400
+          periodSeconds: 10
+          timeoutSeconds: 5
+        startupProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /identity
+            port: 32400
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /media
+          name: media
+          readOnly: true
+        - mountPath: /transcode
+          name: transcode
+      volumes:
+      # Plex's SQLite metadata DB stays on Longhorn; the NAS mount is
+      # NFSv3 nolock, which SQLite doesn't survive.
+      - name: config
+        persistentVolumeClaim:
+          claimName: plex-config
+      # Read-only: Plex only needs movies/ and tv/. torrents/ is visible but
+      # not a library, since its files are hardlinked into movies/.
+      - name: media
+        nfs:
+          server: 192.168.3.2
+          path: /volume1/Media
+          readOnly: true
+      - name: transcode
+        emptyDir: {}
