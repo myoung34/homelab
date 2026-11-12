@@ -29,6 +29,15 @@ helmCharts:
   repo: https://coredns.github.io/helm
   valuesInline:
     replicaCount: 2
+    # The chart default (100m limit) capped coredns: its 14-day max sat at
+    # the limit, so DNS was being throttled. 250m leaves headroom.
+    resources:
+      requests:
+        cpu: 35m
+        memory: 88Mi
+      limits:
+        cpu: 250m
+        memory: 168Mi
     k8sAppLabelOverride: "kube-dns"
     fullnameOverride: coredns
     service:

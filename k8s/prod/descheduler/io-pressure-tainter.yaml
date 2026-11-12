@@ -74,8 +74,11 @@ spec:
                 drop: ["ALL"]
             resources:
               requests:
-                cpu: 10m
-                memory: 32M
+                cpu: 70m
+                memory: 16Mi
+              limits:
+                cpu: 650m
+                memory: 120Mi
             command: ["bash", "-c"]
             args:
             - |

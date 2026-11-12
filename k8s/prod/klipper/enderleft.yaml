@@ -77,8 +77,11 @@ spec:
             # neighbours like the datadog agent (1.4 CPU request), which
             # shuts the MCU down with "Timer too close". Request only, no CPU
             # limit: a limit would add CFS throttling, the same failure.
+            # Memory is limited: klippy peaks near 40Mi, so 128Mi only stops a leak.
             requests:
               cpu: 300m
+              memory: 64Mi
+            limits:
               memory: 128Mi
           securityContext:
             # Run as root so klipper can open the USB serial (0600 root:root).
@@ -120,8 +123,11 @@ spec:
             - "/opt/printer_data"
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 25m
+              memory: 80Mi
+            limits:
+              cpu: 100m
+              memory: 104Mi
           securityContext:
             # Klipper's unix socket is created as root:root; moonraker needs
             # to connect to it, so run as the same UID.

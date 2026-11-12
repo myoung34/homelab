@@ -70,8 +70,11 @@ spec:
             periodSeconds: 30
           resources:
             requests:
-              cpu: 15m
-              memory: 164M
+              cpu: 35m
+              memory: 168Mi
+            limits:
+              cpu: 700m
+              memory: 416Mi
           readinessProbe:
             httpGet:
               path: /health

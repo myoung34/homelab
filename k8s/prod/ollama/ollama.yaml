@@ -268,12 +268,14 @@ spec:
           mountPath: /root/.ollama
         # The model is all on the GPU: 1.3GiB measured loaded, plus up to
         # 8GiB of prompt cache and ~0.6GiB of checkpoints (LLAMA_ARG_* above).
-        # The request covers that so the scheduler doesn't pack the node.
-        # No memory limit: an OOM kill would cost a reload.
+        # The request covers that so the scheduler doesn't pack the node;
+        # measured 11.6Gi max over 14 days, so 12Gi.
+        # No limits: an OOM kill would cost a reload, and a CPU limit would
+        # throttle token generation whenever a layer runs on the CPU.
         resources:
           requests:
             cpu: 1000m
-            memory: 11Gi
+            memory: 12Gi
             amd.com/gpu: 1
           limits:
             amd.com/gpu: 1

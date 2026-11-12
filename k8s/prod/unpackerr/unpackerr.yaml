@@ -48,10 +48,15 @@ spec:
         # Keep the archives: the torrent is still seeding them.
         - name: UN_RADARR_0_DELETE_ORIG
           value: "false"
+        # Barely any usage data yet. Limits leave room for RAR extraction,
+        # which is CPU- and memory-heavy for the length of one import.
         resources:
           requests:
             cpu: 50m
             memory: 64Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
         volumeMounts:
         - mountPath: /media
           name: media

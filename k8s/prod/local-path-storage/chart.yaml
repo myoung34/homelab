@@ -133,6 +133,13 @@ spec:
         image: rancher/local-path-provisioner:v0.0.37
         imagePullPolicy: IfNotPresent
         name: local-path-provisioner
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 88Mi
         volumeMounts:
         - mountPath: /etc/config/
           name: config-volume

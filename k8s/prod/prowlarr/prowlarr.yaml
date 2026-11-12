@@ -87,8 +87,11 @@ spec:
           timeoutSeconds: 5
         resources:
           requests:
-            cpu: 25m
-            memory: 256Mi
+            cpu: 175m
+            memory: 216Mi
+          limits:
+            cpu: 725m
+            memory: 288Mi
         volumeMounts:
         - mountPath: /config
           name: config

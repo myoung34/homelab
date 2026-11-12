@@ -76,8 +76,11 @@ spec:
           timeoutSeconds: 1
         resources:
           requests:
-            cpu: 15m
-            memory: 105M
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
         ports:
         - containerPort: 1883
           name: mqtt

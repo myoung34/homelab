@@ -12,6 +12,13 @@ helmCharts:
   valuesInline:
     service:
       clusterIP: "10.96.0.255"
+    resources:
+      requests:
+        cpu: 15m
+        memory: 48Mi
+      limits:
+        cpu: 100m
+        memory: 120Mi
     livenessProbe:
       initialDelaySeconds: 120
       failureThreshold: 10

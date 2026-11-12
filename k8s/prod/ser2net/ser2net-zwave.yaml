@@ -54,7 +54,13 @@ spec:
       containers:
         - name: ser2net-zwave
           image: jippi/ser2net:4.6.8
-          resources: {}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
           securityContext:
             allowPrivilegeEscalation: true
             privileged: true

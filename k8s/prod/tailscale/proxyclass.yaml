@@ -1,0 +1,19 @@
+# Resources for the tailscale proxy pods (one StatefulSet per exposed
+# Service/Ingress). Without it the operator gives each 1m/1Mi. Over 14 days
+# a typical proxy used 7m/21Mi p95, so that's the request; the limit covers
+# the busiest one seen (ollama-gp: 338m, 99Mi).
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: default
+spec:
+  statefulSet:
+    pod:
+      tailscaleContainer:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 350m
+            memory: 152Mi

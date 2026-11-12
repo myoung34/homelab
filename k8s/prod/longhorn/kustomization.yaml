@@ -56,6 +56,25 @@ helmCharts:
   valuesInline:
     longhornUI:
       replicas: 1
+    # Only the manager and global manager take resources from the chart. The
+    # instance-manager (engines/replicas, the data path) and CSI sidecars are
+    # left alone: a limit there would stall volume I/O.
+    longhornManager:
+      resources:
+        requests:
+          cpu: 325m
+          memory: 320Mi
+        limits:
+          cpu: 725m
+          memory: 448Mi
+    longhornGlobalManager:
+      resources:
+        requests:
+          cpu: 15m
+          memory: 40Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
     # 2, not 1: longhorn-manager puts a minAvailable: 1 PDB on each CSI
     # sidecar Deployment, so with 1 replica no drain can evict it and
     # `talosctl upgrade` / `kubectl drain` hang on whichever node holds it

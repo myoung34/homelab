@@ -487,16 +487,17 @@ spec:
             - "Which apps are not pinned to a Pi 5 but need ARMv8.1?"
             - "Open a PR bumping the memory limit on paperless-ngx."
     deployment:
+      # LLM agent: no CPU limit. It idles near 10m but bursts to 1-2 cores
+      # on startup and tool calls, and throttling would slow replies and
+      # fail probes. The memory limit stays as a guard against a runaway
+      # context; the request tracks measured p95 x1.2 (floor 128Mi).
       resources:
         requests:
           cpu: 100m
-          # ~118 Aperture tool schemas is ~400KB of JSON held per MCP
-          # session, and this agent now holds a second session to
-          # kagent-tool-server on top. Was 256Mi when it carried Aperture
-          # alone; k8s-agent requested 256Mi/1Gi for the cluster half by
-          # itself, so this is the larger of the two it replaces plus room
-          # for holding both at once.
-          memory: 512Mi
+          # Holds two MCP sessions (~118 Aperture tool schemas plus
+          # kagent-tool-server). Measured 110Mi p95 / 151Mi max over 14
+          # days, so 512Mi was mostly unused; the 1Gi limit keeps the room.
+          memory: 136Mi
         limits:
           memory: 1Gi
       env:
