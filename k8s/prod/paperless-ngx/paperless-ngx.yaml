@@ -92,7 +92,9 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           requests:
-            cpu: 10m
+            # Startup is CPU-heavy (bytecode compile + migrations) and the
+            # 14d p95 only saw steady state; 10m starved it past the probe.
+            cpu: 250m
             memory: 1Gi
           limits:
             cpu: 2400m
