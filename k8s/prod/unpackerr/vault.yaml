@@ -1,0 +1,25 @@
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: unpackerr
+spec:
+  vaultAuthRef: unpackerr
+  mount: secret/
+  type: kv-v2
+  path: unpackerr
+  refreshAfter: 60s
+  destination:
+    create: true
+    name: unpackerr
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: unpackerr
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: unpackerr
+    serviceAccount: default
