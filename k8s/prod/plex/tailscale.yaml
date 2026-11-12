@@ -3,6 +3,10 @@ kind: Ingress
 metadata:
   name: plex
   namespace: plex
+  annotations:
+    # Public via Funnel so Plex apps work off-tailnet. Every request still
+    # needs a plex.tv sign-in, and the home IP stays hidden behind Tailscale.
+    tailscale.com/funnel: "true"
 spec:
   defaultBackend:
     service:
