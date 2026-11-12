@@ -74,9 +74,13 @@ spec:
         name: general-agent
       isolateSessions: true
     deployment:
+      # LLM agent: no CPU limit. It idles near 10m but bursts to 1-2 cores
+      # on startup and tool calls, and throttling would slow replies and
+      # fail probes. The memory limit stays as a guard against a runaway
+      # context; the request tracks measured p95 x1.2 (floor 128Mi).
       resources:
         requests:
           cpu: 50m
-          memory: 256Mi
+          memory: 128Mi
         limits:
           memory: 768Mi

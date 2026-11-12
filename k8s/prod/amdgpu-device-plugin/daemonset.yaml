@@ -33,8 +33,11 @@ spec:
           privileged: true
         resources:
           requests:
-            cpu: 15m
-            memory: 64M
+            cpu: 10m
+            memory: 24Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
         volumeMounts:
         - name: device-plugin
           mountPath: /var/lib/kubelet/device-plugins

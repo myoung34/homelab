@@ -21,13 +21,17 @@ helmCharts:
     controller:
       kubeRbacProxy:
         resources:
-          limits: {}
           requests:
-            cpu: 11m
-            memory: 64M
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 80Mi
       manager:
         resources:
-          limits: {}
           requests:
-            cpu: 23m
-            memory: 53M
+            cpu: 20m
+            memory: 40Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi

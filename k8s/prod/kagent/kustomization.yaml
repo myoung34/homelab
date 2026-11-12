@@ -22,6 +22,15 @@ resources:
   - revision-history-limit.yaml
 
 patches:
+  # no-cpu-limit: drop the chart's default CPU limits (controller 2, tools
+  # and ui 1). kustomize drops `cpu: null` from valuesInline, so values
+  # can't unset them. See the controller values below for why.
+  - target:
+      kind: Deployment
+      name: kagent-(controller|tools|ui)
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/containers/0/resources/limits/cpu
   # Agent skills: directories of markdown instructions (SKILL.md plus any
   # scripts it references) that the agent loads on demand. kagent runs a
   # skills-init initContainer that clones each entry into /skills/<name>, then
@@ -215,12 +224,15 @@ helmCharts:
           baseUrl: "http://aperture.kagent.svc.cluster.local"
     controller:
       loglevel: "info"
+      # No CPU limit anywhere in kagent: it bursts to ~0.5 cores reconciling
+      # agents, and throttling slows every agent rollout. The chart's default
+      # CPU limits are removed by the no-cpu-limit patch above.
       resources:
         requests:
-          cpu: 100m
-          memory: 128Mi
+          cpu: 30m
+          memory: 64Mi
         limits:
-          memory: 512Mi
+          memory: 256Mi
       # The DSN is a secret, so it is mounted as a file and referenced by
       # database.postgres.urlFile rather than passed inline. Injecting it as a
       # duplicate POSTGRES_DATABASE_URL env entry does not work: kubelet would
@@ -257,8 +269,8 @@ helmCharts:
     ui:
       resources:
         requests:
-          cpu: 50m
-          memory: 256Mi
+          cpu: 10m
+          memory: 184Mi
         limits:
           memory: 1Gi
       # The UI image needs ARMv8.1+ instructions that the Pi 4's Cortex-A72
@@ -376,12 +388,16 @@ helmCharts:
           - apiGroups: ["rbac.authorization.k8s.io"]
             resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
             verbs: ["get", "list", "watch"]
-      resources:
-        requests:
-          cpu: 50m
-          memory: 128Mi
-        limits:
-          memory: 256Mi
+      # Nested under tools: - the subchart reads .Values.tools.resources, so a
+      # top-level resources: here was silently ignored (pod ran the chart
+      # default 100m/128Mi, 1 CPU/512Mi).
+      tools:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 256Mi
     # Disabled: homelab-agent absorbed it. homelab-agent.yaml reproduces all 18 of
     # its k8s_* toolNames, the three builtin prompt includes it used, and its
     # a2aConfig skills, and adds the homelab knowledge and Aperture tools the

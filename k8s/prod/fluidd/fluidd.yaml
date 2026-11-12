@@ -25,7 +25,13 @@ spec:
       containers:
         - name: fluidd
           image: ghcr.io/fluidd-core/fluidd:v1.38.0
-          resources: {}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
           ports:
             - containerPort: 80
               protocol: TCP

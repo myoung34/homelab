@@ -65,9 +65,10 @@ spec:
           readOnlyRootFilesystem: true
           capabilities:
             drop: ["ALL"]
+        # No CPU limit, like the agents: it bursts to ~1.7 cores on startup.
         resources:
           requests:
             cpu: 10m
-            memory: 64Mi
+            memory: 56Mi
           limits:
             memory: 128Mi

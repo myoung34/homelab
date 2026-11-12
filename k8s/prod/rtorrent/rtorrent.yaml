@@ -158,8 +158,11 @@ spec:
           timeoutSeconds: 10
         resources:
           requests:
-            cpu: 10m
-            memory: 64Mi
+            cpu: 55m
+            memory: 56Mi
+          limits:
+            cpu: 450m
+            memory: 144Mi
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]
@@ -194,10 +197,17 @@ spec:
           failureThreshold: 3
           periodSeconds: 30
           timeoutSeconds: 20
+        # Memory includes page cache from the torrent files rtorrent maps, and
+        # one pod showed 16.9Gi. Under a limit the kernel reclaims those
+        # file-backed pages before it OOM-kills, so cache just gets evicted
+        # sooner; 4Gi only kills a real heap leak.
         resources:
           requests:
-            cpu: 100m
-            memory: 512Mi
+            cpu: 300m
+            memory: 1Gi
+          limits:
+            cpu: 600m
+            memory: 4Gi
         volumeMounts:
         - mountPath: /data
           name: config

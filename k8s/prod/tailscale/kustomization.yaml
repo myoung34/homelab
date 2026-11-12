@@ -6,6 +6,22 @@ resources:
   - namespace.yaml
   - vault.yaml
   - cr.yaml
+  - proxyclass.yaml
+
+# ProxyClass is cluster-scoped, but kustomize doesn't know that for a CRD
+# kind and stamps the namespace above onto it. A plain `patches:` entry runs
+# before the namespace is set, so this has to be a transformer.
+transformers:
+  - |-
+    apiVersion: builtin
+    kind: PatchTransformer
+    metadata:
+      name: proxyclass-cluster-scoped
+    target:
+      kind: ProxyClass
+    patch: |-
+      - op: remove
+        path: /metadata/namespace
 
 helmCharts:
 - name: tailscale-operator
@@ -21,5 +37,11 @@ helmCharts:
       hostname: "homelab-operator"
       resources:
         requests:
-          cpu: 23m
-          memory: 105M
+          cpu: 20m
+          memory: 88Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+    # Every Service/Ingress proxy without its own ProxyClass gets this one.
+    proxyConfig:
+      defaultProxyClass: default

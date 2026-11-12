@@ -45,18 +45,26 @@ helmCharts:
       env:
         - name: ARGOCD_EXEC_TIMEOUT
           value: 3m
+      # Request stays above p95 (275m) on purpose, see above. Limit covers
+      # the 1.4-core peak of a full helm build.
       resources:
         requests:
           cpu: 500m
-          memory: 256M
+          memory: 192Mi
+        limits:
+          cpu: 1400m
+          memory: 480Mi
     applicationSet:
       webhook:
         ingress:
           enabled: false
       resources:
         requests:
-          cpu: 23m
-          memory: 105M
+          cpu: 25m
+          memory: 40Mi
+        limits:
+          cpu: 100m
+          memory: 104Mi
       metrics:
         enabled: true
     notifications:
@@ -64,25 +72,44 @@ helmCharts:
         enabled: true
       resources:
         requests:
-          cpu: 15m
-          memory: 105M
+          cpu: 10m
+          memory: 40Mi
+        limits:
+          cpu: 100m
+          memory: 248Mi
     controller:
       metrics:
         enabled: true
+      # Same starvation as repoServer: at 75m on a saturated node the Lua CRD
+      # health checks (datadog/kagent/longhorn CRDs are huge) hit their
+      # deadline -> ComparisonError "context deadline exceeded", health Unknown.
       resources:
         requests:
-          cpu: 75m
-          memory: 298M
+          cpu: 500m
+          memory: 736Mi
+        limits:
+          cpu: 1200m
+          memory: 1920Mi
     server:
       metrics:
         enabled: true
       extraArgs:
         - --insecure
+      resources:
+        requests:
+          cpu: 95m
+          memory: 144Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
     redis:
       resources:
         requests:
-          cpu: 15m
-          memory: 105M
+          cpu: 20m
+          memory: 56Mi
+        limits:
+          cpu: 100m
+          memory: 72Mi
 - name: argo-workflows
   releaseName: argocd-workflows
   namespace: argocd
@@ -99,8 +126,11 @@ helmCharts:
         - argocd
       resources:
         requests:
-          cpu: 15m
-          memory: 110M
+          cpu: 20m
+          memory: 96Mi
+        limits:
+          cpu: 100m
+          memory: 144Mi
     server:
       metrics:
         enabled: true
@@ -110,8 +140,11 @@ helmCharts:
         - --insecure-skip-verify=true
       resources:
         requests:
-          cpu: 15m
-          memory: 127M
+          cpu: 10m
+          memory: 120Mi
+        limits:
+          cpu: 100m
+          memory: 152Mi
     workflow:
       logging:
         level: debug

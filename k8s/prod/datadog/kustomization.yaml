@@ -89,44 +89,62 @@ helmCharts:
           effect: "NoSchedule"
       containers:
         agent:
+          # Sized from 14 days of container.cpu.usage / memory.working_set.
+          # The agent sat pinned at its old 1469m limit on every node, so p95
+          # (1274m) is a floor, not its real demand. No CPU limit: throttling
+          # it just drops checks. Cutting what it collects is the real fix.
           resources:
             requests:
-              cpu: 1469m
-              memory: 298M
+              cpu: 1300m
+              memory: 352Mi
             limits:
-              cpu: 1469m
-              memory: 298M
+              memory: 448Mi
         processAgent:
           resources:
             requests:
-              cpu: 78m
-              memory: 64M
+              cpu: 15m
+              memory: 72Mi
             limits:
-              cpu: 78m
-              memory: 64M
+              cpu: 100m
+              memory: 88Mi
         systemProbe:
           resources:
             requests:
-              # Steady state is 276-363Mi with networkMonitoring + serviceMonitoring
-              # both on. eBPF maps are kernel allocations charged to the container
+              # eBPF maps are kernel allocations charged to the container
               # memcg (GFP_KERNEL_ACCOUNT), so they count on top of RSS -- the old
               # 384M (= 366Mi) limit sat right on peak usage and OOM-killed on
-              # nearly every node. Request tracks steady state, limit leaves room
-              # for map churn without reserving it on the 3.1Gi nodes.
+              # nearly every node. Measured 598Mi p95 / 650Mi max over 14 days
+              # with networkMonitoring + serviceMonitoring on, above the old
+              # 448Mi request, so the request now tracks p95.
               cpu: 200m
-              memory: 448Mi
+              memory: 736Mi
             limits:
               # BPF program loading + verification at startup is CPU-bursty; the
               # previous 78m limit throttled it into probe failures.
-              cpu: 1
-              memory: 768Mi
+              cpu: 925m
+              memory: 992Mi
         traceAgent:
           resources:
             requests:
-              cpu: 78m
-              memory: 37M
+              cpu: 10m
+              memory: 16Mi
             limits:
-              cpu: 78m
-              memory: 37M
+              cpu: 100m
+              memory: 64Mi
     clusterAgent:
       tokenExistingSecret: datadog-cluster-agent # pragma: allowlist secret
+      resources:
+        requests:
+          cpu: 400m
+          memory: 480Mi
+        limits:
+          cpu: 800m
+          memory: 640Mi
+    operator:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 40Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi

@@ -19,8 +19,11 @@ helmCharts:
       deployment:
         resources:
           requests:
-            cpu: 15m
-            memory: 105M
+            cpu: 10m
+            memory: 24Mi
+          limits:
+            cpu: 125m
+            memory: 64Mi
 
 patches:
   - target:

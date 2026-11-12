@@ -65,8 +65,11 @@ spec:
           protocol: TCP
         resources:
           requests:
-            cpu: 15m
-            memory: 105M
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
         readinessProbe:
           failureThreshold: 3
           initialDelaySeconds: 0

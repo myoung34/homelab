@@ -46,8 +46,11 @@ spec:
             drop: ["ALL"]
         resources:
           requests:
-            cpu: 15m
-            memory: 64M
+            cpu: 10m
+            memory: 56Mi
+          limits:
+            cpu: 325m
+            memory: 72Mi
         volumeMounts:
         - name: device-plugin
           mountPath: /var/lib/kubelet/device-plugins

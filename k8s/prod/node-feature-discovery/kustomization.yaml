@@ -23,8 +23,11 @@ helmCharts:
       enableTaints: true
       resources:
         requests:
-          cpu: 15m
-          memory: 105M
+          cpu: 20m
+          memory: 88Mi
+        limits:
+          cpu: 100m
+          memory: 120Mi
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -39,8 +42,11 @@ helmCharts:
     worker:
       resources:
         requests:
-          cpu: 5m
-          memory: 105M
+          cpu: 40m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 96Mi
       # Keep labelling the Z-Wave node, or ser2net's affinity label disappears.
       # Ride out io-pressure too: a worker that can't reschedule onto a stalled
       # node leaves its labels stale, and ser2net follows a stick that moved.
@@ -55,7 +61,10 @@ helmCharts:
       resources:
         requests:
           cpu: 15m
-          memory: 105M
+          memory: 40Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

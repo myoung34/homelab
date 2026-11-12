@@ -15,6 +15,15 @@ helmCharts:
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
     schedule: "*/5 * * * *" # frequent so io-pressure taints act quickly
+    # Each run is too short for a CPU sample; the chart default 500m request
+    # reserved half a core around the clock for a job that runs seconds.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 88Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
     deschedulerPolicy:
       profiles:
         - name: default
