@@ -17,3 +17,25 @@ spec:
           limits:
             cpu: 350m
             memory: 152Mi
+---
+# Jellyfin's ingress proxy (media.king-gila.ts.net). Ingress proxies run
+# userspace tailscaled, so every byte is TLS- and WireGuard-encrypted in
+# software. Under the default class (350m, on a Pi-class arm64 node) it
+# pegged at 330m and moved 5 Mbit/s, below a 1080p WEB-DL's 9.5 Mbit/s.
+# No CPU limit, and pinned next to Jellyfin on the amd64 node.
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: media
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        kubernetes.io/hostname: cluster41
+      tailscaleContainer:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
