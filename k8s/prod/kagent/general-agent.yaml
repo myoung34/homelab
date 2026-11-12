@@ -5,10 +5,9 @@
 # Deliberately small: no cluster or GitHub tools, so whatever it gets wrong
 # can't touch the homelab. Its Aperture tools are web search/fetch, Google
 # Calendar and Zapier (~20k tokens of schemas, well inside the 64k context).
-# Like every agent here it inherits skills, and therefore a sandboxed bash,
-# from the unnamed Agent patch in kustomization.yaml; the srt shim below is
-# what makes that bash run at all (see homelab-agent-srt for why). The
-# sandbox has no network: web access goes through aperture_web_*.
+# Like every agent here it inherits skills, and therefore bash, from the
+# unnamed Agent patch in kustomization.yaml; bash-shim.yaml runs it
+# unsandboxed.
 #
 # Named for its role, not its model; it runs LFM2.5-24B
 # (modelconfig-lfm.yaml) on ollama-general (k8s/prod/ollama/general.yaml).
@@ -53,7 +52,7 @@ spec:
         Zapier_enable_zapier_action, then run it with
         Zapier_execute_zapier_read_action or
         Zapier_execute_zapier_write_action.
-      - bash: a scratch shell with no network. Good for arithmetic, date
+      - bash: a scratch shell. Good for arithmetic, date
         math and quick text processing. Run `date` when you need today's
         date or time, and `date -d 2026-12-04 +%A` before writing any
         weekday next to a date. Use Mark's dates exactly as he gave them.
@@ -134,52 +133,16 @@ spec:
         limits:
           memory: 768Mi
       env:
-      # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
-      # general-agent-srt ConfigMap below. The rest is the image's PATH.
+      # /opt/srt-shim first so kagent's `srt` resolves to the passthrough in
+      # bash-shim.yaml. The rest is the image's PATH.
       - name: PATH
         value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
       volumes:
       - name: srt-shim
         configMap:
-          name: general-agent-srt
+          name: agent-bash
           defaultMode: 0555
       volumeMounts:
       - name: srt-shim
         mountPath: /opt/srt-shim
         readOnly: true
----
-# srt settings + shim for general-agent's bash. Same mechanism as
-# printer-agent-srt / homelab-agent-srt (see homelab-agent.yaml for why it
-# is a PATH shim). No allowedDomains: the sandbox gets no network, and the
-# Agent above sets no spec.sandbox, so the two agree.
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: general-agent-srt
-  namespace: kagent
-data:
-  # kagent calls `srt --settings <its file> <command...>`; drop its
-  # --settings and use the file next to this script.
-  srt: |
-    #!/bin/sh
-    if [ "$1" = "--settings" ]; then shift 2; fi
-    # srt sets TMPDIR=/tmp/claude but never creates it, so mktemp fails.
-    mkdir -p /tmp/claude
-    exec /usr/bin/srt --settings /opt/srt-shim/srt-settings.json "$@"
-  # allowWrite is "." only; see homelab-agent.yaml's homelab-agent-srt
-  # ConfigMap for why.
-  srt-settings.json: |
-    {
-      "enableWeakerNestedSandbox": true,
-      "network": {
-        "allowedDomains": [],
-        "deniedDomains": []
-      },
-      "filesystem": {
-        "denyRead": [],
-        "allowWrite": [
-          "."
-        ],
-        "denyWrite": []
-      }
-    }

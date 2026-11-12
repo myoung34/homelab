@@ -13,9 +13,13 @@
 # sub-agent session. Isolated, each call starts a fresh sub-agent session;
 # the prompt has the router pass along the context a follow-up needs.
 #
-# Like every Agent here it inherits the skills patch in kustomization.yaml
-# (and so a bash tool). It has no srt shim, so that bash does not work;
-# routing never needs it.
+# kustomization.yaml removes the shared skills patch from this Agent, so
+# it has no bash: its only tools are the three agents.
+#
+# GitHub (any repo, CI runs, PRs) goes to homelab-agent, which holds the
+# GitHub and GitHubActions tools; general-agent only has web fetch, which
+# 404s on Actions logs. Agent errors go straight back to Mark: on
+# 2026-11-11 the router re-sent failing requests for five hours.
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
@@ -35,11 +39,12 @@ spec:
 
       The agents:
       - homelab agent: the Kubernetes cluster, Talos nodes, apps, storage,
-        networking, the myoung34/homelab repo, CI, pull requests, Datadog.
+        networking, Datadog, and anything on GitHub - any repo, CI runs,
+        GitHub Actions, pull requests.
       - printer agent: the Klipper 3D printers (enderbig, enderleft,
         enderright), prints, Moonraker.
       - general agent: everything else - web lookups, general questions,
-        Google Calendar, Zapier.
+        Google Calendar, Zapier. Never GitHub links or repos.
 
       Rules:
       1. If the message starts with "homelab:", "printer:" or "general:",
@@ -52,6 +57,9 @@ spec:
       4. Return the agent's answer unchanged. Do not summarise, shorten or
          add to it.
       5. If you cannot tell which agent fits, ask Mark one short question.
+      6. Call one agent once per message from Mark. If it returns an error
+         or does not answer the request, tell Mark that in one line and
+         stop. Never re-send the request, to the same agent or another.
     tools:
     - type: Agent
       agent:

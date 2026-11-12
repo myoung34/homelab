@@ -22,3 +22,10 @@ spec:
   apiKeySecretKey: ANTHROPIC_API_KEY  # pragma: allowlist secret
   openAI:
     baseUrl: "http://aperture.kagent.svc.cluster.local/v1"
+    # Fail a stuck request in 10 min instead of kagent's 30m default
+    # (go/adk/pkg/models/base.go defaultTimeout). A full 49k-token prompt
+    # reads in ~90s and 10 min generates ~40k tokens at ~72 tok/s, far past
+    # any real reply. With no maxTokens, a runaway generation otherwise
+    # ran the whole 30 min, context-shifting on the single slot, nine
+    # times in sessions 402f5857 and 67af7228 (2026-11-11).
+    timeout: 600

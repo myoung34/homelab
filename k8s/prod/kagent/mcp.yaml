@@ -29,12 +29,12 @@
 # Fixing it means EmbeddedResource support in kagent's ADK MCP client, or
 # Aperture flattening resource blocks into text on the way through.
 #
-# Workaround, until then: the agents' bash sandboxes allow
+# Workaround, until then: the agents' bash can curl
 # raw.githubusercontent.com, and the github prompt fragment
 # (homelab-agent-prompt.yaml) has them curl the exact bytes of public repo
 # files, edit locally, push full contents with GitHub_push_files, and curl
 # the result back to cmp it. Verified 2026-10-08 from homelab-agent's
-# sandbox: k8s/prod/ollama/ollama.yaml fetched that way hashes to its blob
+# bash: k8s/prod/ollama/ollama.yaml fetched that way hashes to its blob
 # SHA (b24557a). aperture_web_fetch is still not a substitute - it runs
 # readability extraction and does not round-trip bytes.
 #

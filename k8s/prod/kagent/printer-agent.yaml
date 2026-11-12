@@ -2,8 +2,8 @@
 #
 # A plain declarative Agent, no custom code. It inherits this app's unnamed
 # `kind: Agent` patch (kustomization.yaml), so it has skills and therefore
-# bash; spec.sandbox below lets that bash reach Moonraker on the printers'
-# in-cluster Services (k8s/prod/klipper) and nothing else. klippy.log and
+# bash, which reaches Moonraker on the printers' in-cluster Services
+# (k8s/prod/klipper). klippy.log and
 # moonraker.log are shipped to Datadog by sidecars in the klipper Deployments,
 # and read here through Aperture's Datadog tools.
 #
@@ -16,7 +16,7 @@
 # tools a PR needs, the shared GitHub rules (prompts/github from
 # homelab-agent-prompt.yaml), and raw.githubusercontent.com plus
 # codeload.github.com (whole-repo tarballs, which prompts/github tells it to
-# start from) in its sandbox for reading file bodies (see mcp.yaml for why
+# start from) for reading file bodies (see mcp.yaml for why
 # get_file_contents cannot).
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
@@ -29,13 +29,6 @@ spec:
     Expert on Mark's Klipper 3D printers (enderbig, enderleft, enderright):
     queries Moonraker directly, reads klippy/moonraker logs in Datadog and the
     printer configs, and diagnoses from evidence.
-  # Must match the printer-agent-srt ConfigMap below, which is what srt reads.
-  sandbox:
-    network:
-      allowedDomains:
-      - "*.klipper.svc.cluster.local"
-      - raw.githubusercontent.com
-      - codeload.github.com
   declarative:
     # Local Qwen3.8-27B (modelconfig-qwen.yaml).
     modelConfig: qwen
@@ -109,8 +102,8 @@ spec:
         limits:
           memory: 768Mi
       env:
-      # /opt/srt-shim first so kagent's `srt` resolves to the shim in the
-      # printer-agent-srt ConfigMap below. The rest is the image's own PATH.
+      # /opt/srt-shim first so kagent's `srt` resolves to the passthrough in
+      # bash-shim.yaml. The rest is the image's own PATH.
       - name: PATH
         value: /opt/srt-shim:/usr/bin:/opt/sandbox-runtime/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
       # Truncate any single tool result over 40k characters (~10k tokens),
@@ -121,64 +114,12 @@ spec:
       - name: KAGENT_MAX_TOOL_RESULT_CHARS
         value: "40000"
       volumes:
-      # srt shim and settings; see the printer-agent-srt ConfigMap below.
+      # No-sandbox srt; see bash-shim.yaml.
       - name: srt-shim
         configMap:
-          name: printer-agent-srt
+          name: agent-bash
           defaultMode: 0555
       volumeMounts:
       - name: srt-shim
         mountPath: /opt/srt-shim
         readOnly: true
----
-# srt (the bash sandbox) settings for printer-agent, plus an `srt` shim that
-# makes srt use them instead of the file kagent generates. See the
-# homelab-agent-srt ConfigMap in homelab-agent.yaml for why it is a PATH shim
-# rather than a mount over /config/srt-settings.json.
-#
-# Why override: kagent's generated file only carries network/filesystem, and
-# bwrap's fresh /proc mount fails in a container ("Can't mount proc on
-# /proc") because the runtime masks paths under the container's /proc and
-# the kernel refuses a new procfs over masked ones. procMount: Unmasked would
-# fix that but needs hostUsers: false, which kagent 0.10.6 cannot set.
-# enableWeakerNestedSandbox makes srt skip that mount; the sandbox then sees
-# the container's own /proc (same uid 1001 processes).
-#
-# allowWrite is "." only (no /tmp); see the homelab-agent-srt ConfigMap in
-# homelab-agent.yaml for why.
-#
-# allowedDomains here is what srt enforces; keep spec.sandbox.network on the
-# Agent identical so the two never disagree.
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: printer-agent-srt
-  namespace: kagent
-data:
-  # kagent calls `srt --settings <its file> <command...>`; drop its
-  # --settings and use the file next to this script.
-  srt: |
-    #!/bin/sh
-    if [ "$1" = "--settings" ]; then shift 2; fi
-    # srt sets TMPDIR=/tmp/claude but never creates it, so mktemp fails.
-    mkdir -p /tmp/claude
-    exec /usr/bin/srt --settings /opt/srt-shim/srt-settings.json "$@"
-  srt-settings.json: |
-    {
-      "enableWeakerNestedSandbox": true,
-      "network": {
-        "allowedDomains": [
-          "*.klipper.svc.cluster.local",
-          "raw.githubusercontent.com",
-          "codeload.github.com"
-        ],
-        "deniedDomains": []
-      },
-      "filesystem": {
-        "denyRead": [],
-        "allowWrite": [
-          "."
-        ],
-        "denyWrite": []
-      }
-    }

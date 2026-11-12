@@ -1,0 +1,26 @@
+# Agent bash without a sandbox.
+#
+# Every Agent here gets bash from spec.skills (kustomization.yaml), and
+# kagent runs each command as `srt --settings <file> bash -c <cmd>` in the
+# session's scratch dir. srt (bubblewrap) cost more than it bought: it
+# needed seccomp Unconfined, a privileged namespace, a raised
+# user.max_user_namespaces and per-agent domain lists, and an agent without
+# its own shim got only "bwrap: Can't mount proc on /proc" from every
+# command (router-agent, sessions 402f5857 and 67af7228, 2026-11-11).
+#
+# Each Agent puts /opt/srt-shim first on PATH and mounts this ConfigMap
+# there, so `srt` resolves to this script, which drops kagent's --settings
+# and runs the command directly. bash then has the pod's own network and
+# filesystem: still uid 1001 with no capabilities, but it can reach the
+# internet and the LAN, and read what the pod mounts (talos os:reader
+# credentials on homelab-agent).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-bash
+  namespace: kagent
+data:
+  srt: |
+    #!/bin/sh
+    if [ "$1" = "--settings" ]; then shift 2; fi
+    exec "$@"

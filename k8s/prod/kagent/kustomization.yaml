@@ -16,6 +16,7 @@ resources:
   - printer-agent.yaml
   - general-agent.yaml
   - router-agent.yaml
+  - bash-shim.yaml
   - slack-bot.yaml
   - talos.yaml
 
@@ -66,34 +67,17 @@ patches:
       # Keep the agent container out of `privileged`.
       #
       # Setting spec.skills makes kagent's controller set
-      # securityContext.privileged=true on the agent container, so that
-      # srt/bubblewrap can build its sandbox out of kernel namespaces
-      # (manifest_builder.go buildContainerSecurityContext). Talos enforces
-      # PodSecurity `baseline` cluster-wide, which forbids that, so the
-      # ReplicaSet cannot create pods at all and the agents go NotReady.
-      #
-      # An explicit allowPrivilegeEscalation: false suppresses it - the
-      # controller skips privileged rather than emit a combination the API
-      # server would reject. privileged would not help anyway: bwrap here is
-      # not setuid and the container runs as uid 1001, so its only route is
-      # an unprivileged user namespace.
-      #
-      # That route needs two things:
-      #   - user.max_user_namespaces > 0 (Talos defaults it to 0), raised in
-      #     terraform/talos/templates/install-disk-and-hostname.yaml.tmpl.
-      #   - a seccomp profile that allows unshare(CLONE_NEWUSER), mount and
-      #     pivot_root. The kubelet's RuntimeDefault refuses them without
-      #     CAP_SYS_ADMIN, so the agent container runs Unconfined. That is
-      #     why the kagent namespace is PodSecurity privileged (namespace.yaml)
-      #     - baseline forbids Unconfined. The container is still uid 1001
-      #     with no capabilities and no privilege escalation; srt then confines
-      #     each command (filesystem and allowedDomains network policy).
+      # securityContext.privileged=true on the agent container, for the
+      # srt/bubblewrap sandbox (manifest_builder.go
+      # buildContainerSecurityContext). Talos enforces PodSecurity
+      # `baseline`, which forbids that, so the ReplicaSet could not create
+      # pods. An explicit allowPrivilegeEscalation: false suppresses it. We
+      # no longer use the sandbox (bash-shim.yaml), so nothing here needs
+      # more than baseline.
       - op: add
         path: /spec/declarative/deployment/securityContext
         value:
           allowPrivilegeEscalation: false
-          seccompProfile:
-            type: Unconfined
       - op: add
         path: /spec/skills
         value:
@@ -160,6 +144,15 @@ patches:
                 value: "1000"
               - name: GIT_HTTP_LOW_SPEED_TIME
                 value: "20"
+  # router-agent only picks an agent and relays its answer, so it gets no
+  # skills and therefore no bash. With bash it tried to do the work itself
+  # and looped on failing commands (sessions 402f5857 and 67af7228).
+  - target:
+      kind: Agent
+      name: router-agent
+    patch: |-
+      - op: remove
+        path: /spec/skills
 
 helmCharts:
 - name: kagent-crds
