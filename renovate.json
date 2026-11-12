@@ -24,28 +24,12 @@
       "minimumReleaseAgeBehaviour": "timestamp-optional"
     },
     {
-      "matchDepTypes": [
-        "devDependencies"
-      ],
-      "automerge": true
-    },
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchPackageNames": [
-        "/.*/"
-      ],
-      "automerge": true
-    },
-    {
       "matchManagers": [
         "kustomize"
       ],
       "matchFileNames": [
         "k8s/prod/datadog/**"
       ],
-      "automerge": true,
       "separateMinorPatch": true
     },
     {
@@ -59,16 +43,6 @@
         "patch"
       ],
       "enabled": false
-    },
-    {
-      "description": "A kagent skill bump rewrites instructions an agent will execute with real tools, so it gets read by a human rather than automerged",
-      "matchManagers": [
-        "custom.regex"
-      ],
-      "matchFileNames": [
-        "k8s/prod/kagent/**"
-      ],
-      "automerge": false
     },
     {
       "description": "Skip patch-level skill bumps (e.g. ponytail v1.2.3 -> v1.2.4); minors and majors still open a PR for review",
@@ -115,13 +89,12 @@
       "enabled": false
     },
     {
-      "description": "mkuf tags are v<release>-<commits>-g<sha> (git describe), which docker versioning reads as an incompatible suffix. A bump recreates the printer pod, killing any print in progress, so it waits for review",
+      "description": "mkuf tags are v<release>-<commits>-g<sha> (git describe), which docker versioning reads as an incompatible suffix",
       "matchPackageNames": [
         "mkuf/klipper",
         "mkuf/moonraker"
       ],
-      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:-(?<build>\\d+)-g[0-9a-f]+)?$",
-      "automerge": false
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:-(?<build>\\d+)-g[0-9a-f]+)?$"
     },
     {
       "description": "An ollama/ollama bump also bumps the patched qwen image, whose tag only exists once ollama-image builds it. That check isn't required, so Renovate merges itself after all checks pass, not GitHub after the required ones",
@@ -131,16 +104,6 @@
       "platformAutomerge": false
     },
     {
-      "description": "Nomad jobs deploy by hand with `nomad job run`, not on merge, so a bump waits for whoever runs it",
-      "matchManagers": [
-        "custom.regex"
-      ],
-      "matchFileNames": [
-        "nomad/**"
-      ],
-      "automerge": false
-    },
-    {
       "description": "silo tags are RELEASE.<date>T<time>Z, which docker versioning can't order",
       "matchPackageNames": [
         "pgsty/silo"
@@ -148,7 +111,7 @@
       "versioning": "regex:^RELEASE\\.(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})T(?<build>\\d{2})-\\d{2}-\\d{2}Z$"
     },
     {
-      "description": "Talos and Kubernetes pins change only after the nodes are upgraded (terraform/talos/AGENTS.md), so they land together in one reviewed PR",
+      "description": "Talos and Kubernetes pins change only after the nodes are upgraded (terraform/talos/AGENTS.md), so they land together in one PR",
       "matchManagers": [
         "custom.regex"
       ],
@@ -156,8 +119,7 @@
         "siderolabs/talos",
         "kubernetes/kubernetes"
       ],
-      "groupName": "talos",
-      "automerge": false
+      "groupName": "talos"
     }
   ],
   "customManagers": [
