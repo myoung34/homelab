@@ -19,6 +19,7 @@ resources:
   - bash-shim.yaml
   - slack-bot.yaml
   - talos.yaml
+  - revision-history-limit.yaml
 
 patches:
   # Agent skills: directories of markdown instructions (SKILL.md plus any

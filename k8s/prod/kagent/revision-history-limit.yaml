@@ -1,0 +1,50 @@
+---
+# Cap old ReplicaSets on the Deployments kagent's controller creates from Agent
+# CRs. Argo's revisionHistoryLimit patch (k8s/argo/appset.yaml) never sees
+# these, and the Agent CRD has no field for it, so they sit at the default of
+# 10. They roll on every Agent change and skill bump.
+#
+# kagent's createOrUpdate copies its desired RevisionHistoryLimit (nil) onto
+# the live object and calls Update whenever the two differ. This policy sets 4
+# again on that Update, so the spec never changes: no new generation, no new
+# ReplicaSet, no reconcile loop. Only the first such Update writes, to move
+# managedFields ownership; later ones are no-ops (checked against a 1.37
+# apiserver).
+#
+# Argo strips the namespace that kustomize's `namespace: kagent` stamps on
+# these, since kustomize doesn't know they are cluster-scoped.
+#
+# Delete this once kagent exposes revisionHistoryLimit under
+# spec.declarative.deployment, and set it in the `kind: Agent` patch instead.
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: kagent-agent-revision-history-limit
+spec:
+  # Cosmetic cap. A broken policy shouldn't block agent rollouts.
+  failurePolicy: Ignore
+  reinvocationPolicy: Never
+  matchConstraints:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: kagent
+    objectSelector:
+      matchLabels:
+        app.kubernetes.io/managed-by: kagent
+    resourceRules:
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["deployments"]
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >-
+          Object{spec: Object.spec{revisionHistoryLimit: 4}}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: kagent-agent-revision-history-limit
+spec:
+  policyName: kagent-agent-revision-history-limit
