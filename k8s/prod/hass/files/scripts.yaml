@@ -1,6 +1,7 @@
 # Look up a title in Radarr and add the top match under HD-1080p (id 4,
 # 12 GiB cap) with search on. Returns {"message": ...} for the caller to
-# speak or post. Used by the Assist and Google Keep automations.
+# speak or post, plus status (added|pending|exists|not_found|error) and the
+# canonical name "Title (Year)". Used by the Assist and Keep automations.
 radarr_download_movie:
   alias: Radarr download movie
   mode: queued
@@ -22,13 +23,16 @@ radarr_download_movie:
     - if: "{{ movie is none }}"
       then:
         - variables:
-            result: {message: "I couldn't find a movie called {{ title }}."}
+            result: {message: "I couldn't find a movie called {{ title }}.", status: not_found, name: "{{ title }}"}
         - stop: not found
           response_variable: result
     - if: "{{ (movie.id | default(0)) > 0 }}"
       then:
         - variables:
-            result: {message: "{{ movie.title }} ({{ movie.year }}) is already in Radarr."}
+            result:
+              message: "{{ movie.title }} ({{ movie.year }}) is already in Radarr."
+              status: "{{ 'exists' if movie.hasFile | default(false) else 'pending' }}"
+              name: "{{ movie.title }} ({{ movie.year }})"
         - stop: already added
           response_variable: result
     - service: rest_command.radarr_add
@@ -39,5 +43,7 @@ radarr_download_movie:
         result:
           message: >
             {% if added.status == 201 %}Downloading {{ movie.title }} ({{ movie.year }}).{% else %}Radarr couldn't add {{ movie.title }} (HTTP {{ added.status }}).{% endif %}
+          status: "{{ 'added' if added.status == 201 else 'error' }}"
+          name: "{{ movie.title }} ({{ movie.year }})"
     - stop: done
       response_variable: result

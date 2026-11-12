@@ -264,9 +264,78 @@
     - service: rest_command.slack_notify
       data:
         message: "🎬 Keep list ({{ item }}): {{ result.message }}"
-    - service: todo.update_item
+    # The list doubles as "still downloading": rename to Radarr's canonical
+    # name and leave it open until radarr_import_remove_from_keep sees the
+    # import. Already-on-disk goes straight away; not-found gets ticked off.
+    - choose:
+        - conditions: "{{ result.status in ['added', 'pending'] }}"
+          sequence:
+            - service: todo.update_item
+              target:
+                entity_id: todo.google_keep_movies
+              data:
+                item: "{{ item }}"
+                rename: "{{ result.name }}"
+        - conditions: "{{ result.status == 'exists' }}"
+          sequence:
+            - service: todo.remove_item
+              target:
+                entity_id: todo.google_keep_movies
+              data:
+                item: "{{ item }}"
+      default:
+        - service: todo.update_item
+          target:
+            entity_id: todo.google_keep_movies
+          data:
+            item: "{{ item }}"
+            status: completed
+
+# Radarr Connect -> Webhook (On Import / On Upgrade) posts here once the file
+# is in /media/movies on the NAS. Remove the matching Keep "movies" item.
+# Match ignores case and punctuation so "Mortal Kombat 2021" (never renamed)
+# and "Mortal Kombat (2021)" both count. The webhook id lives in secrets.yaml
+# (Vault secret/hass) because the repo is public and hass is on Funnel.
+- alias: Radarr Import Remove From Keep
+  id: radarr_import_remove_from_keep
+  mode: queued
+  trigger:
+    - platform: webhook
+      webhook_id: !secret radarr_webhook_id
+      allowed_methods: [POST]
+      local_only: true
+  condition:
+    - condition: template
+      value_template: "{{ trigger.json.eventType | default('') == 'Download' }}"
+  action:
+    - variables:
+        name: "{{ trigger.json.movie.title }} ({{ trigger.json.movie.year }})"
+        key: "{{ (trigger.json.movie.title ~ trigger.json.movie.year) | lower | regex_replace('[^a-z0-9]', '') }}"
+    - service: todo.get_items
       target:
         entity_id: todo.google_keep_movies
       data:
-        item: "{{ item }}"
-        status: completed
+        status: [needs_action, completed]
+      response_variable: listed
+    - variables:
+        hits: >
+          {% set ns = namespace(out=[]) %}
+          {% for i in listed['todo.google_keep_movies']['items'] %}
+            {% if (i.summary | lower | regex_replace('[^a-z0-9]', '')) == key %}
+              {% set ns.out = ns.out + [i.summary] %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.out }}
+    - repeat:
+        for_each: "{{ hits }}"
+        sequence:
+          - service: todo.remove_item
+            target:
+              entity_id: todo.google_keep_movies
+            data:
+              item: "{{ repeat.item }}"
+    - if: "{{ not (trigger.json.isUpgrade | default(false)) }}"
+      then:
+        - service: rest_command.slack_notify
+          data:
+            message: "✅ {{ name }} is on the NAS and in Jellyfin{{ ' (removed from the Keep list)' if hits | length > 0 else '' }}"
