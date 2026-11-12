@@ -22,6 +22,19 @@ resources:
   - revision-history-limit.yaml
 
 patches:
+  # The agents and sandboxagents CRDs are too big for client-side apply: its
+  # kubectl.kubernetes.io/last-applied-configuration copy would exceed the
+  # 256KB annotation limit and the API server rejects the patch. The appset
+  # sets ServerSideApply=true, but a manual sync that omits that option falls
+  # back to client-side apply (seen 2026-11-12). The per-resource annotation
+  # forces SSA for these regardless of the sync's options.
+  - target:
+      group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1sync-options
+        value: ServerSideApply=true
   # no-cpu-limit: drop the chart's default CPU limits (controller 2, tools
   # and ui 1). kustomize drops `cpu: null` from valuesInline, so values
   # can't unset them. See the controller values below for why.
