@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: plex
+  namespace: plex
+spec:
+  defaultBackend:
+    service:
+      name: plex
+      port:
+        number: 32400
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - plex
