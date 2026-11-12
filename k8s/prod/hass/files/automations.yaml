@@ -251,7 +251,8 @@
   condition:
     - condition: template
       value_template: >
-        {{ trigger.event.origin == 'REMOTE' and
+        {# EventOrigin is a plain Enum: compare its string form, not the enum. #}
+        {{ (trigger.event.origin | string) == 'REMOTE' and
            'todo.google_keep_movies' in (trigger.event.data.service_data.entity_id | default([])) }}
   action:
     - variables:
