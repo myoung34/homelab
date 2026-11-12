@@ -1,0 +1,73 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# No `namespace:` here. The chart already puts its objects in kube-system
+# (helmCharts.namespace), and kustomize's namespace transformer would rename
+# the chart's own cilium-secrets Namespace object to kube-system, handing
+# Argo CD the kube-system Namespace. lb.yaml is cluster-scoped.
+
+resources:
+  - lb.yaml
+
+# CNI + kube-proxy replacement, replacing Talos' flannel and kube-proxy
+# (terraform/talos/templates/controlplane.yaml.tmpl). Bootstrapped once with
+# `kubectl kustomize --enable-helm | kubectl apply --server-side` during the
+# migration window, since Argo CD can't sync while the network is swapped;
+# Argo CD owns it from then on. Settings that tie it to Talos follow
+# https://docs.cilium.io/en/stable/installation/k8s-install-talos-linux/.
+helmCharts:
+- name: cilium
+  includeCRDs: true
+  namespace: kube-system
+  releaseName: cilium
+  version: 1.20.4
+  repo: https://helm.cilium.io
+  valuesInline:
+    # Talos assigns each node's pod CIDR (10.244.x.0/24 out of 10.244.0.0/16).
+    ipam:
+      mode: kubernetes
+    kubeProxyReplacement: true
+    # The API server through KubePrism, which runs on every Talos node.
+    k8sServiceHost: localhost
+    k8sServicePort: 7445
+    # Talos already mounts cgroupv2 and bpffs; Talos workloads can't load
+    # kernel modules, so SYS_MODULE is dropped from the chart defaults.
+    cgroup:
+      autoMount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
+    securityContext:
+      capabilities:
+        ciliumAgent: [CHOWN, KILL, NET_ADMIN, NET_RAW, IPC_LOCK, SYS_ADMIN, SYS_RESOURCE, DAC_OVERRIDE, FOWNER, SETGID, SETUID, SYSLOG]
+        cleanCiliumState: [NET_ADMIN, SYS_ADMIN, SYS_RESOURCE]
+    bpf:
+      # Talos forwards kube-dns to the host's DNS; that breaks with eBPF
+      # host routing (cilium#36852), so route through the host stack.
+      hostLegacyRouting: true
+    # All nodes share one L2 VLAN (192.168.1.0/24): route pod traffic
+    # natively, no VXLAN, so no tunnel overhead and pod MTU stays 1500.
+    routingMode: native
+    ipv4NativeRoutingCIDR: 10.244.0.0/16
+    autoDirectNodeRoutes: true
+    # Every node also has tailscale0 (Talos tailscale extension) at MTU 1280.
+    # Left to auto-detect, Cilium attaches to it and takes the lowest MTU of
+    # its devices, which is the classic Talos+Cilium "everything crawls".
+    # Pin the LAN NIC (end0 on the Pis, enp7s0 on cluster41) and the MTU.
+    devices: en+
+    MTU: 1500
+    # LoadBalancer VIPs on the LAN (lb.yaml), answered by ARP from the node
+    # running the backend. The lease traffic needs a higher API rate limit.
+    l2announcements:
+      enabled: true
+    k8sClientRateLimit:
+      qps: 20
+      burst: 40
+    operator:
+      replicas: 2
+      resources:
+        requests:
+          cpu: 20m
+          memory: 64Mi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
