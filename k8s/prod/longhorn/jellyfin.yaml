@@ -3,8 +3,8 @@ kind: Volume
 metadata:
   labels:
     backup-target: default
-    backup-volume: plex-config
-    longhornvolume: plex-config
+    backup-volume: jellyfin-config
+    longhornvolume: jellyfin-config
     recurring-job-group.longhorn.io/default: enabled
     recurring-job.longhorn.io/backup: enabled
     recurring-job.longhorn.io/snapshot: enabled
@@ -13,7 +13,7 @@ metadata:
     setting.longhorn.io/remove-snapshots-during-filesystem-trim: ignored
     setting.longhorn.io/replica-auto-balance: ignored
     setting.longhorn.io/snapshot-data-integrity: ignored
-  name: plex-config
+  name: jellyfin-config
   namespace: longhorn-system
 spec:
   Standby: false
