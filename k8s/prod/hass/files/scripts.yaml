@@ -1,1 +1,43 @@
-#todo
+# Look up a title in Radarr and add the top match under HD-1080p (id 4,
+# 12 GiB cap) with search on. Returns {"message": ...} for the caller to
+# speak or post. Used by the Assist and Google Keep automations.
+radarr_download_movie:
+  alias: Radarr download movie
+  mode: queued
+  fields:
+    title:
+      description: Movie title, optionally with the year ("The Mummy 2026")
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: rest_command.radarr_lookup
+      data:
+        term: "{{ title }}"
+      response_variable: lookup
+    - variables:
+        results: >
+          {{ lookup.content if lookup.status == 200 and lookup.content is list else [] }}
+        movie: "{{ results[0] if results | length > 0 else none }}"
+    - if: "{{ movie is none }}"
+      then:
+        - variables:
+            result: {message: "I couldn't find a movie called {{ title }}."}
+        - stop: not found
+          response_variable: result
+    - if: "{{ (movie.id | default(0)) > 0 }}"
+      then:
+        - variables:
+            result: {message: "{{ movie.title }} ({{ movie.year }}) is already in Radarr."}
+        - stop: already added
+          response_variable: result
+    - service: rest_command.radarr_add
+      data:
+        movie: "{{ movie }}"
+      response_variable: added
+    - variables:
+        result:
+          message: >
+            {% if added.status == 201 %}Downloading {{ movie.title }} ({{ movie.year }}).{% else %}Radarr couldn't add {{ movie.title }} (HTTP {{ added.status }}).{% endif %}
+    - stop: done
+      response_variable: result
