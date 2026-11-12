@@ -64,7 +64,7 @@ spec:
               mountPath: /seed-moonraker
       containers:
         - name: klipper
-          image: mkuf/klipper:v0.13.0-824-g56a9c605e
+          image: mkuf/klipper:v0.13.0-827-g29d4ec2d6
           args:
             - "-l"
             - "/opt/printer_data/logs/klippy.log"
