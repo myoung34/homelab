@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: traefik
+
+resources:
+  - namespace.yaml
+
+# LAN ingress for devices that aren't on Tailscale (TVs). Serves
+# *.marcyoung.us names that resolve to the MetalLB VIP 192.168.1.50, with
+# certs from cert-manager. The tailscale IngressClass is unchanged.
+helmCharts:
+- name: traefik
+  includeCRDs: true
+  namespace: traefik
+  releaseName: traefik
+  version: 42.4.0
+  repo: https://traefik.github.io/charts
+  valuesInline:
+    ingressClass:
+      enabled: true
+      isDefaultClass: false
+      name: traefik
+    ingressRoute:
+      dashboard:
+        enabled: false
+    ports:
+      web:
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
+    service:
+      annotations:
+        metallb.io/loadBalancerIPs: 192.168.1.50
+      spec:
+        type: LoadBalancer
+        # Keep client IPs, and ARP the VIP from the node running traefik.
+        externalTrafficPolicy: Local
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi

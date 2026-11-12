@@ -5,6 +5,3 @@ metadata:
   name: jellyfin
   labels:
     name: jellyfin
-    # hostNetwork (LAN clients on 192.168.1.32:8096) is rejected by the
-    # cluster's default baseline policy.
-    pod-security.kubernetes.io/enforce: privileged

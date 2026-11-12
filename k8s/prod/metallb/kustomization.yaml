@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: metallb
+
+resources:
+  - namespace.yaml
+  - pool.yaml
+
+helmCharts:
+- name: metallb
+  includeCRDs: true
+  namespace: metallb
+  releaseName: metallb
+  version: 0.16.2
+  repo: https://metallb.github.io/metallb
+  valuesInline:
+    controller:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+    # L2 only; no BGP, so neither the FRR sidecar nor the frr-k8s subchart
+    # (on by default since 0.15).
+    frrk8s:
+      enabled: false
+    speaker:
+      frr:
+        enabled: false
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi

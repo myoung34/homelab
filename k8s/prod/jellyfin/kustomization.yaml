@@ -8,3 +8,4 @@ resources:
   - pvc.yaml
   - jellyfin.yaml
   - tailscale.yaml
+  - lan-ingress.yaml
