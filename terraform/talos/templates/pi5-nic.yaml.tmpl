@@ -1,0 +1,19 @@
+# Works around the Pi 5's RP1 ethernet (macb) silently stalling TX under
+# load. On kernel 6.18 klipper logged ~10 "TX stall detected ... re-kicking
+# TSTART" an hour; each stall broke Longhorn's iSCSI and replica traffic,
+# pushed IO stall past 80%, and got the node tainted homelab/io-pressure.
+# Mitigation from siderolabs/sbc-raspberrypi#91: no TSO/GSO/SG offload, and
+# a BQL floor so the TX queue never throttles down to near-empty. Both apply
+# without a reboot. Drop once the upstream macb fixes ship in Talos.
+apiVersion: v1alpha1
+kind: EthernetConfig
+name: end0
+features:
+  tx-scatter-gather: false
+  tx-tcp-segmentation: false
+  tx-generic-segmentation: false
+---
+apiVersion: v1alpha1
+kind: SysfsConfig
+params:
+  class.net.end0.queues.tx-0.byte_queue_limits.limit_min: "65536"

@@ -36,6 +36,7 @@ locals {
     })],
     node.image == local.bare_metal_image ? [templatefile("${path.module}/templates/bare-metal.yaml.tmpl", {})] : [],
     node.image == local.rpi_overlay_image ? [templatefile("${path.module}/templates/pi4-cpufreq.yaml.tmpl", {})] : [],
+    node.image == local.rpi5_overlay_image ? [templatefile("${path.module}/templates/pi5-nic.yaml.tmpl", {})] : [],
   ]) }
 }
 
