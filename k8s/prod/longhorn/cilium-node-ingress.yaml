@@ -1,0 +1,20 @@
+# Longhorn's internal NetworkPolicies (restrictInternalTraffic, on by
+# default) only admit Longhorn *pods* to instance-manager. Some V1 data-engine
+# traffic starts in a node's host network instead (replica rebuild/sync to
+# replica ports, iSCSI on 3260), which Cilium classifies as host/remote-node
+# and denied with "Policy denied" once Cilium replaced flannel (flannel never
+# enforced policy). Symptom: rebuilds fail with "context deadline exceeded"
+# and retry forever. Additive allow for nodes only; other pods stay blocked.
+# See https://longhorn.io/kb/troubleshooting-volume-attachment-stuck-cni-networkpolicies/
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: instance-manager-from-nodes
+spec:
+  endpointSelector:
+    matchLabels:
+      longhorn.io/component: instance-manager
+  ingress:
+  - fromEntities:
+    - host
+    - remote-node

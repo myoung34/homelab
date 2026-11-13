@@ -4,6 +4,7 @@ namespace: longhorn-system
 
 resources:
   - namespace.yaml
+  - cilium-node-ingress.yaml
   - tailscale.yaml
   - vault.yaml
   - backuptargets.yaml
