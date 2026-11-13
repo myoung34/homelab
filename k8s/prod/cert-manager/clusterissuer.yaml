@@ -1,0 +1,20 @@
+# Let's Encrypt via DNS-01 on Cloudflare: proves ownership of *.marcyoung.us
+# without the LAN-only hosts being reachable from the internet.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-account
+    solvers:
+    - dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cloudflare-api-token  # pragma: allowlist secret
+            key: CLOUDFLARE_API_TOKEN
+      selector:
+        dnsZones:
+        - marcyoung.us

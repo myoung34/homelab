@@ -5,7 +5,10 @@ Media server on cluster41, reading the NAS share `/volume1/Media` read-only
 at `/media`. Replaced Plex, whose off-network playback needs a paid pass.
 
 - **Public / tailnet:** `https://media.king-gila.ts.net` (Tailscale Funnel).
-- **LAN:** `hostNetwork`, so `http://192.168.1.32:8096`.
+- **LAN without Tailscale (TVs):** `https://media.marcyoung.us`, via traefik
+  on the Cilium LB VIP `192.168.1.50` (`lan-ingress.yaml`). Not
+  `media.king-gila.ts.net`: off-tailnet that name goes out through Funnel
+  at a few Mbit/s.
 - **Transcoding:** CPU only. Both GPUs on cluster41 are allocated to ollama.
 
 | Library  | Folder          |
@@ -28,5 +31,7 @@ Jellyfin's Dashboard → API Keys).
 
 ## Gotchas
 
-- **cluster41 is a single point of failure.** The pod is pinned there.
+- **Prefers cluster41**, but can run elsewhere if it's down (CPU
+  transcoding on an arm64 board will be slow).
+- **No UDP discovery**: without hostNetwork, clients add the server by URL.
 - **Config is on Longhorn** (`jellyfin-config`, 20 Gi, nightly backup).

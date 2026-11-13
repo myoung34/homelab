@@ -1,0 +1,29 @@
+# LAN name for devices that aren't on Tailscale (TVs):
+# https://media.marcyoung.us -> traefik on the Cilium LB VIP 192.168.1.50.
+# Cloudflare holds an A record to that private IP (terraform/cloudflare);
+# the cert comes from cert-manager via DNS-01. Everyone else keeps using
+# https://media.king-gila.ts.net (tailscale.yaml).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jellyfin-lan
+  namespace: jellyfin
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - media.marcyoung.us
+    secretName: media-marcyoung-us-tls  # pragma: allowlist secret
+  rules:
+  - host: media.marcyoung.us
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jellyfin
+            port:
+              number: 8096

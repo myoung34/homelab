@@ -29,7 +29,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: jellyfin
       app.kubernetes.io/name: jellyfin
-  # hostNetwork binds :8096 on the node, so two pods can't overlap.
+  # One RWO Longhorn volume: never two pods at once.
   strategy:
     type: Recreate
   template:
@@ -39,16 +39,21 @@ spec:
         app.kubernetes.io/name: jellyfin
     spec:
       automountServiceAccountToken: false
-      # cluster41 is the only amd64 node with real CPU (12 cores, 32 GB);
-      # the rest are 4-8 GB arm64 boards. No GPU: ollama holds both the
-      # NVIDIA and AMD cards through the device plugins, so transcoding is
-      # CPU-only.
-      nodeSelector:
-        kubernetes.io/hostname: cluster41
-      # LAN clients (TVs) reach 192.168.1.32:8096 directly and find the
-      # server by UDP 7359 discovery, same pattern as hass.
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
+      # Prefer cluster41: the only amd64 node with real CPU (12 cores, 32 GB)
+      # and no GPU to spare (ollama holds both), so transcoding is CPU-only.
+      # Preferred, not required: if cluster41 is down Jellyfin comes up on an
+      # arm64 board instead (slow transcodes, direct play still fine). LAN
+      # clients reach it through traefik's Cilium LB VIP, which doesn't care
+      # which node this lands on.
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [cluster41]
       containers:
       - name: jellyfin
         image: jellyfin/jellyfin:12.4
