@@ -297,6 +297,11 @@ helmCharts:
       # advertises it; every Pi 4 here reports a bare ARMv8.0 baseline and
       # also lacks AES/SHA1/SHA2/PMULL. Expressing the CPU requirement keeps
       # this correct as nodes are added or rebuilt.
+      #
+      # amd64 is the second term (terms are ORed): the image is multi-arch
+      # and x86 has no such gap, but NFD doesn't set the ARM ATOMICS label
+      # there. Without it klipper is the only home, so one taint on klipper
+      # (homelab/io-pressure, 2026-11-13) left the UI Pending for 18h.
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -305,6 +310,10 @@ helmCharts:
                   - key: feature.node.kubernetes.io/cpu-cpuid.ATOMICS
                     operator: In
                     values: ["true"]
+              - matchExpressions:
+                  - key: kubernetes.io/arch
+                    operator: In
+                    values: ["amd64"]
       # OpenShift-only Route, and we front the UI with the tailscale Ingress in
       # tailscale.yaml instead.
       route:
