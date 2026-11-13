@@ -5,6 +5,7 @@ provider "registry.terraform.io/hashicorp/aws" {
   version = "5.87.0"
   hashes = [
     "h1:IYq3by7O/eJuXzJwOF920z2nZEkw08PkDFdw2xkyhrs=",
+    "h1:z2CG1IX+2d6pvDVUNlTeb2/UD6CTSU4M1ntSmQCiWUM=",
     "zh:017f237466875c919330b9e214fb33af14fffbff830d3755e8976d8fa3c963c2",
     "zh:0776d1e60aa93c85ecbb01144aed2789c8e180bb0f1c811a0aba17ca7247b26c",
     "zh:0dfa5c6cfb3724494fdc73f7d042515e88a20da8968959f48b3ec0b937bd8c8f",
@@ -28,6 +29,7 @@ provider "registry.terraform.io/paultyng/unifi" {
   constraints = "~> 0.41"
   hashes = [
     "h1:fc0gUNc7ddxeLKVgVbt2iuYBn0U9GKE9lxK78w8oRF4=",
+    "h1:vE4C9E7NtYUC7otQrAvNNkDFBHqEMxkUlcqJhLWchLY=",
     "zh:03ddd3aee05a08e1446f75a7b3f52810181d3307728cba08ce8fb67f109a9c00",
     "zh:11b14b79ad02b0a55fd6116b10c0eb6fab432dd7d1f3527af0e2055adf292451",
     "zh:18c0eb19889927f115a1e05d64f59b4e8d530ccdf1a8b574940a86be20973564",
@@ -42,5 +44,27 @@ provider "registry.terraform.io/paultyng/unifi" {
     "zh:c8354eaaab5f526e8e530b098544c7583a0f0b5b27d67500c7b3e9da56a3a7e5",
     "zh:dc29f1e70f20ce86d3c6a66c7a817616f993a1cf9d941604dfd5222a06992c4c",
     "zh:e772779333419f34d2c6da333c7f7d235a5a34f21ea47636b548e132aed74f3b",
+  ]
+}
+
+provider "registry.terraform.io/ubiquiti-community/unifi" {
+  version     = "0.65.0"
+  constraints = "~> 0.65"
+  hashes = [
+    "h1:SVcdw8xKxvDzbYztT4ds0+kX7D3PX1rNvtkZv0VjpUU=",
+    "zh:0721a5d4b47c41b729d3aaa3c868de15acce5613d5596c7b2f3f9108a646b451",
+    "zh:09dc1bd653523e7f4b6413f8fd043db153b198b86482edf4f62051025e96b2ce",
+    "zh:0ac999b36f14a8b348b1f01c471a1b301a3513b615eaa8d7ca3d3c237c2b8425",
+    "zh:3a890b225c0fd9f1e2ccb9a231da3b451116ffe858b23a3a753400c25f6b69b9",
+    "zh:41578d3f38208effd19505bceaf4a1b8ff4ab8da536c51a821706ba72fa85cd1",
+    "zh:54ef388a39cf0a5fbd6f3145513d8e94cb63f6753627f1fa1ee2d9f1a9b528cb",
+    "zh:78e0db33a6bfd5f4a98d8ea7c785420b6cd8ddf970d582795b7be3cf8ccd7740",
+    "zh:7f527d97d7baaa26d7e9013b1621ebae08e40061b32eb3c2828a9c973630d8e8",
+    "zh:8217befe9fb4dd802d5612750f01adfdfdc8bbc8ba0f6afc4f1c56a11cc95fc0",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:9cdac2d10882e49e56b8f56b09c1d35d8ce1ea2ff7c2def86b5d20616a9cbea4",
+    "zh:a5a8f8d3810d93f98a07d281cf69cf52283ae642e3d897a0e710b4fc92fb09b1",
+    "zh:c95ca86be5aa1afa8c1b3abb90d65bc1d6c42fba532a85095765adb3b180b53d",
+    "zh:e070e007d9a778278f912f13e855060b002b0cd2806f0d1b2f595dcc55ed8909",
   ]
 }

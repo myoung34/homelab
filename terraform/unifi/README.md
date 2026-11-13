@@ -1,6 +1,26 @@
 Unifi
 =====
 
+Applying
+========
+
+State lives in Fastly object storage. Its S3 API rejects the SDK's default
+checksums, so `backend.tf` sets `skip_s3_checksum` and every run needs:
+
+```
+export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
+aws-vault exec -n fastly -- terraform plan
+```
+
+Two providers:
+
+- `paultyng/unifi` (`unifi`): networks, WLANs, devices, settings. Logs in
+  with `UNIFI_USERNAME`/`UNIFI_PASSWORD`. Run with `-parallelism=1`; parallel
+  logins trip the UDM's login lockout.
+- `ubiquiti-community/unifi` (`unifizbf`): zone-based firewall in
+  `firewall.tf`. Also takes `UNIFI_API_KEY`; a Site Manager key (api.ui.com)
+  works with `UNIFI_CLOUD_CONNECTOR=true`.
+
 Notes
 =====
 
