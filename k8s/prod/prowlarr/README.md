@@ -19,6 +19,8 @@ from the seedbox can treat it as account sharing.
   `http://prowlarr.prowlarr.svc.cluster.local:9696`, Radarr server
   `http://radarr.radarr.svc.cluster.local:7878`, plus Radarr's API key from
   Radarr's Settings → General.
+- **Settings → Apps → + → Sonarr**: same, with Sonarr server
+  `http://sonarr.sonarr.svc.cluster.local:8989` and Sonarr's API key.
 - Re-add the indexers from the seedbox Prowlarr; its config is not migrated.
   Once they are in, stop the seedbox copy:
   `ssh seedbox tmux kill-session -t prowlarr`.

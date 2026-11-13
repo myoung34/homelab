@@ -16,8 +16,8 @@ at `/media`. Replaced Plex, whose off-network playback needs a paid pass.
 | Movies   | `/media/movies` |
 | TV Shows | `/media/tv`     |
 
-Don't add `/media/torrents/`: Radarr hardlinks finished downloads into
-`movies/`, so every movie would show twice.
+Don't add `/media/torrents/`: Radarr and Sonarr hardlink finished
+downloads into `movies/` and `tv/`, so everything would show twice.
 
 ## First-time setup
 
@@ -25,9 +25,9 @@ Jellyfin's startup wizard is unauthenticated until it completes, and Funnel
 makes it public, so finish it immediately after the first deploy. The admin
 password lives in Vault at `secret/jellyfin` (`ADMIN_USER`, `ADMIN_PASSWORD`).
 
-Radarr notifies Jellyfin on import (Settings → Connect → Emby / Jellyfin,
-host `jellyfin.jellyfin.svc.cluster.local`, port `8096`, API key from
-Jellyfin's Dashboard → API Keys).
+Radarr and Sonarr notify Jellyfin on import (Settings → Connect → Emby /
+Jellyfin, host `jellyfin.jellyfin.svc.cluster.local`, port `8096`, API key
+from Jellyfin's Dashboard → API Keys).
 
 ## Gotchas
 

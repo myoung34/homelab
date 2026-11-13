@@ -20,6 +20,7 @@ resources:
   - jellyfin.yaml
   - prowlarr.yaml
   - radarr.yaml
+  - sonarr.yaml
   - rtorrent.yaml
   #- klipper-enderright.yaml
   - klipper-enderleft.yaml
