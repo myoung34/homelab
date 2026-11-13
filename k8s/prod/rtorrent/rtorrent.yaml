@@ -125,13 +125,18 @@ spec:
         # :47123 (see README), which dials this tunnel address.
         - name: FIREWALL_VPN_INPUT_PORTS
           value: "47123"
-        # Lets pods (radarr, prowlarr, the tailscale ingress) reach this pod
-        # and get replies routed back over eth0 instead of into the tunnel.
-        # gluetun accepts every port from these subnets, so anything listening
-        # is cluster-reachable: XMLRPC, ruTorrent and WebDAV all sit behind
-        # htpasswd, and the proxy behind HTTPPROXY_USER/HTTPPROXY_PASSWORD.
+        # Routes replies to cluster pods back over eth0 instead of into the
+        # tunnel. It only opens OUTPUT; inbound is FIREWALL_INPUT_PORTS below.
         - name: FIREWALL_OUTBOUND_SUBNETS
           value: "10.244.0.0/16"
+        # Lets pods (radarr, sonarr, prowlarr, the tailscale ingress) reach
+        # XMLRPC, ruTorrent and the proxy on eth0. Without it gluetun only
+        # accepts input addressed to eth0's own subnet: fine under flannel's
+        # /24, but Cilium gives eth0 a /32, so every connection was dropped.
+        # XMLRPC and ruTorrent sit behind htpasswd, the proxy behind
+        # HTTPPROXY_USER/HTTPPROXY_PASSWORD.
+        - name: FIREWALL_INPUT_PORTS
+          value: "8000,8080,8888"
         - name: HTTPPROXY
           value: "on"
         # Unauthenticated, and PUT /v1/vpn/status can stop the tunnel, so keep
