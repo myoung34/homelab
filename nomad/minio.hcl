@@ -42,7 +42,7 @@ EOH
       }
 
       config {
-        image      = "pgsty/silo:RELEASE.2026-10-26T00-00-00Z"
+        image      = "pgsty/silo:RELEASE.2026-11-09T00-00-00Z"
         force_pull = true
 
         command = "server"
