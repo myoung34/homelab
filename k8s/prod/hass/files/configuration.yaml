@@ -98,6 +98,45 @@ rest_command:
         "minimumAvailability": "released",
         "addOptions": {"searchForMovie": true, "monitor": "movieOnly"}
       }
+  # Same as radarr_* above, for "download the show {title}" and the Keep
+  # "tv" list (script.sonarr_download_series).
+  sonarr_lookup:
+    url: "http://sonarr.sonarr.svc.cluster.local:8989/api/v3/series/lookup?term={{ term | urlencode }}"
+    method: GET
+    headers:
+      X-Api-Key: !secret sonarr_api_key
+    timeout: 20
+  sonarr_add:
+    url: "http://sonarr.sonarr.svc.cluster.local:8989/api/v3/series"
+    method: POST
+    content_type: application/json
+    headers:
+      X-Api-Key: !secret sonarr_api_key
+    timeout: 20
+    # qualityProfileId 4 = HD-1080p (100 MB/min cap). Season 1 now, plus
+    # seasons that appear after the add; search right away.
+    payload: >
+      {
+        "title": {{ show.title | to_json }},
+        "tvdbId": {{ show.tvdbId }},
+        "year": {{ show.year }},
+        "titleSlug": {{ show.titleSlug | to_json }},
+        "images": {{ show.images | to_json }},
+        "seasons": {{ show.seasons | to_json }},
+        "qualityProfileId": 4,
+        "rootFolderPath": "/media/tv",
+        "seasonFolder": true,
+        "seriesType": "standard",
+        "monitored": true,
+        "monitorNewItems": "all",
+        "addOptions": {"monitor": "firstSeason", "searchForMissingEpisodes": true}
+      }
+  sonarr_series:
+    url: "http://sonarr.sonarr.svc.cluster.local:8989/api/v3/series/{{ id }}"
+    method: GET
+    headers:
+      X-Api-Key: !secret sonarr_api_key
+    timeout: 20
   slack_notify:
     url: !secret slack_webhook_url
     method: POST

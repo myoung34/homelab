@@ -339,3 +339,139 @@
         - service: rest_command.slack_notify
           data:
             message: "✅ {{ name }} is on the NAS and in Jellyfin{{ ' (removed from the Keep list)' if hits | length > 0 else '' }}"
+
+# Assist: "download the show Severance". Say the year for ambiguous titles.
+# Logic lives in script.sonarr_download_series.
+- alias: Assist Download Show
+  id: assist_download_show
+  mode: queued
+  trigger:
+    - platform: conversation
+      command:
+        - "download [the] (show|series|tv show) {title}"
+        - "(get|grab) [the] (show|series|tv show) {title}"
+  action:
+    - service: script.sonarr_download_series
+      data:
+        title: "{{ trigger.slots.title }}"
+      response_variable: result
+    - set_conversation_response: "{{ result.message }}"
+    - if: "{{ result.status == 'added' }}"
+      then:
+        - service: rest_command.slack_notify
+          data:
+            message: "📺 Assist: {{ result.message }}"
+
+# "Hey Google, add Severance to my tv list". Same as Keep Movies List
+# Download, against the Keep list "tv" and Sonarr.
+- alias: Keep TV List Download
+  id: keep_tv_list_download
+  mode: queued
+  trigger:
+    - platform: event
+      event_type: call_service
+      event_data:
+        domain: todo
+        service: add_item
+  condition:
+    - condition: template
+      value_template: >
+        {{ (trigger.event.origin | string) == 'REMOTE' and
+           'todo.google_keep_tv' in (trigger.event.data.service_data.entity_id | default([])) }}
+  action:
+    - variables:
+        item: "{{ trigger.event.data.service_data.item }}"
+    - service: script.sonarr_download_series
+      data:
+        title: "{{ item }}"
+      response_variable: result
+    - service: rest_command.slack_notify
+      data:
+        message: "📺 Keep list ({{ item }}): {{ result.message }}"
+    - choose:
+        - conditions: "{{ result.status in ['added', 'pending'] }}"
+          sequence:
+            - service: todo.update_item
+              target:
+                entity_id: todo.google_keep_tv
+              data:
+                item: "{{ item }}"
+                rename: "{{ result.name }}"
+        - conditions: "{{ result.status == 'exists' }}"
+          sequence:
+            - service: todo.remove_item
+              target:
+                entity_id: todo.google_keep_tv
+              data:
+                item: "{{ item }}"
+      default:
+        - service: todo.update_item
+          target:
+            entity_id: todo.google_keep_tv
+          data:
+            item: "{{ item }}"
+            status: completed
+
+# Sonarr Connect -> Webhook (On Import Complete only) posts here once per
+# release: one ping for a season pack, not one per episode. Every import gets
+# a Slack note; the Keep "tv" item goes once every monitored aired episode
+# has a file, so it stays open while season 1 trickles in.
+- alias: Sonarr Import Remove From Keep
+  id: sonarr_import_remove_from_keep
+  mode: queued
+  trigger:
+    - platform: webhook
+      webhook_id: !secret sonarr_webhook_id
+      allowed_methods: [POST]
+      local_only: true
+  condition:
+    - condition: template
+      value_template: "{{ trigger.json.eventType | default('') == 'Download' }}"
+  action:
+    - variables:
+        series: "{{ trigger.json.series }}"
+        name: "{{ series.title }} ({{ series.year }})"
+        key: "{{ (series.title ~ series.year) | lower | regex_replace('[^a-z0-9]', '') }}"
+        eps: "{{ trigger.json.episodes | default([]) }}"
+        what: >
+          {%- set seasons = eps | map(attribute='seasonNumber') | unique | list -%}
+          {% if eps | length == 1 %}S{{ '%02d' % eps[0].seasonNumber }}E{{ '%02d' % eps[0].episodeNumber }}
+          {%- elif seasons | length == 1 %}S{{ '%02d' % seasons[0] }} ({{ eps | length }} episodes)
+          {%- else %}{{ eps | length }} episodes{% endif %}
+    - service: rest_command.sonarr_series
+      data:
+        id: "{{ series.id }}"
+      response_variable: fetched
+    - variables:
+        stats: "{{ fetched.content.statistics | default({}) if fetched.status == 200 else {} }}"
+        complete: >
+          {{ (stats.episodeCount | default(0)) > 0 and
+             (stats.episodeFileCount | default(0)) >= (stats.episodeCount | default(0)) }}
+    - service: todo.get_items
+      target:
+        entity_id: todo.google_keep_tv
+      data:
+        status: [needs_action, completed]
+      response_variable: listed
+    - variables:
+        hits: >
+          {% set ns = namespace(out=[]) %}
+          {% if complete %}
+            {% for i in listed['todo.google_keep_tv']['items'] %}
+              {% if (i.summary | lower | regex_replace('[^a-z0-9]', '')) == key %}
+                {% set ns.out = ns.out + [i.summary] %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ ns.out }}
+    - repeat:
+        for_each: "{{ hits }}"
+        sequence:
+          - service: todo.remove_item
+            target:
+              entity_id: todo.google_keep_tv
+            data:
+              item: "{{ repeat.item }}"
+    - service: rest_command.slack_notify
+      data:
+        message: "✅ {{ name }} {{ what }} is on the NAS and in Jellyfin{{ ' (removed from the Keep list)' if hits | length > 0 else '' }}"
