@@ -8,7 +8,7 @@
 # Looked up through unifizbf so policies carry the controller's UUIDs, not the
 # legacy ObjectIds paultyng keeps in state.
 data "unifi_network" "zbf" {
-  for_each = toset(["Default", "WIFI", "IoT", "printer", "yourmom"])
+  for_each = toset(["IoT", "printer", "yourmom"])
   provider = unifizbf
   name     = each.key
 }
@@ -80,39 +80,19 @@ resource "unifi_firewall_policy" "block_untrusted_gateway_mgmt" {
   }
 }
 
-# DHCP hands out NextDNS; stop clients from bypassing it with hardcoded
-# resolvers. cluster and NAS are excluded: CoreDNS, cert-manager and the Argo
-# workflows query 8.8.8.8/1.1.1.1 directly.
-resource "unifi_firewall_policy" "block_internal_dns_bypass" {
-  provider   = unifizbf
-  name       = "Block DNS except NextDNS (Internal clients)"
-  action     = "BLOCK"
-  protocol   = "tcp_udp"
-  ip_version = "IPV4"
-  source = {
-    zone_id         = data.unifi_firewall_zone.internal.id
-    matching_target = "NETWORK"
-    network_ids     = [data.unifi_network.zbf["Default"].id, data.unifi_network.zbf["WIFI"].id]
-  }
-  destination = {
-    zone_id            = data.unifi_firewall_zone.external.id
-    matching_target    = "IP"
-    ips                = local.nextdns_servers
-    match_opposite_ips = true
-    port_matching_type = "SPECIFIC"
-    port               = "53,853"
-  }
-}
-
+# DHCP hands out NextDNS; stop IoT devices from bypassing it with hardcoded
+# resolvers. People networks (Default, WIFI) are left alone: a hard block
+# breaks phones/laptops with their own DNS settings.
 resource "unifi_firewall_policy" "block_untrusted_dns_bypass" {
   provider   = unifizbf
-  name       = "Block DNS except NextDNS (Untrusted)"
+  name       = "Block DNS except NextDNS (IoT)"
   action     = "BLOCK"
   protocol   = "tcp_udp"
   ip_version = "IPV4"
   source = {
     zone_id         = unifi_firewall_zone.untrusted.id
-    matching_target = "ANY"
+    matching_target = "NETWORK"
+    network_ids     = [data.unifi_network.zbf["IoT"].id]
   }
   destination = {
     zone_id            = data.unifi_firewall_zone.external.id
