@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: sonarr
+    app.kubernetes.io/name: sonarr
+  name: sonarr
+spec:
+  ports:
+  - name: http
+    port: 8989
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: sonarr
+    app.kubernetes.io/name: sonarr
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: sonarr
+    app.kubernetes.io/name: sonarr
+  name: sonarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: sonarr
+      app.kubernetes.io/name: sonarr
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: sonarr
+        app.kubernetes.io/name: sonarr
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: default
+      containers:
+      - name: sonarr
+        image: lscr.io/linuxserver/sonarr:4.0.20
+        imagePullPolicy: IfNotPresent
+        env:
+        # Matches myoung:users. The share squashes every write to admin:users
+        # anyway, so this only matters if that squash is ever turned off.
+        - name: PUID
+          value: "1026"
+        - name: PGID
+          value: "100"
+        - name: UMASK
+          value: "002"
+        - name: TZ
+          value: "America/Chicago"
+        # No login in the app: it is only reachable on the tailnet and inside
+        # the cluster. "External" means "auth is someone else's job", which
+        # also stops the first-run "Authentication Required" dialog.
+        - name: SONARR__AUTH__METHOD
+          value: External
+        ports:
+        - containerPort: 8989
+          name: http
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        startupProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /ping
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 125m
+            memory: 248Mi
+          limits:
+            cpu: 850m
+            memory: 384Mi
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /media
+          name: media
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: sonarr-config
+      # Same export, same mount path as rtorrent: rtorrent writes
+      # /media/torrents/, sonarr imports into /media/tv/. One mount, so the
+      # import is a hardlink, and no remote path mapping is needed.
+      - name: media
+        nfs:
+          server: 192.168.3.2
+          path: /volume1/Media
