@@ -91,6 +91,9 @@ EOH
     Port                5046
     Format              json
     Tag                 talos
+    # Talos' kernel/service log lines carry no hostname; record the sender
+    # so Datadog monitors can name the node (e.g. Pi 5 macb TX stalls).
+    Source_Address_Key  talos_node
 
 [FILTER]
     Name  modify
