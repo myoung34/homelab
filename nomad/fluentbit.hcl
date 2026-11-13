@@ -9,7 +9,12 @@ job "fluent-bit" {
       value     = "bigNASty"
     }
 
+    # Host networking so in_tcp sees each Talos node's real address. Bridged,
+    # every connection arrived from Docker's proxy (172.17.0.1). Same as
+    # netbootxyz. The static ports below still reserve 5044-5046.
     network {
+      mode = "host"
+
       port "syslog" {
         static = 5044
       }
@@ -105,6 +110,14 @@ EOH
     Match talos
     Add service talos
 
+# talos_node arrives as "tcp://192.168.1.69:43122"; keep just the IP so it's
+# a stable per-node key (the port changes on every reconnect).
+[FILTER]
+    Name  lua
+    Match talos
+    call  node_ip
+    code  function node_ip(tag, ts, r) local a = r["talos_node"]; if a then local ip = string.match(a, "^%a+://%[?([^%]]-)%]?:%d+$"); if ip then r["talos_node"] = ip; return 1, ts, r end end; return 0, ts, r end
+
 [FILTER]
     Name  modify
     Match unifi
@@ -129,14 +142,9 @@ EOH
       }
 
       config {
-        image      = "fluent/fluent-bit:latest"
-        force_pull = true
-
-        ports = [
-          "syslog",
-          "syslog2",
-          "syslog3"
-        ]
+        image        = "fluent/fluent-bit:latest"
+        force_pull   = true
+        network_mode = "host"
 
         args = [
           "-c",
