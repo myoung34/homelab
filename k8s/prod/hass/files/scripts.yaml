@@ -47,3 +47,55 @@ radarr_download_movie:
           name: "{{ movie.title }} ({{ movie.year }})"
     - stop: done
       response_variable: result
+
+# Sonarr twin of radarr_download_movie: add the top match under HD-1080p
+# (id 4), season 1 plus future seasons, search on. Same result shape.
+# "exists" means every monitored aired episode already has a file.
+sonarr_download_series:
+  alias: Sonarr download series
+  mode: queued
+  fields:
+    title:
+      description: Show title, optionally with the year ("Shogun 2024")
+      required: true
+      selector:
+        text:
+  sequence:
+    - service: rest_command.sonarr_lookup
+      data:
+        term: "{{ title }}"
+      response_variable: lookup
+    - variables:
+        results: >
+          {{ lookup.content if lookup.status == 200 and lookup.content is list else [] }}
+        show: "{{ results[0] if results | length > 0 else none }}"
+    - if: "{{ show is none }}"
+      then:
+        - variables:
+            result: {message: "I couldn't find a show called {{ title }}.", status: not_found, name: "{{ title }}"}
+        - stop: not found
+          response_variable: result
+    - if: "{{ (show.id | default(0)) > 0 }}"
+      then:
+        - variables:
+            stats: "{{ show.statistics | default({}) }}"
+            result:
+              message: "{{ show.title }} ({{ show.year }}) is already in Sonarr."
+              status: >
+                {{ 'exists' if (stats.episodeCount | default(0)) > 0 and
+                   (stats.episodeFileCount | default(0)) >= (stats.episodeCount | default(0)) else 'pending' }}
+              name: "{{ show.title }} ({{ show.year }})"
+        - stop: already added
+          response_variable: result
+    - service: rest_command.sonarr_add
+      data:
+        show: "{{ show }}"
+      response_variable: added
+    - variables:
+        result:
+          message: >
+            {% if added.status == 201 %}Downloading {{ show.title }} ({{ show.year }}), season 1.{% else %}Sonarr couldn't add {{ show.title }} (HTTP {{ added.status }}).{% endif %}
+          status: "{{ 'added' if added.status == 201 else 'error' }}"
+          name: "{{ show.title }} ({{ show.year }})"
+    - stop: done
+      response_variable: result
