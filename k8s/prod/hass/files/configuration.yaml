@@ -31,6 +31,7 @@ default_config:
 
 group: !include groups.yaml
 automation: !include automations.yaml
+automation webhooks: !include automations_webhooks.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
