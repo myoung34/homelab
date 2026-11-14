@@ -32,8 +32,26 @@ helmCharts:
       ignoreAutoConfig:
         - kube_scheduler
         - kube_controller_manager
+        # Replaced by the slower-interval copy in confd below.
+        - kube_apiserver_metrics
       clusterName: prod
       confd:
+        # The bundled auto_conf, but every 120s instead of 15s. Each scrape
+        # pulls ~16MB / 107k series of apiserver /metrics; at 15s it pinned
+        # cluster13 (CPU pressure 85%, ~50s per scrape) and starved the
+        # apiserver enough that ArgoCD server-side diffs timed out.
+        kube_apiserver_metrics.yaml: |-
+          ad_identifiers:
+            - kube-apiserver
+          init_config:
+          instances:
+            - possible_prometheus_urls:
+                - https://%%host%%:6443/metrics
+                - https://%%host%%:8443/metrics
+              bearer_token_auth: tls_only
+              min_collection_interval: 120
+              tags:
+                - apiserver:%%host%%
         argocd.yaml: |-
           instances:
             -
