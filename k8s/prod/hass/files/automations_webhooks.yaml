@@ -1,0 +1,116 @@
+# Automations whose triggers use !secret. The UI automation editor reads
+# automations.yaml raw and 500s on !secret, so they live here instead
+# (read-only in the UI).
+
+# Radarr Connect -> Webhook (On Import / On Upgrade) posts here once the file
+# is in /media/movies on the NAS. Remove the matching Keep "movies" item.
+# Match ignores case and punctuation so "Mortal Kombat 2021" (never renamed)
+# and "Mortal Kombat (2021)" both count. The webhook id lives in secrets.yaml
+# (Vault secret/hass) because the repo is public and hass is on Funnel.
+- alias: Radarr Import Remove From Keep
+  id: radarr_import_remove_from_keep
+  mode: queued
+  trigger:
+    - platform: webhook
+      webhook_id: !secret radarr_webhook_id
+      allowed_methods: [POST]
+      local_only: true
+  condition:
+    - condition: template
+      value_template: "{{ trigger.json.eventType | default('') == 'Download' }}"
+  action:
+    - variables:
+        name: "{{ trigger.json.movie.title }} ({{ trigger.json.movie.year }})"
+        key: "{{ (trigger.json.movie.title ~ trigger.json.movie.year) | lower | regex_replace('[^a-z0-9]', '') }}"
+    - service: todo.get_items
+      target:
+        entity_id: todo.google_keep_movies
+      data:
+        status: [needs_action, completed]
+      response_variable: listed
+    - variables:
+        hits: >
+          {% set ns = namespace(out=[]) %}
+          {% for i in listed['todo.google_keep_movies']['items'] %}
+            {% if (i.summary | lower | regex_replace('[^a-z0-9]', '')) == key %}
+              {% set ns.out = ns.out + [i.summary] %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.out }}
+    - repeat:
+        for_each: "{{ hits }}"
+        sequence:
+          - service: todo.remove_item
+            target:
+              entity_id: todo.google_keep_movies
+            data:
+              item: "{{ repeat.item }}"
+    - if: "{{ not (trigger.json.isUpgrade | default(false)) }}"
+      then:
+        - service: rest_command.slack_notify
+          data:
+            message: "✅ {{ name }} is on the NAS and in Jellyfin{{ ' (removed from the Keep list)' if hits | length > 0 else '' }}"
+
+# Sonarr Connect -> Webhook (On Import Complete only) posts here once per
+# release: one ping for a season pack, not one per episode. Every import gets
+# a Slack note; the Keep "tv" item goes once every monitored aired episode
+# has a file, so it stays open while season 1 trickles in.
+- alias: Sonarr Import Remove From Keep
+  id: sonarr_import_remove_from_keep
+  mode: queued
+  trigger:
+    - platform: webhook
+      webhook_id: !secret sonarr_webhook_id
+      allowed_methods: [POST]
+      local_only: true
+  condition:
+    - condition: template
+      value_template: "{{ trigger.json.eventType | default('') == 'Download' }}"
+  action:
+    - variables:
+        series: "{{ trigger.json.series }}"
+        name: "{{ series.title }} ({{ series.year }})"
+        key: "{{ (series.title ~ series.year) | lower | regex_replace('[^a-z0-9]', '') }}"
+        eps: "{{ trigger.json.episodes | default([]) }}"
+        what: >
+          {%- set seasons = eps | map(attribute='seasonNumber') | unique | list -%}
+          {% if eps | length == 1 %}S{{ '%02d' % eps[0].seasonNumber }}E{{ '%02d' % eps[0].episodeNumber }}
+          {%- elif seasons | length == 1 %}S{{ '%02d' % seasons[0] }} ({{ eps | length }} episodes)
+          {%- else %}{{ eps | length }} episodes{% endif %}
+    - service: rest_command.sonarr_series
+      data:
+        id: "{{ series.id }}"
+      response_variable: fetched
+    - variables:
+        stats: "{{ fetched.content.statistics | default({}) if fetched.status == 200 else {} }}"
+        complete: >
+          {{ (stats.episodeCount | default(0)) > 0 and
+             (stats.episodeFileCount | default(0)) >= (stats.episodeCount | default(0)) }}
+    - service: todo.get_items
+      target:
+        entity_id: todo.google_keep_tv
+      data:
+        status: [needs_action, completed]
+      response_variable: listed
+    - variables:
+        hits: >
+          {% set ns = namespace(out=[]) %}
+          {% if complete %}
+            {% for i in listed['todo.google_keep_tv']['items'] %}
+              {% if (i.summary | lower | regex_replace('[^a-z0-9]', '')) == key %}
+                {% set ns.out = ns.out + [i.summary] %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ ns.out }}
+    - repeat:
+        for_each: "{{ hits }}"
+        sequence:
+          - service: todo.remove_item
+            target:
+              entity_id: todo.google_keep_tv
+            data:
+              item: "{{ repeat.item }}"
+    - service: rest_command.slack_notify
+      data:
+        message: "✅ {{ name }} {{ what }} is on the NAS and in Jellyfin{{ ' (removed from the Keep list)' if hits | length > 0 else '' }}"
