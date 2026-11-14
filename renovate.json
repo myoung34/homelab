@@ -15,15 +15,6 @@
       "automerge": true
     },
     {
-      "description": "Let a minor/patch release soak before automerge so a pulled release never reaches ArgoCD. Digests carry no release timestamp, so a missing one doesn't block",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "minimumReleaseAge": "3 days",
-      "minimumReleaseAgeBehaviour": "timestamp-optional"
-    },
-    {
       "matchManagers": [
         "kustomize"
       ],
