@@ -41,7 +41,7 @@ spec:
       serviceAccountName: default
       containers:
       - name: radarr
-        image: lscr.io/linuxserver/radarr:6.4.4
+        image: lscr.io/linuxserver/radarr:7.0.3
         imagePullPolicy: IfNotPresent
         env:
         # Matches myoung:users. The share squashes every write to admin:users
