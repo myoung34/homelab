@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: fluidd
-          image: ghcr.io/fluidd-core/fluidd:v1.38.0
+          image: ghcr.io/fluidd-core/fluidd:v1.38.1
           resources:
             requests:
               cpu: 10m
