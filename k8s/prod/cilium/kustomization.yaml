@@ -19,7 +19,7 @@ helmCharts:
   includeCRDs: true
   namespace: kube-system
   releaseName: cilium
-  version: 1.20.4
+  version: 1.20.5
   repo: https://helm.cilium.io
   valuesInline:
     # Talos assigns each node's pod CIDR (10.244.x.0/24 out of 10.244.0.0/16).
