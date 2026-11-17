@@ -99,6 +99,13 @@ spec:
       - name: gluetun
         image: qmcgaw/gluetun:v3.41.3
         restartPolicy: Always
+        # An abrupt gluetun exit leaves its wireguard ip rules in the shared
+        # pod netns; every restart then fails "adding IPv6 rule: file exists".
+        # https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/kubernetes.md#adding-ipv6-rule--file-exists
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "(ip rule del table 51820; ip -6 rule del table 51820) || true"]
         envFrom:
         - secretRef:
             name: rtorrent  # WIREGUARD_PRIVATE_KEY, HTTPPROXY_USER, HTTPPROXY_PASSWORD
