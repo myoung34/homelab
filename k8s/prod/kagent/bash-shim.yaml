@@ -14,6 +14,12 @@
 # filesystem: still uid 1001 with no capabilities, but it can reach the
 # internet and the LAN, and read what the pod mounts (talos os:reader
 # credentials on homelab-agent).
+#
+# git and gh: the image has neither, and on 2026-11-17 (session 01a1e7a2)
+# homelab-agent probed bash for them, found nothing, and told Mark it
+# couldn't open a PR, despite holding the GitHub_* tools and a prompt rule
+# saying not to. These stubs answer on the spot, in the tool result where
+# the model is looking, rather than in a prompt it has stopped reading.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,3 +30,14 @@ data:
     #!/bin/sh
     if [ "$1" = "--settings" ]; then shift 2; fi
     exec "$@"
+  git: &nogit |
+    #!/bin/sh
+    cat >&2 <<'EOF'
+    There is no git here, and you don't need it. Make branches, commits and
+    pull requests with your GitHub tools: GitHub_create_branch, then
+    GitHub_push_files (every changed file in one commit), then
+    GitHub_create_pull_request. Read files with GitHub_get_file_contents.
+    If you have no GitHub_* tools, GitHub work belongs to homelab-agent; say so.
+    EOF
+    exit 127
+  gh: *nogit
