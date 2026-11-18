@@ -39,7 +39,7 @@ EOH
       }
 
       config {
-        image      = "eclipse-mosquitto:2.0.22"
+        image      = "eclipse-mosquitto:2.0.23"
         force_pull = true
 
         ports = [
