@@ -58,7 +58,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: bot
-        image: ghcr.io/myoung34/kagent-slack-bridge:0.4.0
+        image: ghcr.io/myoung34/kagent-slack-bridge:0.4.1
         env:
         # First is the default; `<name>:` picks <name>-agent.
         - name: KAGENT_AGENTS
