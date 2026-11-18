@@ -5,6 +5,9 @@
     - platform: state
       entity_id: binary_sensor.g4_instant_person_detected_2
       to: "on"
+      not_from:
+        - unavailable
+        - unknown
   condition:
     - condition: state
       entity_id: binary_sensor.g4_instant_is_dark_2
@@ -21,6 +24,9 @@
     - platform: state
       entity_id: binary_sensor.g4_instant_person_detected
       to: "on"
+      not_from:
+        - unavailable
+        - unknown
   condition:
     - condition: state
       entity_id: binary_sensor.g4_instant_is_dark
@@ -80,7 +86,14 @@
         - binary_sensor.g4_doorbell_pro_is_dark
         - binary_sensor.g4_instant_is_dark
       to: "on"
+      # Protect reconnects flip is_dark unavailable -> on; don't treat that as dusk.
+      not_from:
+        - unavailable
+        - unknown
   condition:
+    # Lights go off at midnight; never turn them back on overnight.
+    - condition: time
+      after: "12:00:00"
     - condition: state
       entity_id: binary_sensor.g4_doorbell_pro_is_dark
       state: "on"
@@ -127,6 +140,9 @@
     - platform: state
       entity_id: binary_sensor.g4_doorbell_pro_person_detected
       to: "on"
+      not_from:
+        - unavailable
+        - unknown
       for:
         seconds: 5
   condition:
@@ -148,6 +164,9 @@
     - platform: state
       entity_id: binary_sensor.g4_doorbell_pro_package_detected
       to: "on"
+      not_from:
+        - unavailable
+        - unknown
       for:
         seconds: 5
   action:
@@ -183,6 +202,9 @@
     - platform: state
       entity_id: binary_sensor.kids_room_motion
       to: "on"
+      not_from:
+        - unavailable
+        - unknown
   condition:
     - condition: time
       after: "20:00:00"
