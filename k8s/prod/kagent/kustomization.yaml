@@ -15,7 +15,6 @@ resources:
   - printer-agent-prompt.yaml
   - printer-agent.yaml
   - general-agent.yaml
-  - router-agent.yaml
   - bash-shim.yaml
   - slack-bot.yaml
   - talos.yaml
@@ -167,15 +166,6 @@ patches:
                 value: "1000"
               - name: GIT_HTTP_LOW_SPEED_TIME
                 value: "20"
-  # router-agent only picks an agent and relays its answer, so it gets no
-  # skills and therefore no bash. With bash it tried to do the work itself
-  # and looped on failing commands (sessions 402f5857 and 67af7228).
-  - target:
-      kind: Agent
-      name: router-agent
-    patch: |-
-      - op: remove
-        path: /spec/skills
 
 helmCharts:
 - name: kagent-crds

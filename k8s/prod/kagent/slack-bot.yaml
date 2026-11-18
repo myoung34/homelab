@@ -6,11 +6,11 @@
 # The bridge picks the agent itself, by prefix: `printer: ...` goes to
 # printer-agent, `general: ...` to general-agent, anything else to
 # homelab-agent (first in KAGENT_AGENTS). A thread stays with the agent its
-# first message picked. This used to go through router-agent, whose small
-# model sent a GitHub request to general-agent and re-sent it three times
-# (2026-11-17), told Mark "I'll relay the findings" instead of relaying
-# homelab-agent's follow-up question (2026-11-18), and only ever stood
-# between Mark and an agent that could answer.
+# first message picked. This used to go through router-agent (since
+# deleted), whose small model sent a GitHub request to general-agent and
+# re-sent it three times (2026-11-17), told Mark "I'll relay the findings"
+# instead of relaying homelab-agent's follow-up question (2026-11-18), and
+# only ever stood between Mark and an agent that could answer.
 #
 # Socket Mode, so no ingress: the pod dials out to Slack. One replica - two
 # would each hold a socket and Slack would spread events across them, which
