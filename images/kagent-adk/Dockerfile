@@ -72,6 +72,18 @@
 # tree; terraform init in terraform/talos/validate.sh does not fit in 30s
 # either.
 #
+# adk-go-reconfirm-on-resume.patch is the core of google/adk-go#2238 (open,
+# for #2233) cut down to v2.3.0, the adk-go kagent 0.10.6 pins; #2238
+# itself targets main and does not apply. When a tool resumed after a
+# human answer asks for confirmation again, stock adk-go records the
+# request but never emits the adk_request_confirmation, so the client
+# never sees it. kagent's remote agent tool does exactly that whenever a
+# subagent pauses a second time: on 2026-11-18 homelab-agent's follow-up
+# ask_user (immich, session 01a1ebfb-633c) reached router-agent as a bare
+# {"status":"pending"}, the router told Mark "I'll relay the findings", and
+# the task completed with homelab-agent still waiting. reconfirm_test.go is
+# the repro. kagent v1.0.1 (adk v2.6.0) does not have the fix either.
+#
 # Only /app changes. Each variant starts from the official image named by
 # BASE: golang-adk:<v> for plain agents, golang-adk:<v>-full (sandbox
 # runtime for skills) for agents with spec.skills. The controller derives
@@ -87,49 +99,58 @@
 # A2A_V0_VERSION = the github.com/a2aproject/a2a-go
 # version there), the patches re-checked, and the tag in
 # kustomization.yaml updated by hand. Drop kagent-pr2791.patch once the
-# kagent release includes #2790/#2791.
+# kagent release includes #2790/#2791. ADK_VERSION = google.golang.org/adk/v2
+# in kagent's go/go.mod; drop the adk-go patch once that version has #2238.
 ARG KAGENT_VERSION=0.10.6
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
-ARG PATCHES=a2a414v0-cap-compact-orphan-reinit-bashto
+ARG PATCHES=a2a414v0-cap-compact-orphan-reinit-bashto-reconfirm
 ARG A2A_VERSION=2.5.0
 ARG A2A_V0_VERSION=0.3.15
+ARG ADK_VERSION=2.3.0
 ARG BASE=ghcr.io/kagent-dev/kagent/golang-adk:${KAGENT_VERSION}
 
 FROM --platform=$BUILDPLATFORM golang:1.27-bookworm AS build
 ARG KAGENT_VERSION
 ARG A2A_VERSION
 ARG A2A_V0_VERSION
+ARG ADK_VERSION
 ARG PATCHES
 ARG TARGETARCH
 WORKDIR /src
 RUN git clone -q --depth 1 --branch v${A2A_VERSION} https://github.com/a2aproject/a2a-go.git a2a \
  && git clone -q --depth 1 --branch v${A2A_V0_VERSION} https://github.com/a2aproject/a2a-go.git a2a-v0 \
+ && git clone -q --depth 1 --branch v${ADK_VERSION} https://github.com/google/adk-go.git adk \
  && git clone -q --depth 1 --branch v${KAGENT_VERSION} https://github.com/kagent-dev/kagent.git kagent
-COPY a2a-go-pr414.patch a2a-go-v0-stalled-subscriber.patch kagent-pr2791.patch \
-     kagent-tool-result-cap.patch kagent-fail-inflight-on-shutdown.patch \
+COPY a2a-go-pr414.patch a2a-go-v0-stalled-subscriber.patch adk-go-reconfirm-on-resume.patch \
+     kagent-pr2791.patch kagent-tool-result-cap.patch kagent-fail-inflight-on-shutdown.patch \
      kagent-skills-init-reentrant.patch kagent-bash-timeout.patch ./
 COPY wedge_test.go a2a/a2asrv/eventqueue/homelab_wedge_test.go
 COPY wedge_v0_test.go a2a-v0/a2asrv/eventqueue/homelab_wedge_test.go
+COPY reconfirm_test.go adk/internal/llminternal/homelab_reconfirm_test.go
 RUN git -C a2a apply ../a2a-go-pr414.patch \
  && git -C a2a-v0 apply ../a2a-go-v0-stalled-subscriber.patch \
+ && git -C adk apply ../adk-go-reconfirm-on-resume.patch \
  && git -C kagent apply ../kagent-pr2791.patch \
  && git -C kagent apply ../kagent-tool-result-cap.patch \
  && git -C kagent apply ../kagent-fail-inflight-on-shutdown.patch \
  && git -C kagent apply ../kagent-skills-init-reentrant.patch \
  && git -C kagent apply ../kagent-bash-timeout.patch
-# The patched queues' own tests plus the homelab repros (wedge_test.go,
-# wedge_v0_test.go), which fail on stock a2a-go. Native arch: this stage
-# runs on BUILDPLATFORM.
+# The patched packages' own tests plus the homelab repros (wedge_test.go,
+# wedge_v0_test.go, reconfirm_test.go), which fail on stock a2a-go/adk-go.
+# Native arch: this stage runs on BUILDPLATFORM.
 RUN cd a2a && go test -race -count=1 ./a2asrv/eventqueue/... ./internal/taskexec/... \
- && cd ../a2a-v0 && go test -race -count=1 ./a2asrv/... ./internal/taskexec/...
+ && cd ../a2a-v0 && go test -race -count=1 ./a2asrv/... ./internal/taskexec/... \
+ && cd ../adk && go test -count=1 ./internal/llminternal/...
 WORKDIR /src/kagent/go
 # Pin: a patch only helps if kagent requires the exact version it was made
 # against. Fail here rather than ship an unpatched server.
 RUN test "$(go list -m -f '{{.Version}}' github.com/a2aproject/a2a-go/v2)" = "v${A2A_VERSION}" \
  && test "$(go list -m -f '{{.Version}}' github.com/a2aproject/a2a-go)" = "v${A2A_V0_VERSION}" \
+ && test "$(go list -m -f '{{.Version}}' google.golang.org/adk/v2)" = "v${ADK_VERSION}" \
  && go mod edit -replace github.com/a2aproject/a2a-go/v2=/src/a2a \
       -replace github.com/a2aproject/a2a-go=/src/a2a-v0 \
+      -replace google.golang.org/adk/v2=/src/adk \
  && go test -count=1 ./adk/pkg/a2a/... ./adk/pkg/agent/... ./adk/pkg/runner/... \
       ./adk/pkg/app/... ./adk/pkg/taskstore/... ./core/internal/skillsinit/... \
  && go test -short -count=1 ./adk/pkg/skills/... ./adk/pkg/tools/...
@@ -138,7 +159,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath \
       -ldflags "-s -w -X github.com/kagent-dev/kagent/go/core/internal/version.Version=${KAGENT_VERSION}-${PATCHES}" \
       -o /app ./adk/cmd \
  && go version -m /app | grep -A1 -E 'dep\s+github.com/a2aproject/a2a-go\s' | grep -q '=>\s/src/a2a-v0\s' \
- && go version -m /app | grep -A1 -E 'dep\s+github.com/a2aproject/a2a-go/v2\s' | grep -q '=>\s/src/a2a\s'
+ && go version -m /app | grep -A1 -E 'dep\s+github.com/a2aproject/a2a-go/v2\s' | grep -q '=>\s/src/a2a\s' \
+ && go version -m /app | grep -A1 -E 'dep\s+google.golang.org/adk/v2\s' | grep -q '=>\s/src/adk\s'
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath -ldflags "-s -w" \
       -o /skills-init ./core/cmd/skills-init
 

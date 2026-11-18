@@ -1,0 +1,30 @@
+diff --git a/internal/llminternal/request_confirmation_processor.go b/internal/llminternal/request_confirmation_processor.go
+index 97ff8e4..d0db70f 100644
+--- a/internal/llminternal/request_confirmation_processor.go
++++ b/internal/llminternal/request_confirmation_processor.go
+@@ -248,12 +248,23 @@ func RequestConfirmationRequestProcessor(ctx agent.InvocationContext, req *model
+ 				toolsToResumeConfirmation[callID] = cc.confirmation
+ 			}
+
+-			ev, err := f.handleFunctionCalls(ctx, toolsmap, &model.LLMResponse{
++			functionCallEvent := &session.Event{LLMResponse: model.LLMResponse{
+ 				Content: &genai.Content{Parts: parts, Role: genai.RoleUser},
+-			}, toolsToResumeConfirmation, nil)
++			}}
++			ev, err := f.handleFunctionCalls(ctx, toolsmap, &functionCallEvent.LLMResponse, toolsToResumeConfirmation, nil)
+ 			if !yield(ev, err) {
+ 				return
+ 			}
++			if err != nil {
++				return
++			}
++			// A resumed tool may ask again (google/adk-go#2233); emit that
++			// request the way the normal post-model path does.
++			if confirmEv := generateRequestConfirmationEvent(ctx, functionCallEvent, ev); confirmEv != nil {
++				if !yield(confirmEv, nil) {
++					return
++				}
++			}
+ 		}
+ 	}
+ }
