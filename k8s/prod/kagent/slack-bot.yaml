@@ -12,6 +12,11 @@
 # instead of relaying homelab-agent's follow-up question (2026-11-18), and
 # only ever stood between Mark and an agent that could answer.
 #
+# Images: Slack uploads reach the agent as links to the bridge's file
+# proxy (Service below, cluster-internal only), which streams the file from
+# Slack with the bot token (files:read); links are HMAC-signed per file.
+# The agents curl them and OCR with tesseract (images/kagent-adk).
+#
 # Socket Mode, so no ingress: the pod dials out to Slack. One replica - two
 # would each hold a socket and Slack would spread events across them, which
 # is harmless but buys nothing.
@@ -28,6 +33,20 @@ kind: ServiceAccount
 metadata:
   name: kagent-slack
   namespace: kagent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kagent-slack
+  namespace: kagent
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: http
+  selector:
+    app: kagent-slack
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -67,6 +86,12 @@ spec:
           value: http://kagent-controller.kagent:8083/api/a2a/kagent/{agent}/
         - name: KAGENT_UI_CHAT_URL
           value: https://kagent.king-gila.ts.net/agents/kagent/{agent}/chat
+        # Where the agents fetch uploaded images (the Service above).
+        - name: FILE_PROXY_URL
+          value: http://kagent-slack.kagent:8080
+        ports:
+        - name: http
+          containerPort: 8080
         # SLACK_BOT_TOKEN, SLACK_APP_TOKEN, ALLOWED_USER_IDS
         envFrom:
         - secretRef:

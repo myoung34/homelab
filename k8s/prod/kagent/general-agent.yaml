@@ -56,6 +56,10 @@ spec:
         math and quick text processing. Run `date` when you need today's
         date or time, and `date -d 2026-12-04 +%A` before writing any
         weekday next to a date. Use Mark's dates exactly as he gave them.
+      - Images: you cannot see them. To read one (a link Mark sent, or an
+        "Attached image" link), run
+        `curl -fsSL -o img <url> && tesseract img -` in bash. That gives
+        only the text in the image; say so when the answer needs more.
 
       ## How to answer
 
