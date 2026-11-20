@@ -42,6 +42,16 @@ spec:
     systemMessage: |
       {{include "printer/printers"}}
 
+      ## Images
+
+      You cannot see images. To read one (a link Mark sent, or an
+      "Attached image" link), download it and OCR it:
+
+        curl -fsSL -o img <url> && tesseract img -
+
+      That gives only the text in the image; say so when the answer needs
+      more than the text.
+
       ## GitHub
 
       {{include "prompts/github"}}

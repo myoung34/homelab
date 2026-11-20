@@ -84,10 +84,14 @@
 # the task completed with homelab-agent still waiting. reconfirm_test.go is
 # the repro. kagent v1.0.1 (adk v2.6.0) does not have the fix either.
 #
-# Only /app changes. Each variant starts from the official image named by
-# BASE: golang-adk:<v> for plain agents, golang-adk:<v>-full (sandbox
-# runtime for skills) for agents with spec.skills. The controller derives
-# both names from controller.goAgentImage in k8s/prod/kagent.
+# Each variant starts from the official image named by BASE:
+# golang-adk:<v> for plain agents, golang-adk:<v>-full (sandbox runtime for
+# skills) for agents with spec.skills. The controller derives both names
+# from controller.goAgentImage in k8s/prod/kagent. The plain variant only
+# replaces /app. The -full variant (target full) also adds tesseract, so
+# agents can read images Mark sends (image links, or Slack uploads through
+# the kagent-slack-bridge file proxy): curl the image, `tesseract <file> -`.
+# The models are text-only, and every agent here runs -full.
 #
 # DELETE THIS once a kagent release runs its server on an a2a-go that
 # includes #414 (or a v0 equivalent), then drop the renovate.json hold:
@@ -104,7 +108,7 @@
 ARG KAGENT_VERSION=0.10.6
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
-ARG PATCHES=a2a414v0-cap-compact-orphan-reinit-bashto-reconfirm
+ARG PATCHES=a2a414v0-cap-compact-orphan-reinit-bashto-reconfirm-ocr
 ARG A2A_VERSION=2.5.0
 ARG A2A_V0_VERSION=0.3.15
 ARG ADK_VERSION=2.3.0
@@ -168,7 +172,16 @@ FROM ghcr.io/kagent-dev/kagent/skills-init:${KAGENT_VERSION} AS skills-init
 LABEL org.opencontainers.image.source=https://github.com/myoung34/homelab
 COPY --from=build /skills-init /usr/local/bin/skills-init
 
-# Last stage, so the default build target stays the agent image.
-FROM ${BASE}
+FROM ${BASE} AS agent
 LABEL org.opencontainers.image.source=https://github.com/myoung34/homelab
 COPY --from=build /app /app
+
+# -full only: the plain base has no package manager. Wolfi (the -full base)
+# keeps only current package versions, so these are unpinned.
+FROM agent AS full
+USER 0
+RUN apk add --no-cache tesseract tesseract-eng
+USER 1001:1001
+
+# Last stage, so the default build target stays the plain agent image.
+FROM agent
