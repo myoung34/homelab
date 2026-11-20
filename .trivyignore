@@ -1,0 +1,6 @@
+# Noise on nearly every workload; keep higher-signal KSV checks
+# (privileged, hostNetwork, capabilities, RBAC wildcards).
+# Default security context configured
+KSV-0118
+# Root file system is not read-only
+KSV-0014
