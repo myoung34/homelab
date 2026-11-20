@@ -35,7 +35,7 @@ EOH
       }
 
       config {
-        image      = "postgres:18-bookworm"
+        image      = "postgres:19-bookworm"
         force_pull = true
 
         entrypoint = ["docker-entrypoint.sh"]
