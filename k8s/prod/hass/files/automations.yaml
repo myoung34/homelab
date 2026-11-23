@@ -194,6 +194,35 @@
         message: >
           🚨🚨 SMOKE ALARM DETECTED
           Time: {{ now().strftime('%Y-%m-%d %I:%M:%S %p') }}
+# water leak from any moisture sensor in HA (matched by device_class, no names).
+# state_changed fires for every entity; the condition keeps only leak sensors
+# going off -> on, then the 5s wait debounces a blip.
+- alias: Water Leak Detected
+  id: water_leak_detected
+  mode: parallel
+  trigger:
+    - platform: event
+      event_type: state_changed
+  condition:
+    - condition: template
+      value_template: >
+        {% set n = trigger.event.data.new_state %}
+        {% set o = trigger.event.data.old_state %}
+        {{ n is not none and o is not none
+           and n.domain == 'binary_sensor'
+           and n.attributes.device_class | default('') == 'moisture'
+           and o.state == 'off' and n.state == 'on' }}
+  action:
+    - delay:
+        seconds: 5
+    - condition: template
+      value_template: "{{ is_state(trigger.event.data.entity_id, 'on') }}"
+    - service: rest_command.slack_notify
+      data:
+        message: >
+          💧🚨 WATER LEAK DETECTED: {{ device_attr(trigger.event.data.entity_id, 'name')
+          or trigger.event.data.new_state.name }}
+          Time: {{ now().strftime('%Y-%m-%d %I:%M:%S %p') }}
 # liams room motion and dark turn on stuff
 - alias: Liams Room Motion Lights On
   id: liams_room_motion_lights_on

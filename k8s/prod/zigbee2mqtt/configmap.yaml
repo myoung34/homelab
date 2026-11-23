@@ -60,13 +60,13 @@ data:
         friendly_name: wall-4
         description: THIRDREALITY 3RSP02028BZ location:upstairs deck light
       '0x00158d008bbf3f0e':
-        friendly_name: water-1
+        friendly_name: workspace_hvac_pan
         description: aqara LUMI LUMI (Water leak sensor) location:hvac pan
       '0x00158d008bc192ea':
-        friendly_name: water-2
+        friendly_name: bar_sink
         description: aqara LUMI LUMI (Water leak sensor) location:under bar sink
       '0x00158d008bc19938':
-        friendly_name: water-3
+        friendly_name: main_exit
         description: aqara LUMI LUMI (Water leak sensor) location:main exit
       '0xd44867fffe08df72':
         friendly_name: light_sconce_office
