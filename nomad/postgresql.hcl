@@ -35,11 +35,15 @@ EOH
       }
 
       config {
-        image      = "postgres:19-bookworm"
+        # Postgres 16 plus pgvector and VectorChord, for immich
+        # (k8s/prod/immich). The data dir is PG16: a new major needs a
+        # pg_upgrade, not a tag bump (Renovate's v18/v19 bumps were never
+        # applied). VectorChord has no PG19 build.
+        image      = "ghcr.io/immich-app/postgres:16-vectorchord1.1.1-pgvector0.8.7"
         force_pull = true
 
         entrypoint = ["docker-entrypoint.sh"]
-        args       = ["postgres"]
+        args       = ["postgres", "-c", "shared_preload_libraries=vchord.so"]
 
         ports = ["postgresql"]
 
