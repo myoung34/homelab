@@ -1,17 +1,7 @@
 ---
 # DB credentials live in Vault (kv-v2 path secret/immich, key DB_URL).
 #
-# One-time setup (not in this repo):
-#   1. On the Synology Postgres (192.168.3.2):
-#        CREATE USER immich PASSWORD '...';
-#        CREATE DATABASE immich OWNER immich;
-#      then in the immich database install the vector extension immich
-#      wants and set DB_VECTOR_EXTENSION in immich.yaml to match:
-#        CREATE EXTENSION vectorchord;   -- immich's default
-#      (or pgvector, if that is what is installed).
-#   2. vault kv put secret/immich DB_URL="postgresql://immich:PASSWORD@192.168.3.2:5432/immich" # pragma: allowlist secret
-#   3. Allow the k8s role "immich" to read secret/immich for the default
-#      service account in namespace immich.
+# Setup outside git (DB, extensions, Vault policy and role): README.md.
 
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultStaticSecret

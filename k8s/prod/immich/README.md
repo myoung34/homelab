@@ -20,25 +20,28 @@ lives on the NAS; if the cluster dies the photos survive.
 - **Mobile app:** Immich (iOS/Android), server URL above
 - No Funnel, no public exposure
 
-## One-time setup before first deploy works
+## One-time setup (done 2026-11-23, outside git)
 
-1. On the Synology Postgres:
+1. Postgres: the Synology job runs immich's PG16 image with pgvector and
+   VectorChord and preloads `vchord.so` (`nomad/postgresql.hcl`). In it:
    ```sql
-   CREATE USER immich PASSWORD '...';
+   CREATE ROLE immich LOGIN PASSWORD '...';
    CREATE DATABASE immich OWNER immich;
-   -- in the immich database, install the vector extension and set
-   -- DB_VECTOR_EXTENSION in immich.yaml to match (vectorchord by default):
-   CREATE EXTENSION vectorchord;
+   \c immich
+   CREATE EXTENSION vchord CASCADE;        -- pulls in vector
+   CREATE EXTENSION earthdistance CASCADE; -- pulls in cube
    ```
+   immich is not a superuser, so after a VectorChord upgrade run
+   `ALTER EXTENSION vchord UPDATE; REINDEX INDEX face_index; REINDEX INDEX clip_index;`
+   by hand (immich docs, administration/postgres-standalone.md).
 2. `vault kv put secret/immich DB_URL="postgresql://immich:PASSWORD@192.168.3.2:5432/immich" # pragma: allowlist secret`
-3. k8s Vault role `immich` allowing the `default` service account in namespace
-   `immich` to read `secret/immich` (pattern: `k8s/prod/paperless-ngx/vault.yaml`)
-4. Make sure `/volume1/Media/photos` exists on the NAS (a folder under the
-   same `/volume1/Media` export jellyfin/radarr/rtorrent use; create it if
-   not present).
+3. Vault policy and k8s role `immich` (`default` service account, namespace
+   `immich`, read `secret/immich`).
+4. `/volume1/Media/photos` exists on the NAS (under the `/volume1/Media`
+   export jellyfin/radarr/rtorrent use).
 
 ArgoCD picks the app up automatically (ApplicationSet git generator over
-`k8s/prod/*`); the pod will not come up until the Vault secret exists.
+`k8s/prod/*`); nothing else is needed before merge.
 
 ## Not in this PR (deliberate)
 
