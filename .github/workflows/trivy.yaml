@@ -1,0 +1,56 @@
+name: Trivy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 12 * * 0" # Sunday, ahead of the Monday Zapier digest release
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          limit-severities-for-sarif: true
+          format: sarif
+          output: trivy.sarif
+          trivyignores: .trivyignore
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy
+
+  report:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: read
+    steps:
+      - name: Send open Trivy alerts to the Zapier digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ZAPIER_HOOK: ${{ secrets.ZAPIER_TRIVY_HOOK }}
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/code-scanning/alerts?state=open&tool_name=Trivy&per_page=100" \
+            --jq '.[] | .rule.security_severity_level // .rule.severity' \
+          | jq -R . | jq -s \
+              --arg repo "$GITHUB_REPOSITORY" \
+              --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/security/code-scanning?query=is%3Aopen+tool%3ATrivy" \
+              '(group_by(.) | map("\(.[0]) \(length)") | join(", ")) as $by
+               | {repo: $repo, total: length, url: $url,
+                  summary: "\($repo): \(length) open\(if length > 0 then " (\($by))" else "" end)"}' \
+          | curl -fsS -X POST -H 'Content-Type: application/json' --data @- "$ZAPIER_HOOK"
