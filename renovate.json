@@ -80,6 +80,16 @@
       "enabled": false
     },
     {
+      "description": "The tag's leading number is the Postgres major (nomad/postgresql.hcl). A new major needs a pg_upgrade of the data dir, not a tag bump",
+      "matchPackageNames": [
+        "ghcr.io/immich-app/postgres"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "description": "mkuf tags are v<release>-<commits>-g<sha> (git describe), which docker versioning reads as an incompatible suffix",
       "matchPackageNames": [
         "mkuf/klipper",
