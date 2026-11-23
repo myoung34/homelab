@@ -384,7 +384,8 @@
           data:
             item: "{{ item }}"
             status: completed
-# low battery on any device in HA (matched by device_class battery, no names).
+# low battery on any device in HA (matched by device_class battery, no names;
+# phones from the mobile_app integration are skipped).
 # Low = battery sensor < 10% or battery binary_sensor on. Fires when something
 # newly goes low, plus a 9am digest. Each message lists every low device and
 # every battery device that is offline (unavailable). Silent if both are empty.
@@ -410,6 +411,7 @@
             {% set o = trigger.event.data.old_state %}
             {{ n is not none and o is not none
                and n.attributes.device_class | default('') == 'battery'
+               and n.entity_id not in integration_entities('mobile_app')
                and o.state not in ['unavailable', 'unknown']
                and ((n.domain == 'sensor'
                      and n.state | float(101) < 10 and o.state | float(101) >= 10)
@@ -419,9 +421,12 @@
     - variables:
         battery: >
           {%- set ns = namespace(low=[], seen=[], off=[]) -%}
+          {%- set phones = integration_entities('mobile_app') -%}
           {%- for s in (states.sensor | list) + (states.binary_sensor | list)
-             if s.attributes.device_class | default('') == 'battery' -%}
-            {%- set name = device_attr(s.entity_id, 'name') or s.name -%}
+             if s.attributes.device_class | default('') == 'battery'
+             and s.entity_id not in phones -%}
+            {%- set name = device_attr(s.entity_id, 'name_by_user')
+               or device_attr(s.entity_id, 'name') or s.name -%}
             {%- if s.state == 'unavailable' -%}
               {%- if name not in ns.off -%}{%- set ns.off = ns.off + [name] -%}{%- endif -%}
             {%- elif name not in ns.seen
