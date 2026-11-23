@@ -121,6 +121,19 @@
         "kubernetes/kubernetes"
       ],
       "groupName": "talos"
+    },
+    {
+      "description": "A new workflow pinned to an older action re-proposes a bump whose title matches an already-merged PR (e.g. #2516 then #2526); without this Renovate disables automerge on the repeat",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "recreateWhen": "always"
     }
   ],
   "customManagers": [
