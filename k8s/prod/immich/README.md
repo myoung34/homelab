@@ -28,7 +28,7 @@ lives on the NAS; if the cluster dies the photos survive.
    -- DB_VECTOR_EXTENSION in immich.yaml to match (vectorchord by default):
    CREATE EXTENSION vectorchord;
    ```
-2. `vault kv put secret/immich DB_URL="postgresql://immich:PASSWORD@192.168.3.2:5432/immich"`
+2. `vault kv put secret/immich DB_URL="postgresql://immich:PASSWORD@192.168.3.2:5432/immich" # pragma: allowlist secret`
 3. k8s Vault role `immich` allowing the `default` service account in namespace
    `immich` to read `secret/immich` (pattern: `k8s/prod/paperless-ngx/vault.yaml`)
 4. Make sure `/media/photos` exists and is exported (it is on the same share

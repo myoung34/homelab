@@ -9,7 +9,7 @@
 #      wants and set DB_VECTOR_EXTENSION in immich.yaml to match:
 #        CREATE EXTENSION vectorchord;   -- immich's default
 #      (or pgvector, if that is what is installed).
-#   2. vault kv put secret/immich DB_URL="postgresql://immich:PASSWORD@192.168.3.2:5432/immich"
+#   2. vault kv put secret/immich DB_URL="postgresql://immich:PASSWORD@192.168.3.2:5432/immich" # pragma: allowlist secret
 #   3. Allow the k8s role "immich" to read secret/immich for the default
 #      service account in namespace immich.
 
