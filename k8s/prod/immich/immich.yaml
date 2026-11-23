@@ -43,6 +43,10 @@ spec:
         app.kubernetes.io/instance: immich
         app.kubernetes.io/name: immich
     spec:
+      # The Service named immich makes kubelet inject IMMICH_PORT=tcp://...,
+      # which immich reads as its listen port and crashes on (server: NaN,
+      # ML: int_parsing). No service-link env vars.
+      enableServiceLinks: false
       automountServiceAccountToken: true
       # Prefer cluster41: the only amd64 node with real CPU (12 cores,
       # 32 GB), same reasoning as jellyfin. Transcoding and thumbnail work
@@ -256,6 +260,10 @@ spec:
         app.kubernetes.io/instance: immich
         app.kubernetes.io/name: immich-machine-learning
     spec:
+      # The Service named immich makes kubelet inject IMMICH_PORT=tcp://...,
+      # which immich reads as its listen port and crashes on (server: NaN,
+      # ML: int_parsing). No service-link env vars.
+      enableServiceLinks: false
       automountServiceAccountToken: false
       # Required, not preferred: face detection + CLIP + OCR are CPU-bound and
       # slow on a Pi, and cluster41 is the only amd64 node with real CPU. The
