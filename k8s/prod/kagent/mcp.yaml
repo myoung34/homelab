@@ -5,6 +5,11 @@
 # aperture_web_search and aperture_web_fetch. Anything else wired into
 # Aperture shows up here too, with no change needed on this side.
 #
+# 2026-11-23: Aperture now refuses per-user OAuth credentials for tagged
+# devices, which cut tag:k8s off every OAuth connector. GitHub and
+# GitHubActions were switched to a shared bearer_token (a myoung34 PAT) in
+# Aperture's config; Datadog moved to its own RemoteMCPServer (end of file).
+#
 # Note that only the two aperture web tools carry an `aperture_` prefix on the
 # wire; the rest are bare `GitHub_*`, `Datadog_*`, `GoogleCalendar_*`,
 # `GoogleDrive_*`, `Zapier_*`. MCP clients that namespace tools by server
@@ -144,3 +149,38 @@ spec:
   url: http://aperture.kagent.svc.cluster.local/v1/mcp
   timeout: 30s
   sseReadTimeout: 5m0s
+---
+# Datadog, direct. Aperture's Datadog connector is oauth2_dcr (per-user),
+# and Aperture refuses per-user credentials for tagged devices ("connector
+# Datadog: tagged devices cannot hold per-user credentials"), so tag:k8s gets
+# no Datadog tools through it. Datadog's MCP server takes an API key and an
+# application key as two headers; Aperture's shared auth can inject only one
+# (api_key/bearer_token), so this bypasses Aperture.
+#
+# Keys: Vault secret/kagent (DD_API_KEY, DD_APPLICATION_KEY), synced to the
+# kagent Secret by vault.yaml - same values as secret/datadog.
+#
+# Tool names here have no Datadog_ prefix (search_datadog_logs, not
+# Datadog_search_datadog_logs): only Aperture adds connector prefixes.
+apiVersion: kagent.dev/v1alpha2
+kind: RemoteMCPServer
+metadata:
+  name: datadog
+  namespace: kagent
+spec:
+  description: "Datadog MCP server (logs, metrics), API + application key"
+  protocol: STREAMABLE_HTTP
+  url: https://mcp.datadoghq.com/api/unstable/mcp-server/mcp
+  timeout: 30s
+  sseReadTimeout: 5m0s
+  headersFrom:
+  - name: DD_API_KEY
+    valueFrom:
+      type: Secret
+      name: kagent
+      key: DD_API_KEY
+  - name: DD_APPLICATION_KEY
+    valueFrom:
+      type: Secret
+      name: kagent
+      key: DD_APPLICATION_KEY

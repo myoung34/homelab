@@ -36,7 +36,7 @@ spec:
   description: >-
     Kubernetes expert and resident expert on Mark's homelab: diagnoses the
     Talos cluster with the k8s_* tools and ships fixes as pull requests
-    against myoung34/homelab, with web, GitHub and Datadog through Aperture.
+    against myoung34/homelab, with web and GitHub through Aperture, and Datadog.
   declarative:
     # Local Qwen3.8-27B (modelconfig-qwen.yaml). Fixed cost is ~31k of
     # the 131k context per request: ~21k of Aperture tool schemas, ~3k of
@@ -219,7 +219,7 @@ spec:
 
       ## Your other tools
 
-      Aperture proxies 27 more:
+      Aperture proxies 22 more, and Datadog adds 5:
         - aperture_web_search / aperture_web_fetch: search the web, and fetch
           one exact URL. web_fetch takes exact URLs only - get them from a
           search result, do not invent them.
@@ -229,8 +229,9 @@ spec:
         - GitHubActions_*: read-only CI. actions_list / actions_get for
           workflow runs and jobs, get_job_logs for job output. This is how
           you see CI; bash has no GitHub token.
-        - Datadog_*: logs and metrics only. Before a non-trivial query,
-          call Datadog_load_datadog_skill with `datadog/logs` or
+        - Datadog (*_datadog_* tools, not through Aperture): logs and
+          metrics only. Before a non-trivial query, call
+          load_datadog_skill with `datadog/logs` or
           `datadog/metrics`; the skill holds the query syntax you need.
           Datadog also covers the Synology and the Nomad jobs, which you
           have no other way to see.
@@ -406,7 +407,8 @@ spec:
     # dashboard, outside ArgoCD, see mcp.yaml) is the only other lever.
     #
     # Aperture's 142 MCP *resources* (the Datadog skill markdown) are not
-    # tools and do not cross over; Datadog_load_datadog_skill reads them.
+    # tools and do not cross over. Datadog now has its own server (below), whose
+    # load_datadog_skill reads the skill markdown.
     - type: McpServer
       mcpServer:
         apiGroup: kagent.dev
@@ -415,11 +417,6 @@ spec:
         toolNames:
           - aperture_web_search
           - aperture_web_fetch
-          - Datadog_load_datadog_skill
-          - Datadog_search_datadog_logs
-          - Datadog_analyze_datadog_logs
-          - Datadog_get_datadog_metric
-          - Datadog_search_datadog_metrics
           - GitHub_get_me
           - GitHub_get_file_contents
           - GitHub_create_or_update_file
@@ -445,6 +442,19 @@ spec:
           - GitHubActions_actions_list
           - GitHubActions_actions_get
           - GitHubActions_get_job_logs
+    # Datadog, straight to its MCP server (mcp.yaml, RemoteMCPServer
+    # datadog): Aperture can't serve it to tag:k8s. Logs and metrics only.
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: datadog
+        toolNames:
+          - load_datadog_skill
+          - search_datadog_logs
+          - analyze_datadog_logs
+          - get_datadog_metric
+          - search_datadog_metrics
     # The printer expert (printer-agent.yaml), called as a tool.
     - type: Agent
       agent:

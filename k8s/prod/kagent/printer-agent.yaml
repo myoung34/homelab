@@ -5,7 +5,7 @@
 # bash, which reaches Moonraker on the printers' in-cluster Services
 # (k8s/prod/klipper). klippy.log and
 # moonraker.log are shipped to Datadog by sidecars in the klipper Deployments,
-# and read here through Aperture's Datadog tools.
+# and read here through the datadog RemoteMCPServer (mcp.yaml).
 #
 # homelab-agent can call this agent as a tool (homelab-agent.yaml).
 #
@@ -69,16 +69,23 @@ spec:
         - k8s_get_resource_yaml
         - k8s_get_pod_logs
         - k8s_get_events
+    # Datadog direct (mcp.yaml, RemoteMCPServer datadog).
+    - type: McpServer
+      mcpServer:
+        apiGroup: kagent.dev
+        kind: RemoteMCPServer
+        name: datadog
+        toolNames:
+        - search_datadog_logs
+        - analyze_datadog_logs
+        - list_datadog_skills
+        - load_datadog_skill
     - type: McpServer
       mcpServer:
         apiGroup: kagent.dev
         kind: RemoteMCPServer
         name: aperture
         toolNames:
-        - Datadog_search_datadog_logs
-        - Datadog_analyze_datadog_logs
-        - Datadog_list_datadog_skills
-        - Datadog_load_datadog_skill
         - aperture_web_search
         - aperture_web_fetch
         # Pull requests against myoung34/homelab (k8s/prod/klipper).
