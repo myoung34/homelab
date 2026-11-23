@@ -1,0 +1,19 @@
+---
+# Tailnet only - no tailscale.com/funnel annotation, so the UI is not
+# exposed beyond the tailnet.
+# https://immich.king-gila.ts.net
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: immich
+  namespace: immich
+spec:
+  defaultBackend:
+    service:
+      name: immich
+      port:
+        number: 2283
+  ingressClassName: tailscale
+  tls:
+  - hosts:
+    - immich
