@@ -93,8 +93,8 @@ data:
     The Datadog agent tails klippy.log from each printer's volume, and
     Moonraker logs to stdout: query `source:klipper service:klippy
     kube_deployment:<printer>` or `source:moonraker kube_deployment:<printer>`.
-    Load the logs skill (Datadog_list_datadog_skills /
-    Datadog_load_datadog_skill) before non-trivial queries. Datadog keeps
+    Load the logs skill (list_datadog_skills /
+    load_datadog_skill) before non-trivial queries. Datadog keeps
     history beyond the ~5 days of rotated logs on the printer, but its klippy
     lines carry ingestion time, not Klipper's own clock.
 

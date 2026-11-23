@@ -1,5 +1,6 @@
 ---
-# Holds POSTGRES_DATABASE_URL, the full DSN for the kagent database on
+# Holds DD_API_KEY and DD_APPLICATION_KEY for the datadog RemoteMCPServer
+# (mcp.yaml), and POSTGRES_DATABASE_URL, the full DSN for the kagent database on
 # bigNASty. The controller reads it as a file rather than an env var (see
 # database.postgres.urlFile in kustomization.yaml), so the password never
 # appears in the pod spec, in `kubectl describe`, or in this repo.
