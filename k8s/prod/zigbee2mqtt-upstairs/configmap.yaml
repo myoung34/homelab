@@ -13,6 +13,10 @@ data:
   configuration.yaml: |
     ota:
       disable_automatic_update_check: true
+    # mark devices offline when they stop checking in (battery: 25h, mains: 10m)
+    # so HA shows them unavailable and the low-battery alert lists them
+    availability:
+      enabled: true
     advanced:
       last_seen: ISO_8601
       log_level: debug
