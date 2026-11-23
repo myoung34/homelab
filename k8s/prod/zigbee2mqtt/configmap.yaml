@@ -14,13 +14,18 @@ data:
   configuration.yaml: |
     ota:
       disable_automatic_update_check: true
-    # mark devices offline when they stop checking in (battery: 25h, mains: 10m)
-    # so HA shows them unavailable and the low-battery alert lists them
+    # mark devices offline when they stop checking in so HA shows them
+    # unavailable and the low-battery alert lists them. mains: 10m (default).
+    # battery: 3h, down from 25h. Every battery device here is an Aqara leak
+    # sensor, which checks in about hourly; a dead one should surface fast.
+    # Raise this if a battery device with a slower check-in is added.
     availability:
       enabled: true
+      passive:
+        timeout: 180
     advanced:
       last_seen: ISO_8601
-      log_level: debug
+      log_level: info
       log_output:
         - console
       network_key: '!secrets network_key'
@@ -59,7 +64,7 @@ data:
         description: THIRDREALITY 3RSP02028BZ location:basement deck light
       '0xffffb40e06054321':
         friendly_name: wall-3
-        description: THIRDREALITY 3RSP02028BZ location:spare (no automations)
+        description: THIRDREALITY 3RSP02028BZ location:near main exit (zigbee router for main_exit)
       '0xffffb40e060579ee':
         friendly_name: wall-4
         description: THIRDREALITY 3RSP02028BZ location:upstairs deck light
