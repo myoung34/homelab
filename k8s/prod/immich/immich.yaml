@@ -1,0 +1,349 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich
+  name: immich
+spec:
+  ports:
+  - name: http
+    port: 2283
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # Restart when the Vault-rendered secret rotates.
+    secret.reloader.stakater.com/reload: immich
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich
+  name: immich
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: immich
+      app.kubernetes.io/name: immich
+  # The library is one NFS share; two pods writing it at once is a recipe for
+  # corruption. Recreate keeps it single-pod.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: immich
+        app.kubernetes.io/name: immich
+    spec:
+      automountServiceAccountToken: true
+      # Prefer cluster41: the only amd64 node with real CPU (12 cores,
+      # 32 GB), same reasoning as jellyfin. Transcoding and thumbnail work
+      # are CPU-heavy. Preferred, not required: an arm64 board still serves
+      # (direct play, slower transcodes). Avoid the Pi 4s - ARMv8.0 without
+      # LSE atomics; an arm64 image built for ARMv8.1+ passes its probe and
+      # then SIGILLs serving a request.
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [cluster41]
+      containers:
+      - name: immich
+        image: ghcr.io/immich-app/immich-server:v3.4.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TZ
+          value: "America/Chicago"
+        # Full DSN from Vault; when DB_URL is set the individual DB_* vars are
+        # ignored (immich docs, install/environment-variables).
+        - name: DB_URL
+          valueFrom:
+            secretKeyRef:
+              name: immich
+              key: DB_URL
+        # Vector extension for smart search. Must match what is installed in
+        # the Synology Postgres immich database.
+        - name: DB_VECTOR_EXTENSION
+          value: "vectorchord"
+        # Redis sidecar in this namespace.
+        - name: REDIS_HOSTNAME
+          value: "redis.immich.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6379"
+        # Face recognition / smart search / OCR run in the machine-learning
+        # service below. Server reads this (config.dto.ts,
+        # IMMICH_MACHINE_LEARNING_URL); falls back to the same FQDN:3003 by
+        # default, but we set it explicitly.
+        - name: IMMICH_MACHINE_LEARNING_URL
+          value: "http://immich-machine-learning.immich.svc.cluster.local:3003"
+        ports:
+        - containerPort: 2283
+          name: http
+          protocol: TCP
+        # GET /api/server/ping is a public endpoint that returns "Pong"
+        # (server/src/controllers/server.controller.ts).
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 90
+          periodSeconds: 15
+          httpGet:
+            path: /api/server/ping
+            port: http
+          timeoutSeconds: 3
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          httpGet:
+            path: /api/server/ping
+            port: http
+          timeoutSeconds: 3
+        # Migrations run on first boot; on an existing library they can
+        # take real time.
+        startupProbe:
+          failureThreshold: 120
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          httpGet:
+            path: /api/server/ping
+            port: http
+          timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: "4"
+            memory: 4Gi
+        volumeMounts:
+        - mountPath: /data
+          name: upload
+      serviceAccountName: default
+      volumes:
+      # The library is the source of truth for phone backups, so it lives on
+      # the NAS: same export as jellyfin/radarr/rtorrent (/volume1/Media),
+      # photos/ under it. Writable, unlike their read-only library mounts.
+      - name: upload
+        nfs:
+          server: 192.168.3.2
+          path: /volume1/Media/photos
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: redis
+  name: redis
+spec:
+  ports:
+  - name: redis
+    port: 6379
+    protocol: TCP
+    targetPort: redis
+  selector:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: redis
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: redis
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: immich
+      app.kubernetes.io/name: redis
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: immich
+        app.kubernetes.io/name: redis
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: redis
+        image: "redis:8-alpine"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 15m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 10
+          tcpSocket:
+            port: redis
+          timeoutSeconds: 1
+        ports:
+        - containerPort: 6379
+          name: redis
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          periodSeconds: 10
+          tcpSocket:
+            port: redis
+          timeoutSeconds: 1
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 5
+          tcpSocket:
+            port: redis
+          timeoutSeconds: 1
+      serviceAccountName: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich-machine-learning
+  name: immich-machine-learning
+spec:
+  ports:
+  - name: http
+    port: 3003
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich-machine-learning
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich-machine-learning
+  name: immich-machine-learning
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: immich
+      app.kubernetes.io/name: immich-machine-learning
+  # The model cache is a single Longhorn volume; two pods writing it at once
+  # would corrupt it. Recreate keeps it single-pod, like the server and redis.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: immich
+        app.kubernetes.io/name: immich-machine-learning
+    spec:
+      automountServiceAccountToken: false
+      # Required, not preferred: face detection + CLIP + OCR are CPU-bound and
+      # slow on a Pi, and cluster41 is the only amd64 node with real CPU. The
+      # server stays preferred because it reads the library over NFS, not the
+      # cache, and can fall back to an arm64 board (direct play, slower
+      # transcodes).
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [cluster41]
+      containers:
+      - name: immich-machine-learning
+        # CPU build (the default `DEVICE=cpu` build stage); no GPU here.
+        image: ghcr.io/immich-app/immich-machine-learning:v3.4.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TZ
+          value: "America/Chicago"
+        - name: DEVICE
+          value: "cpu"
+        # Models land in /cache (TRANSFORMERS_CACHE in the image), persisted
+        # below so a restart does not re-download ~5-8GB of weights.
+        - name: MACHINE_LEARNING_CACHE_FOLDER
+          value: "/cache"
+        # One worker keeps memory predictable on cluster41; the server queues
+        # instead of running inference in parallel.
+        - name: MACHINE_LEARNING_WORKERS
+          value: "1"
+        ports:
+        - containerPort: 3003
+          name: http
+          protocol: TCP
+        # GET /ping is the image's own health endpoint (scripts/healthcheck.py
+        # hits http://localhost:3003/ping; main.py:160 serves it).
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 20
+          httpGet:
+            path: /ping
+            port: http
+          timeoutSeconds: 3
+        readinessProbe:
+          failureThreshold: 3
+          periodSeconds: 10
+          httpGet:
+            path: /ping
+            port: http
+          timeoutSeconds: 3
+        # First boot downloads the CLIP, face and OCR models before it is
+        # useful; give it time on the NAS-grade storage.
+        startupProbe:
+          failureThreshold: 60
+          periodSeconds: 10
+          httpGet:
+            path: /ping
+            port: http
+          timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: "4"
+            memory: 4Gi
+        volumeMounts:
+        - mountPath: /cache
+          name: cache
+      serviceAccountName: default
+      volumes:
+      - name: cache
+        persistentVolumeClaim:
+          claimName: immich-machine-learning-cache
+---
+# Re-downloadable models (the ML service re-fetches what it needs), so one
+# replica on the longhorn-1r class is enough - same reasoning as mosquitto-data.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-machine-learning-cache
+  namespace: immich
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: longhorn-1r

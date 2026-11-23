@@ -1,0 +1,7 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: immich
+  labels:
+    name: immich
