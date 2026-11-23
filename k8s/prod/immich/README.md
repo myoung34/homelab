@@ -8,9 +8,11 @@ lives on the NAS; if the cluster dies the photos survive.
 | piece          | where                          | notes                                |
 |----------------|--------------------------------|--------------------------------------|
 | immich-server  | k8s, this namespace            | v3.4.2, port 2283                    |
+| immich-ml      | k8s, this namespace            | v3.4.2, port 3003, face/CLIP/OCR     |
 | redis          | k8s, this namespace            | ephemeral cache/queue                |
 | Postgres       | Synology `192.168.3.2:5432/immich` | creds from Vault, key `DB_URL` |
 | photo library  | Synology NFS `/volume1/Media/photos` | mounted at `/data`, the write target |
+| ML model cache | Longhorn (`longhorn-1r`, 20Gi) | `/cache`, models are re-downloadable |
 
 ## Access
 
@@ -40,17 +42,19 @@ ArgoCD picks the app up automatically (ApplicationSet git generator over
 
 ## Not in this PR (deliberate)
 
-- **immich-machine-learning** - face recognition, smart search and ML
-  thumbnails are off. The server tolerates the missing service. Add it later
-  if wanted; it needs a GPU or real CPU and a model cache volume.
 - **Postgres backup** - the `immich` DB is on the Synology and is not in the
   `k8s/prod/workflows/psql-*` CronWorkflow set. Add one if you want it covered
   by the MinIO backup path.
 
 ## Notes
 
-- Image tag is pinned `v3.4.2` (current release at the time of writing).
-  Bump it through Renovate rather than hand-editing, per repo convention.
-- Node affinity prefers `cluster41` (amd64, real CPU); the Pi 4s (ARMv8.0)
-  will SIGILL on arm64 images built for ARMv8.1+, so it should land on
-  cluster41 or a Pi 5.
+- Image tags are pinned `v3.4.2` (current release at the time of writing),
+  server and machine-learning together so the two stay compatible. Bump them
+  through Renovate rather than hand-editing, per repo convention.
+- Node affinity: the server **prefers** `cluster41` (amd64, real CPU); the
+  machine-learning pod **requires** it - the inference work is CPU-bound and
+  slow on a Pi, and cluster41 is the only amd64 node with real CPU. The Pi 4s
+  (ARMv8.0) will SIGILL on arm64 images built for ARMv8.1+.
+- Face recognition / smart search / OCR run in the ML service, pointed at the
+  server via `IMMICH_MACHINE_LEARNING_URL` (port 3003, `/ping` health, models
+  cached at `/cache`).

@@ -82,9 +82,12 @@ spec:
           value: "redis.immich.svc.cluster.local"
         - name: REDIS_PORT
           value: "6379"
-        # No immich-machine-learning service in this stack; smart search,
-        # face recognition and ML thumbnails are unavailable. The server
-        # tolerates its absence.
+        # Face recognition / smart search / OCR run in the machine-learning
+        # service below. Server reads this (config.dto.ts,
+        # IMMICH_MACHINE_LEARNING_URL); falls back to the same FQDN:3003 by
+        # default, but we set it explicitly.
+        - name: IMMICH_MACHINE_LEARNING_URL
+          value: "http://immich-machine-learning.immich.svc.cluster.local:3003"
         ports:
         - containerPort: 2283
           name: http
@@ -211,3 +214,136 @@ spec:
             port: redis
           timeoutSeconds: 1
       serviceAccountName: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich-machine-learning
+  name: immich-machine-learning
+spec:
+  ports:
+  - name: http
+    port: 3003
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich-machine-learning
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: immich
+    app.kubernetes.io/name: immich-machine-learning
+  name: immich-machine-learning
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: immich
+      app.kubernetes.io/name: immich-machine-learning
+  # The model cache is a single Longhorn volume; two pods writing it at once
+  # would corrupt it. Recreate keeps it single-pod, like the server and redis.
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: immich
+        app.kubernetes.io/name: immich-machine-learning
+    spec:
+      automountServiceAccountToken: false
+      # Required, not preferred: face detection + CLIP + OCR are CPU-bound and
+      # slow on a Pi, and cluster41 is the only amd64 node with real CPU. The
+      # server stays preferred because it reads the library over NFS, not the
+      # cache, and can fall back to an arm64 board (direct play, slower
+      # transcodes).
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [cluster41]
+      containers:
+      - name: immich-machine-learning
+        # CPU build (the default `DEVICE=cpu` build stage); no GPU here.
+        image: ghcr.io/immich-app/immich-machine-learning:v3.4.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TZ
+          value: "America/Chicago"
+        - name: DEVICE
+          value: "cpu"
+        # Models land in /cache (TRANSFORMERS_CACHE in the image), persisted
+        # below so a restart does not re-download ~5-8GB of weights.
+        - name: MACHINE_LEARNING_CACHE_FOLDER
+          value: "/cache"
+        # One worker keeps memory predictable on cluster41; the server queues
+        # instead of running inference in parallel.
+        - name: MACHINE_LEARNING_WORKERS
+          value: "1"
+        ports:
+        - containerPort: 3003
+          name: http
+          protocol: TCP
+        # GET /ping is the image's own health endpoint (scripts/healthcheck.py
+        # hits http://localhost:3003/ping; main.py:160 serves it).
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 20
+          httpGet:
+            path: /ping
+            port: http
+          timeoutSeconds: 3
+        readinessProbe:
+          failureThreshold: 3
+          periodSeconds: 10
+          httpGet:
+            path: /ping
+            port: http
+          timeoutSeconds: 3
+        # First boot downloads the CLIP, face and OCR models before it is
+        # useful; give it time on the NAS-grade storage.
+        startupProbe:
+          failureThreshold: 60
+          periodSeconds: 10
+          httpGet:
+            path: /ping
+            port: http
+          timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: "4"
+            memory: 4Gi
+        volumeMounts:
+        - mountPath: /cache
+          name: cache
+      serviceAccountName: default
+      volumes:
+      - name: cache
+        persistentVolumeClaim:
+          claimName: immich-machine-learning-cache
+---
+# Re-downloadable models (the ML service re-fetches what it needs), so one
+# replica on the longhorn-1r class is enough - same reasoning as mosquitto-data.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: immich-machine-learning-cache
+  namespace: immich
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: longhorn-1r
