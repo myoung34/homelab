@@ -384,3 +384,72 @@
           data:
             item: "{{ item }}"
             status: completed
+# low battery on any device in HA (matched by device_class battery, no names).
+# Low = battery sensor < 10% or battery binary_sensor on. Fires when something
+# newly goes low, plus a 9am digest. Each message lists every low device and
+# every battery device that is offline (unavailable). Silent if both are empty.
+- alias: Low Battery
+  id: low_battery
+  mode: single
+  max_exceeded: silent
+  trigger:
+    - platform: time
+      at: "09:00:00"
+      id: digest
+    - platform: event
+      event_type: state_changed
+      id: change
+  condition:
+    - condition: or
+      conditions:
+        - condition: trigger
+          id: digest
+        - condition: template
+          value_template: >
+            {% set n = trigger.event.data.new_state %}
+            {% set o = trigger.event.data.old_state %}
+            {{ n is not none and o is not none
+               and n.attributes.device_class | default('') == 'battery'
+               and o.state not in ['unavailable', 'unknown']
+               and ((n.domain == 'sensor'
+                     and n.state | float(101) < 10 and o.state | float(101) >= 10)
+                 or (n.domain == 'binary_sensor'
+                     and n.state == 'on' and o.state == 'off')) }}
+  action:
+    - variables:
+        battery: >
+          {%- set ns = namespace(low=[], seen=[], off=[]) -%}
+          {%- for s in (states.sensor | list) + (states.binary_sensor | list)
+             if s.attributes.device_class | default('') == 'battery' -%}
+            {%- set name = device_attr(s.entity_id, 'name') or s.name -%}
+            {%- if s.state == 'unavailable' -%}
+              {%- if name not in ns.off -%}{%- set ns.off = ns.off + [name] -%}{%- endif -%}
+            {%- elif name not in ns.seen
+                 and ((s.domain == 'sensor' and s.state | float(101) < 10)
+                   or (s.domain == 'binary_sensor' and s.state == 'on')) -%}
+              {%- set ns.seen = ns.seen + [name] -%}
+              {%- set ns.low = ns.low + [name ~ (' (' ~ s.state ~ '%)'
+                 if s.domain == 'sensor' else ' (low)')] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{- {'low': ns.low | sort, 'off': ns.off | sort} }}
+    - condition: template
+      value_template: "{{ battery.low | count > 0 or battery.off | count > 0 }}"
+    - service: rest_command.slack_notify
+      data:
+        message: |
+          🔋 Battery check {{ now().strftime('%Y-%m-%d %I:%M %p') }}
+          {%- if battery.low %}
+
+          Low ({{ battery.low | count }}):
+          {%- for d in battery.low %}
+          • {{ d }}
+          {%- endfor %}
+          {%- endif %}
+          {%- if battery.off %}
+
+          Offline ({{ battery.off | count }}):
+          {%- for d in battery.off %}
+          • {{ d }}
+          {%- endfor %}
+          {%- endif %}
