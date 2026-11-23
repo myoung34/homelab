@@ -68,6 +68,15 @@ data:
       '0x00158d008bc19938':
         friendly_name: main_exit
         description: aqara LUMI LUMI (Water leak sensor) location:main exit
+      '0x00158d008c7820d5':
+        friendly_name: basement_bath
+        description: aqara LUMI LUMI (Water leak sensor) location:basement bathroom
+      '0x00158d008c782da7':
+        friendly_name: storage_room
+        description: aqara LUMI LUMI (Water leak sensor) location:storage room
+      '0x00158d008c782db8':
+        friendly_name: brew_table
+        description: aqara LUMI LUMI (Water leak sensor) location:under brew table
       '0xd44867fffe08df72':
         friendly_name: light_sconce_office
         description: switch next to rudys tank in office controls outside sconce
