@@ -10,7 +10,7 @@ lives on the NAS; if the cluster dies the photos survive.
 | immich-server  | k8s, this namespace            | v3.4.2, port 2283                    |
 | redis          | k8s, this namespace            | ephemeral cache/queue                |
 | Postgres       | Synology `192.168.3.2:5432/immich` | creds from Vault, key `DB_URL` |
-| photo library  | Synology NFS `/media/photos`   | mounted at `/data`, the write target |
+| photo library  | Synology NFS `/volume1/Media/photos` | mounted at `/data`, the write target |
 
 ## Access
 
@@ -31,8 +31,8 @@ lives on the NAS; if the cluster dies the photos survive.
 2. `vault kv put secret/immich DB_URL="postgresql://immich:PASSWORD@192.168.3.2:5432/immich" # pragma: allowlist secret`
 3. k8s Vault role `immich` allowing the `default` service account in namespace
    `immich` to read `secret/immich` (pattern: `k8s/prod/paperless-ngx/vault.yaml`)
-4. Make sure `/media/photos` exists and is exported (it is on the same share
-   as `/volume1/Media`; create a subfolder and add it to the export list if
+4. Make sure `/volume1/Media/photos` exists on the NAS (a folder under the
+   same `/volume1/Media` export jellyfin/radarr/rtorrent use; create it if
    not present).
 
 ArgoCD picks the app up automatically (ApplicationSet git generator over

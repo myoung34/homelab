@@ -77,9 +77,6 @@ spec:
         # the Synology Postgres immich database.
         - name: DB_VECTOR_EXTENSION
           value: "vectorchord"
-        # Photo library, on the NAS (see volume below).
-        - name: UPLOAD_LOCATION
-          value: "/data"
         # Redis sidecar in this namespace.
         - name: REDIS_HOSTNAME
           value: "redis.immich.svc.cluster.local"
@@ -92,21 +89,22 @@ spec:
         - containerPort: 2283
           name: http
           protocol: TCP
-        # immich exposes no HTTP health endpoint; TCP on 2283 is the
-        # closest thing (the API returns 404 on unknown paths, which a
-        # plain httpGet probe would treat as failed).
+        # GET /api/server/ping is a public endpoint that returns "Pong"
+        # (server/src/controllers/server.controller.ts).
         livenessProbe:
           failureThreshold: 3
           initialDelaySeconds: 90
           periodSeconds: 15
-          tcpSocket:
+          httpGet:
+            path: /api/server/ping
             port: http
           timeoutSeconds: 3
         readinessProbe:
           failureThreshold: 3
           initialDelaySeconds: 30
           periodSeconds: 10
-          tcpSocket:
+          httpGet:
+            path: /api/server/ping
             port: http
           timeoutSeconds: 3
         # Migrations run on first boot; on an existing library they can
@@ -115,7 +113,8 @@ spec:
           failureThreshold: 120
           initialDelaySeconds: 30
           periodSeconds: 5
-          tcpSocket:
+          httpGet:
+            path: /api/server/ping
             port: http
           timeoutSeconds: 3
         resources:
@@ -131,14 +130,12 @@ spec:
       serviceAccountName: default
       volumes:
       # The library is the source of truth for phone backups, so it lives on
-      # the NAS: same server and mount style as jellyfin/radarr/rtorrent.
-      # Writable, unlike their read-only library mounts.
+      # the NAS: same export as jellyfin/radarr/rtorrent (/volume1/Media),
+      # photos/ under it. Writable, unlike their read-only library mounts.
       - name: upload
         nfs:
           server: 192.168.3.2
-          # /media/photos is the Synology share itself (independent of
-          # /volume1/Media). Same server, different export path.
-          path: /media/photos
+          path: /volume1/Media/photos
 ---
 apiVersion: v1
 kind: Service
