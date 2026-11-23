@@ -49,16 +49,16 @@ data:
     devices:
       '0xffffb40e0605214d':
         friendly_name: wall-1
-        description: THIRDREALITY 3RSP02028BZ location:tbd
+        description: THIRDREALITY 3RSP02028BZ location:liams room
       '0xffffb40e0605366d':
         friendly_name: wall-2
-        description: THIRDREALITY 3RSP02028BZ location:tbd
+        description: THIRDREALITY 3RSP02028BZ location:basement deck light
       '0xffffb40e06054321':
         friendly_name: wall-3
-        description: THIRDREALITY 3RSP02028BZ location:tbd
+        description: THIRDREALITY 3RSP02028BZ location:spare (no automations)
       '0xffffb40e060579ee':
         friendly_name: wall-4
-        description: THIRDREALITY 3RSP02028BZ location:tbd
+        description: THIRDREALITY 3RSP02028BZ location:upstairs deck light
       '0x00158d008bbf3f0e':
         friendly_name: water-1
         description: aqara LUMI LUMI (Water leak sensor) location:hvac pan
