@@ -194,6 +194,64 @@
         message: >
           🚨🚨 SMOKE ALARM DETECTED
           Time: {{ now().strftime('%Y-%m-%d %I:%M:%S %p') }}
+# water leak from any moisture sensor in HA (matched by device_class, no names).
+# change: state_changed fires for every entity; the condition keeps only leak
+#   sensors turning on from any other state (incl. unavailable, so a sensor
+#   that rejoins while wet still alerts). 5s wait debounces a blip.
+# start: after an HA restart, alert on every sensor still wet (60s wait lets
+#   zigbee2mqtt states load). May double up with a change alert; loud is fine.
+- alias: Water Leak Detected
+  id: water_leak_detected
+  mode: parallel
+  trigger:
+    - platform: event
+      event_type: state_changed
+      id: change
+    - platform: homeassistant
+      event: start
+      id: start
+  condition:
+    - condition: or
+      conditions:
+        - condition: trigger
+          id: start
+        - condition: template
+          value_template: >
+            {% set n = trigger.event.data.new_state %}
+            {% set o = trigger.event.data.old_state %}
+            {{ n is not none
+               and n.domain == 'binary_sensor'
+               and n.attributes.device_class | default('') == 'moisture'
+               and (o is none or o.state != 'on') and n.state == 'on' }}
+  action:
+    - delay:
+        seconds: "{{ 60 if trigger.id == 'start' else 5 }}"
+    - variables:
+        wet: >
+          {%- if trigger.id == 'start' -%}
+            {{- states.binary_sensor
+                | selectattr('attributes.device_class', 'defined')
+                | selectattr('attributes.device_class', 'eq', 'moisture')
+                | selectattr('state', 'eq', 'on')
+                | map(attribute='entity_id') | list -}}
+          {%- elif is_state(trigger.event.data.entity_id, 'on') -%}
+            {{- [trigger.event.data.entity_id] -}}
+          {%- else -%}
+            {{- [] -}}
+          {%- endif -%}
+    - condition: template
+      value_template: "{{ wet | count > 0 }}"
+    - service: rest_command.slack_notify
+      data:
+        message: >
+          {%- set ns = namespace(names=[]) -%}
+          {%- for e in wet -%}
+            {%- set ns.names = ns.names + [device_attr(e, 'name_by_user')
+                or device_attr(e, 'name') or state_attr(e, 'friendly_name') or e] -%}
+          {%- endfor -%}
+          💧🚨 WATER LEAK DETECTED: {{ ns.names | join(', ') }}
+          {{- ' (still wet after HA restart)' if trigger.id == 'start' }}
+          Time: {{ now().strftime('%Y-%m-%d %I:%M:%S %p') }}
 # liams room motion and dark turn on stuff
 - alias: Liams Room Motion Lights On
   id: liams_room_motion_lights_on

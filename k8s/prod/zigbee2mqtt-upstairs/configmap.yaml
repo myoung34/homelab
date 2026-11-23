@@ -66,20 +66,20 @@ data:
         friendly_name: kitchen_outside_flood
         description: 2 gang switch in kitchen next to outside door, switch on right
       '0x00158d008cd1a88f':
-        friendly_name: water-9
+        friendly_name: liam_bath
         description: liam bath
       '0x00158d008cd0533f':
-        friendly_name: water-5
+        friendly_name: upstairs_hvac_pan
         description: hvac pan
       '0x00158d008cd1a665':
-        friendly_name: water-7
+        friendly_name: master_bath
         description: master bath
       '0x00158d008cd1a818':
-        friendly_name: water-8
+        friendly_name: half_bath
         description: half bath
       '0x00158d008c865760':
-        friendly_name: water-4
+        friendly_name: kitchen_sink
         description: kitchen sink
       '0x00158d008cd0540e':
-        friendly_name: water-6
+        friendly_name: laundry_room
         description: laundry room
