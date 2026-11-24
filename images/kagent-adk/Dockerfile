@@ -105,7 +105,7 @@
 # kustomization.yaml updated by hand. Drop kagent-pr2791.patch once the
 # kagent release includes #2790/#2791. ADK_VERSION = google.golang.org/adk/v2
 # in kagent's go/go.mod; drop the adk-go patch once that version has #2238.
-ARG KAGENT_VERSION=0.10.6
+ARG KAGENT_VERSION=0.10.7
 # Tag suffix: <KAGENT_VERSION>-<PATCHES>. Change it whenever the patch set
 # changes, or nodes with the old tag cached (IfNotPresent) keep running it.
 ARG PATCHES=a2a414v0-cap-compact-orphan-reinit-bashto-reconfirm-ocr
