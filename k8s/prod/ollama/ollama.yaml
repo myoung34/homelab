@@ -65,7 +65,7 @@ spec:
         # full context errors instead of silently dropping the system prompt.
         # Back to the official image once a release can turn context shift
         # off server-wide; see images/ollama/Dockerfile.
-        image: "ghcr.io/myoung34/homelab/ollama:0.40.17-rocm-noshift"
+        image: "ghcr.io/myoung34/homelab/ollama:0.40.18-rocm-noshift"
         imagePullPolicy: IfNotPresent
         env:
         # Default splits each blob into many concurrent chunk downloads: fine
@@ -170,7 +170,7 @@ spec:
       containers:
       - name: ollama
         # Same patched image as pull-model above.
-        image: "ghcr.io/myoung34/homelab/ollama:0.40.17-rocm-noshift"
+        image: "ghcr.io/myoung34/homelab/ollama:0.40.18-rocm-noshift"
         imagePullPolicy: IfNotPresent
         # Serve, then preload qwen3.8:agent in the background so the
         # ~10-30s load happens at pod start instead of on the first agent

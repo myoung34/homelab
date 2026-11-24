@@ -24,7 +24,7 @@
 # packageRules in renovate.json. Until then Renovate bumps OLLAMA_VERSION
 # and the tag in ollama.yaml together; if the patch stops applying, the
 # ollama-image build fails and the PR stays open.
-ARG OLLAMA_VERSION=0.40.17
+ARG OLLAMA_VERSION=0.40.18
 ARG BASE=ollama/ollama:${OLLAMA_VERSION}-rocm
 
 FROM golang:1.27-bookworm AS build
