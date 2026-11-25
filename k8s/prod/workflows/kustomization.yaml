@@ -7,5 +7,6 @@ resources:
   - vault.yaml
   - talos.yaml
   - etcdsnapshot.yaml
+  - openbao-snapshot.yaml
   - psql-hass.yaml
   - psql-paperless.yaml

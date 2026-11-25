@@ -10,7 +10,7 @@ Also see [this post](https://markyoung.us/post/smart-home/)
 ├── misc
 │   └── Random things. No real rule here
 ├── synology
-│   └── Nomad jobs that run on the synology (some may be encrypted because chicken-and-egg (vault))
+│   └── Nomad jobs that run on the synology (some may be encrypted because chicken-and-egg (openbao))
 ├── talos
 │   └── Encrypted talos configs
 ├── terraform
@@ -34,9 +34,9 @@ Todo. In the meantime a tl;dr:
   * Datadog - o11y
   * Netboot.xyz - This is how I flash my talos easily. I build MAC's per node to a file. Some are ARM64, some are AMD64
   * `synology-ups-datadog` - custom script to send UPS metrics to datadog via Zapier, because of a [bug in go snmp](https://github.com/DataDog/integrations-core/issues/10899)
-  * Vault - my way of handling secrets. Backed by Minio for cost/local reasons
+  * OpenBao - my way of handling secrets. Raft storage, auto-unseals from a key file on the NAS; monthly raft snapshots to Minio (`k8s/prod/workflows/openbao-snapshot.yaml`)
   * traefik - How i expose services from nomad using consul discovery.
-  * minio - local s3 compatible system. I use it for backups (see `k8s/prod/workflows`) and vault
+  * minio - local s3 compatible system. I use it for backups (see `k8s/prod/workflows`)
 * Kubernetes cluster
   * Runs on talos across a mixture of Raspberry Pi 4's and Rock Pi X (To get some AMD64 in there) on [pirack's](https://www.uctronics.com/uctronics-for-raspberry-pi-rack-with-micro-hdmi-adapter-boards-19-1u-rack-mount-supports-1-4-units-of-raspberry-pi-4-model-b-u6128.html) powered by PoE
   * Cluster naming is by rack and position. 1st rack, 1st position is `cluster11`. 2nd rack 3rd position would be `cluster23`
