@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copy Vault state into a fresh OpenBao (docs/superpowers/specs/2026-11-25-openbao-migration-design.md).
+# Copy Vault (or OpenBao) state into a fresh OpenBao.
 #
 # Usage (VAULT_ADDR/VAULT_TOKEN point at the server being read or written):
 #   ./openbao-bootstrap.sh export DIR   # old Vault -> DIR (holds plaintext secrets; created 0700)

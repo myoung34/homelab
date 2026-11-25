@@ -1,0 +1,63 @@
+---
+# Monthly OpenBao raft snapshot to MinIO. The snapshot is encrypted with the
+# static seal key, which lives only on the NAS (/volume1/@appdata/openbao) and
+# in the password manager -- never alongside these backups.
+#
+# OpenBao side (one-time, not derivable from VaultStaticSecrets):
+#   printf 'path "sys/storage/raft/snapshot" {\n  capabilities = ["read"]\n}\n' \
+#     | bao policy write openbao-snapshot -
+#   bao write auth/kubernetes/role/openbao-snapshot \
+#     bound_service_account_names=default bound_service_account_namespaces=argocd \
+#     token_policies=openbao-snapshot token_ttl=15m
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: openbao-snapshot
+spec:
+  schedules:
+    - "0 0 1 * *"
+  startingDeadlineSeconds: 0
+  suspend: false
+  workflowSpec:
+    entrypoint: snapshot
+    templates:
+      - name: snapshot
+        container:
+          name: snapshot
+          image: alpine:3.24.4
+          command:
+          - sh
+          - -c
+          - |
+            set -eu
+            apk add -U curl jq python3 py3-pip >/dev/null
+            pip3 install --break-system-packages awscli==1.42.27 >/dev/null
+
+            _addr=http://192.168.3.2:8200
+            _jwt=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+            _token=$(curl -sf -X POST "${_addr}/v1/auth/kubernetes/login" \
+              -d "{\"role\": \"openbao-snapshot\", \"jwt\": \"${_jwt}\"}" | jq -r .auth.client_token)
+
+            _file=openbao-$(date '+%Y%m%d%H%M%S').snap
+            curl -sf -H "X-Vault-Token: ${_token}" "${_addr}/v1/sys/storage/raft/snapshot" -o "${_file}"
+            tar tzf "${_file}" | grep -q state.bin
+
+            aws configure set default.s3.signature_version s3v4
+            aws --endpoint-url http://192.168.3.2:9000 s3 cp "${_file}" s3://backups/openbao/
+            curl -XPOST -H 'Content-Type: application/json' ${ZAPIER_WEBHOOK_URL} -d '{"message": "openbao snapshot complete"}'
+          env:
+          - name: ZAPIER_WEBHOOK_URL
+            valueFrom:
+              secretKeyRef:
+                key: ZAPIER_WEBHOOK_URL
+                name: argowf
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                key: MINIO_ACCESS_KEY_ID
+                name: argowf
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                key: MINIO_SECRET_ACCESS_KEY
+                name: argowf

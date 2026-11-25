@@ -30,7 +30,7 @@ storage "raft" {
 }
 
 # Auto-unseal from a key file on the NAS, outside every shared folder.
-# See docs/superpowers/specs/2026-11-25-openbao-migration-design.md.
+# Key: 32 random bytes, owned 100:1000 (openbao), mode 0400. Losing it loses the data.
 seal "static" {
   current_key_id = "20261125-1"
   current_key    = "file:///openbao/seal/unseal-20261125-1.key"

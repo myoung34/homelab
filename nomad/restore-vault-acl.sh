@@ -29,31 +29,20 @@ find . -name vault.yaml | while read -r vaultfile; do
     continue
   fi
 
-  # Process each VaultStaticSecret
-  jq -c '.[] | select(.kind=="VaultStaticSecret")' /tmp/vault_objects.json | while read -r vss; do
-
-    auth_ref=$(echo "$vss" | jq -r '.spec.vaultAuthRef')
-    mount=$(echo "$vss" | jq -r '.spec.mount' | sed 's:/*$::')
-    path=$(echo "$vss" | jq -r '.spec.path')
+  # One policy per auth ref, covering every VaultStaticSecret that uses it
+  # (writing one per secret let the last one overwrite the rest).
+  for auth_ref in $(jq -r '[.[] | select(.kind=="VaultStaticSecret") | .spec.vaultAuthRef] | unique | .[]' /tmp/vault_objects.json); do
 
     echo
-    echo "Creating policy for:"
-    echo "  Auth Ref: $auth_ref"
-    echo "  Secret:   $mount/$path"
+    echo "Creating policy: $auth_ref"
 
-    cat >/tmp/policy.hcl <<EOF
-path "$mount/data/$path" {
-  capabilities = ["read"]
-}
-
-path "$mount/metadata/$path" {
-  capabilities = ["read", "list"]
-}
-EOF
+    jq -r --arg ref "$auth_ref" '
+      .[] | select(.kind=="VaultStaticSecret" and .spec.vaultAuthRef==$ref)
+      | (.spec.mount | sub("/+$"; "")) as $m
+      | "path \"\($m)/data/\(.spec.path)\" {\n  capabilities = [\"read\"]\n}\n\npath \"\($m)/metadata/\(.spec.path)\" {\n  capabilities = [\"read\", \"list\"]\n}\n"
+    ' /tmp/vault_objects.json >/tmp/policy.hcl
 
     vault policy write "$auth_ref" /tmp/policy.hcl
-
-    echo "  Policy created: $auth_ref"
 
   done
 
@@ -64,7 +53,10 @@ EOF
     sa=$(echo "$vauth" | jq -r '.spec.kubernetes.serviceAccount')
     namespace=$(echo "$vauth" | jq -r '.metadata.namespace // empty')
 
-    # Infer namespace from directory if missing
+    # Missing namespace: kustomization's namespace, then the directory name
+    if [[ -z "$namespace" || "$namespace" == "null" ]]; then
+      namespace=$(yq -r '.namespace // ""' "$(dirname "$vaultfile")/kustomization.yaml" 2>/dev/null || true)
+    fi
     if [[ -z "$namespace" || "$namespace" == "null" ]]; then
       namespace=$(basename "$(dirname "$vaultfile")")
     fi
