@@ -14,7 +14,7 @@ helmCharts:
   includeCRDs: true
   namespace: traefik
   releaseName: traefik
-  version: 42.4.3
+  version: 43.0.0
   repo: https://traefik.github.io/charts
   valuesInline:
     ingressClass:
