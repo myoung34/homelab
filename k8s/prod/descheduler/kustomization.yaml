@@ -15,6 +15,10 @@ helmCharts:
   repo: https://kubernetes-sigs.github.io/descheduler/
   valuesInline:
     schedule: "*/5 * * * *" # frequent so io-pressure taints act quickly
+    # Chart default is 3: every run logged V2 "Processing node" lines for each
+    # plugin and node (~18k lines/day). "Evicted pod" is V1, so it still logs.
+    cmdOptions:
+      v: 1
     # Each run is too short for a CPU sample; the chart default 500m request
     # reserved half a core around the clock for a job that runs seconds.
     resources:

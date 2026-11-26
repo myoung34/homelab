@@ -83,6 +83,11 @@ patches:
       - op: replace
         path: /data/nfd-worker.conf
         value: |-
+          # 60s default. Each pass logged "starting feature discovery..." /
+          # "feature discovery completed" at V0 on every node (~22k lines/day,
+          # stderr so status:error) to relabel hardware that rarely changes.
+          core:
+            sleepInterval: 300s
           sources:
             usb:
               deviceClassWhitelist:

@@ -66,6 +66,12 @@ helmCharts:
       envFrom:
         - secretRef:
             name: datadog
+      env:
+        # longhorn-manager starts its CSI plugin with -d (debug) itself, so the
+        # log-level setting doesn't reach it: ~35k GetCapacity poll lines/day.
+        # Its pods are owned by longhorn-manager, so annotations won't stick.
+        - name: DD_LOGS_CONFIG_PROCESSING_RULES
+          value: '[{"type":"exclude_at_match","name":"longhorn_csi_getcapacity","pattern":"level=info msg=\"(GetCapacity|Node: [^,]+, DataEngine: )"}]'
     agents:
       # tracefs (/sys/kernel/tracing, RW for system-probe's kprobe_events)
       # used to be added here; the chart mounts it itself since 3.261.0, and
