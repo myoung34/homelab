@@ -43,7 +43,6 @@ helmCharts:
               args:
                 includedTaints:
                   - homelab/io-pressure
-                  - homelab/cpu-pressure
           plugins:
             balance:
               enabled:
