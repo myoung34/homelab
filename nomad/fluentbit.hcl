@@ -115,6 +115,32 @@ EOH
     Match   talos
     Exclude talos-service ^auditd$
 
+# Of the ~666k talos lines/day left after auditd: ~156k were machined
+# logging every poll from the console dashboard ("unary Success
+# {authorized based on PID ... service \"dashboard\""), ~74k were
+# controller-runtime DEBUG lines, ~56k were etcd's info-level "trace"
+# dumps. etcd's warn lines ("apply request took too long") still pass.
+[FILTER]
+    Name       grep
+    Match      talos
+    Logical_Op and
+    Exclude    talos-service ^machined$
+    Exclude    msg unary Success \{authorized based on PID
+
+[FILTER]
+    Name       grep
+    Match      talos
+    Logical_Op and
+    Exclude    talos-service ^controller-runtime$
+    Exclude    msg ^\S+ DEBUG\s
+
+[FILTER]
+    Name       grep
+    Match      talos
+    Logical_Op and
+    Exclude    talos-service ^etcd$
+    Exclude    msg ^trace$
+
 [FILTER]
     Name  modify
     Match *

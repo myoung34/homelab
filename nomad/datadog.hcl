@@ -63,6 +63,9 @@ logs:
       - /opt/logs/ecs/ecs-volume-plugin.log
       - /opt/logs/upstart/*.log
       - /opt/logs/Docker/docker.log
+      # The Nomad agent's stdout, captured by its systemd user unit. Line for
+      # line the same as nomad.log, already shipped by custom_log_collection.d.
+      - /opt/logs/systemd/user@*.service.log
     service: nomad
     source: bigNASty
 
