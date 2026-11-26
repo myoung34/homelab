@@ -50,8 +50,11 @@ helmCharts:
         containerCollectAll: true
       networkMonitoring:
         enabled: true
+      # Universal Service Monitoring off: billed as 10 APM hosts and adds
+      # eBPF HTTP tracing on every Pi, while nothing (dashboard or monitor)
+      # read its universal.http.* metrics. NPM (networkMonitoring) stays.
       serviceMonitoring:
-        enabled: true
+        enabled: false
       systemProbe:
         mountPackageManagementDirs:
         - name: "public-key-dir"
