@@ -1,6 +1,6 @@
-# Taints nodes whose IO is stalled so the descheduler (RemovePodsViolatingNodeTaints)
-# moves pods off them. Hysteresis: taint above HIGH% full IO stall, untaint below LOW%,
-# so pods drift back once the node recovers.
+# Taints nodes whose IO or CPU is stalled so the descheduler (RemovePodsViolatingNodeTaints)
+# moves pods off them. Hysteresis per check in CHECKS: taint above HIGH% stall, untaint
+# below LOW%, so pods drift back once the node recovers.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -64,9 +64,13 @@ spec:
             imagePullPolicy: IfNotPresent
             env:
             - {name: HOME, value: /tmp}
-            - {name: KEY, value: homelab/io-pressure}
-            - {name: HIGH, value: "50"}
-            - {name: LOW, value: "10"}
+            # key:cadvisor-metric:HIGH%:LOW%. io = "full" stall, cpu = "some" wait.
+            # cpu HIGH 80: healthy Pis sit 20-50% (cluster13 52%); undervolted,
+            # throttled cluster11 hit 97% on 2026-11-26.
+            - name: CHECKS
+              value: >-
+                homelab/io-pressure:container_pressure_io_stalled_seconds_total:50:10
+                homelab/cpu-pressure:container_pressure_cpu_waiting_seconds_total:80:40
             - {name: WINDOW, value: "60"}
             securityContext:
               allowPrivilegeEscalation: false
@@ -84,29 +88,36 @@ spec:
             - |
               set -euo pipefail
               TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-              # cumulative seconds the whole node had all tasks stalled on IO
-              stall() {
-                curl -sfk -m 10 -H "Authorization: Bearer $TOKEN" "https://$1:10250/metrics/cadvisor" \
-                  | awk '/^container_pressure_io_stalled_seconds_total\{.*id="\/"/ {print $2; exit}'
-              }
+              metrics() { curl -sfk -m 10 -H "Authorization: Bearer $TOKEN" "https://$1:10250/metrics/cadvisor" || true; }
+              # cumulative node-level (id="/") seconds for metric $1, from metrics on stdin
+              pick() { awk -v m="$1" 'index($0, m "{") == 1 && /id="\/"/ {print $2; exit}'; }
               declare -A ip before
               while read -r n addr _; do
                 ip[$n]=$addr
-                before[$n]=$(stall "$addr" || true)
+                body=$(metrics "$addr")
+                for c in $CHECKS; do
+                  IFS=: read -r key metric _ _ <<<"$c"
+                  before[$n|$key]=$(pick "$metric" <<<"$body")
+                done
               done < <(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name} {.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}')
               sleep "$WINDOW"
               for n in "${!ip[@]}"; do
-                after=$(stall "${ip[$n]}" || true)
-                if [ -z "${before[$n]}" ] || [ -z "$after" ]; then
-                  echo "$n: no metrics, leaving as is"
-                  continue
-                fi
-                pct=$(awk -v a="${before[$n]}" -v b="$after" -v w="$WINDOW" 'BEGIN {printf "%d", (b - a) / w * 100}')
-                tainted=$(kubectl get node "$n" -o jsonpath="{.spec.taints[?(@.key==\"$KEY\")].key}")
-                if [ -z "$tainted" ] && [ "$pct" -ge "$HIGH" ]; then
-                  kubectl taint node "$n" "$KEY=true:NoSchedule"
-                elif [ -n "$tainted" ] && [ "$pct" -lt "$LOW" ]; then
-                  kubectl taint node "$n" "$KEY:NoSchedule-"
-                fi
-                echo "$n: io stall ${pct}%"
+                body=$(metrics "${ip[$n]}")
+                for c in $CHECKS; do
+                  IFS=: read -r key metric high low <<<"$c"
+                  a=${before[$n|$key]}
+                  b=$(pick "$metric" <<<"$body")
+                  if [ -z "$a" ] || [ -z "$b" ]; then
+                    echo "$n $key: no metrics, leaving as is"
+                    continue
+                  fi
+                  pct=$(awk -v a="$a" -v b="$b" -v w="$WINDOW" 'BEGIN {printf "%d", (b - a) / w * 100}')
+                  tainted=$(kubectl get node "$n" -o jsonpath="{.spec.taints[?(@.key==\"$key\")].key}")
+                  if [ -z "$tainted" ] && [ "$pct" -ge "$high" ]; then
+                    kubectl taint node "$n" "$key=true:NoSchedule"
+                  elif [ -n "$tainted" ] && [ "$pct" -lt "$low" ]; then
+                    kubectl taint node "$n" "$key:NoSchedule-"
+                  fi
+                  echo "$n $key: ${pct}%"
+                done
               done
