@@ -27,6 +27,10 @@ helmCharts:
     configs:
       params:
         controller.sync.timeout.seconds: "600"
+        # info logged ~241k lines/day (every reconcile: "Reconciliation
+        # completed", "Update successful", ...). warn keeps errors and
+        # health/sync failures.
+        controller.log.level: warn
       secret:
         createSecret: false
     global:
@@ -67,16 +71,11 @@ helmCharts:
           memory: 104Mi
       metrics:
         enabled: true
+    # No triggers, templates or subscriptions are configured
+    # (argocd-notifications-cm holds only `context`), so the controller only
+    # produced ~158k "Start processing"/"Processing completed" logs/day.
     notifications:
-      metrics:
-        enabled: true
-      resources:
-        requests:
-          cpu: 10m
-          memory: 40Mi
-        limits:
-          cpu: 100m
-          memory: 248Mi
+      enabled: false
     controller:
       metrics:
         enabled: true
@@ -121,7 +120,7 @@ helmCharts:
       metrics:
         enabled: true
       logging:
-        level: debug
+        level: info
       workflowNamespaces:
         - argocd
       resources:
@@ -135,7 +134,7 @@ helmCharts:
       metrics:
         enabled: true
       logging:
-        level: debug
+        level: info
       extraArgs:
         - --insecure-skip-verify=true
       resources:
@@ -147,7 +146,7 @@ helmCharts:
           memory: 152Mi
     workflow:
       logging:
-        level: debug
+        level: info
       serviceAccount:
         create: true
         labels: {}
