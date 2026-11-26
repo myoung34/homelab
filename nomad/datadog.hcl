@@ -82,25 +82,9 @@ logs:
     path: /opt/nomad-logs/nomad.log
     source: custom
     service: nomad
-
-  - type: file
-    path: /var/log/consul.log
-    source: custom
-    service: consul
 EOH
 
         destination = "local/custom_log_collection.d/conf.yaml"
-      }
-
-      template {
-        data = <<EOH
-init_config:
-
-instances:
-  - url: http://192.168.3.2:8500
-EOH
-
-        destination = "local/consul.d/conf.yaml"
       }
 
       template {
@@ -117,13 +101,16 @@ EOH
 
       template {
         data = <<EOH
+# loader: core (Go). The python loader crashes on every run on the
+# agent's Python 3.13 ("There is no current event loop"), so nothing
+# below was being collected. Core also decodes Synology's Opaque-float
+# UPS values that broke the python loader with "embedded null
+# character" (DataDog/integrations-core#10899) - the reason for the old
+# Zapier-based synology-ups-datadog job. Core only honours the
+# `symbol:` syntax; the legacy top-level OID/name form is silently
+# ignored.
 init_config:
-  loader: python
-  oid_batch_size: 60
-
-  profiles:
-    generic:
-      definition_file: _generic-host-resources.yaml
+  loader: core
 
 instances:
   - ip_address: 192.168.3.2
@@ -131,66 +118,94 @@ instances:
     port: 161
     community_string: home
     min_collection_interval: 60
-    enforce_mib_constraints: false
 
     metric_tags:
-      - OID: .1.3.6.1.2.1.1.5.0
-        tag: snmp_host
-        symbol: sysName
+      - tag: snmp_host
+        symbol:
+          OID: 1.3.6.1.2.1.1.5.0
+          name: sysName
 
-      - OID: .1.3.6.1.2.1.1.5.0
-        tag: host
-        symbol: sysName
+      # OL = on line, OB = on battery, LB = low battery (NUT status).
+      - tag: ups_status
+        symbol:
+          OID: 1.3.6.1.4.1.6574.4.2.1.0
+          name: upsInfoStatus
 
     metrics:
-      - OID: .1.3.6.1.4.1.6574.4.3.6.1
-        name: upsBatteryRuntimeValue
+      - symbol:
+          OID: 1.3.6.1.4.1.6574.4.3.1.1.0
+          name: upsBatteryChargeValue
 
-      - OID: .1.3.6.1.2.1.1.3.0
-        name: uptime
+      - symbol:
+          OID: 1.3.6.1.4.1.6574.4.3.6.1.0
+          name: upsBatteryRuntimeValue
 
-      - OID: .1.3.6.1.4.1.2021.11.9.0
-        name: ssCpuUser
+      - symbol:
+          OID: 1.3.6.1.4.1.6574.4.2.12.1.0
+          name: upsInfoLoadValue
 
-      - OID: .1.3.6.1.4.1.2021.11.10.0
-        name: ssCpuSystem
+      - symbol:
+          OID: 1.3.6.1.2.1.1.3.0
+          name: uptime
 
-      - OID: .1.3.6.1.4.1.2021.11.11.0
-        name: laCpuIdle
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.11.9.0
+          name: ssCpuUser
 
-      - OID: .1.3.6.1.4.1.2021.10.1.5.1
-        name: laLoad.1
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.11.10.0
+          name: ssCpuSystem
 
-      - OID: .1.3.6.1.4.1.6574.1.2.0
-        name: cpuTemp
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.11.11.0
+          name: laCpuIdle
 
-      - OID: .1.3.6.1.4.1.2021.4.3.0
-        name: swapTotal
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.10.1.5.1
+          name: laLoad.1
 
-      - OID: .1.3.6.1.4.1.2021.4.4.0
-        name: swapFree
+      - symbol:
+          OID: 1.3.6.1.4.1.6574.1.2.0
+          name: cpuTemp
 
-      - OID: .1.3.6.1.4.1.2021.4.5.0
-        name: memoryTotal
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.4.3.0
+          name: swapTotal
 
-      - OID: .1.3.6.1.4.1.2021.4.6.0
-        name: memoryUsed
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.4.4.0
+          name: swapFree
 
-      - OID: .1.3.6.1.4.1.2021.4.11.0
-        name: memoryFree
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.4.5.0
+          name: memoryTotal
 
-      - OID: .1.3.6.1.4.1.2021.4.15.0
-        name: memoryCached
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.4.6.0
+          name: memoryUsed
+
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.4.11.0
+          name: memoryFree
+
+      - symbol:
+          OID: 1.3.6.1.4.1.2021.4.15.0
+          name: memoryCached
 
       - MIB: IF-MIB
-        table: ifTable
+        table:
+          OID: 1.3.6.1.2.1.2.2
+          name: ifTable
         symbols:
-          - ifInOctets
-          - ifOutOctets
-
+          - OID: 1.3.6.1.2.1.2.2.1.10
+            name: ifInOctets
+          - OID: 1.3.6.1.2.1.2.2.1.16
+            name: ifOutOctets
         metric_tags:
           - tag: interface
-            column: ifDescr
+            column:
+              OID: 1.3.6.1.2.1.2.2.1.2
+              name: ifDescr
 EOH
 
         destination = "local/snmp.d/conf.yaml"
@@ -207,7 +222,6 @@ EOH
         ]
 
         volumes = [
-          "local/consul.d/conf.yaml:/etc/datadog-agent/conf.d/consul.d/conf.yaml",
           "local/vault.d/conf.yaml:/etc/datadog-agent/conf.d/vault.d/conf.yaml",
           "local/custom_log_collection.d/conf.yaml:/etc/datadog-agent/conf.d/custom_log_collection.d/conf.yaml",
           "local/log.d/conf.yaml:/etc/datadog-agent/conf.d/log.d/conf.yaml",

@@ -33,9 +33,8 @@ Todo. In the meantime a tl;dr:
 * Synology - Major backbone. Runs nomad natively (not k8s because no worky). Things that run here are stateful or data related
   * Datadog - o11y
   * Netboot.xyz - This is how I flash my talos easily. I build MAC's per node to a file. Some are ARM64, some are AMD64
-  * `synology-ups-datadog` - custom script to send UPS metrics to datadog via Zapier, because of a [bug in go snmp](https://github.com/DataDog/integrations-core/issues/10899)
+  * UPS metrics - the Datadog agent's SNMP check (`loader: core`) in `nomad/datadog.hcl`. Replaces the old Zapier `synology-ups-datadog` job from [integrations-core#10899](https://github.com/DataDog/integrations-core/issues/10899)
   * OpenBao - my way of handling secrets. Raft storage, auto-unseals from a key file on the NAS; monthly raft snapshots to Minio (`k8s/prod/workflows/openbao-snapshot.yaml`)
-  * traefik - How i expose services from nomad using consul discovery.
   * minio - local s3 compatible system. I use it for backups (see `k8s/prod/workflows`)
 * Kubernetes cluster
   * Runs on talos across a mixture of Raspberry Pi 4's and Rock Pi X (To get some AMD64 in there) on [pirack's](https://www.uctronics.com/uctronics-for-raspberry-pi-rack-with-micro-hdmi-adapter-boards-19-1u-rack-mount-supports-1-4-units-of-raspberry-pi-4-model-b-u6128.html) powered by PoE

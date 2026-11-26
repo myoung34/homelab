@@ -36,8 +36,8 @@ data:
 
     Synology running Nomad - `nomad/*.hcl`. Stateful and data-plane things
     live here, deliberately not on k8s: Vault (secrets, backed by MinIO),
-    MinIO (local S3, holds every backup), PostgreSQL, Datadog, traefik with
-    consul discovery, netboot.xyz (how Talos nodes get flashed). You have no
+    MinIO (local S3, holds every backup), PostgreSQL, Datadog,
+    netboot.xyz (how Talos nodes get flashed). You have no
     Nomad tools. You can read these files through GitHub and reason about
     them, but you cannot inspect or change that side at runtime - say so
     rather than implying otherwise.
