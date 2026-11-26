@@ -41,6 +41,9 @@ helmCharts:
         # were most of the agent's ~76k error logs/day.
         - cilium
       clusterName: prod
+      # Info is check start/finish chatter: ~58k lines/day steady, far more
+      # on every rollout. Bump back to info while debugging the agent.
+      logLevel: WARN
       orchestratorExplorer:
         kubelet_configuration_check:
           enabled: false

@@ -126,3 +126,7 @@ helmCharts:
       # replica rebuild - sustained disk I/O on nodes that are already slow.
       # best-effort would optimise harder and rebuild more.
       replicaAutoBalance: least-effort
+      # Info was ~69k lines/day (CSI GetCapacity polls, admission "Request
+      # (user: ...)" lines), and logrus writes to stderr, so Datadog tagged
+      # every one of them status:error.
+      logLevel: Warn
