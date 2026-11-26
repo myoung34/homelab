@@ -49,14 +49,13 @@
       "enabled": false
     },
     {
-      "description": "Renovate ships patch releases several times a day and the image only runs the config validator, so skip patches; minors and majors still bump",
+      "description": "Renovate ships a release almost every day and the image only runs the config validator, so bump it once a month",
       "matchPackageNames": [
         "ghcr.io/renovatebot/renovate"
       ],
-      "matchUpdateTypes": [
-        "patch"
-      ],
-      "enabled": false
+      "schedule": [
+        "* 0-3 1 * *"
+      ]
     },
     {
       "description": "Hold kagent charts at 0.10.6: the agent images come from images/kagent-adk, so a chart bump also needs KAGENT_VERSION, A2A_VERSION and the image tags moved by hand. Remove once kagent ships a2aproject/a2a-go#414 (see images/kagent-adk/Dockerfile)",
