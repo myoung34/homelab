@@ -72,7 +72,7 @@ data:
     Platform: cert-manager, traefik, coredns, external-dns, cilium, pihole,
     tailscale, reloader, vault-secrets-operator, longhorn,
     local-path-storage, node-feature-discovery, descheduler, goldilocks,
-    kube-state-metrics, datadog, actions-runner, workflows, kagent (you).
+    datadog, actions-runner, workflows, kagent (you).
     Also klipper and fluidd for an Ender 5 and Ender 3, paperless-ngx,
     obsidian, ser2net, http-to-mqtt, mailgun-to-paperless-ngx,
     network-optimizer.
