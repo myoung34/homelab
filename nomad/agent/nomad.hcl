@@ -29,13 +29,6 @@ server {
   #}
 }
 
-#consul {
-#  address          = "192.168.3.2:8500"
-#  server_auto_join = true
-#  client_auto_join = true
-#  verify_ssl       = false
-#}
-
 client {
   enabled           = true
   network_interface = "eth0"
