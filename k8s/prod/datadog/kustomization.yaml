@@ -32,32 +32,15 @@ helmCharts:
       ignoreAutoConfig:
         - kube_scheduler
         - kube_controller_manager
-        # Replaced by the slower-interval copy in confd below.
+        # Off entirely. Even at a 120s interval each scrape pulled ~35k
+        # samples and took 10-34s per control-plane node, and nothing
+        # (dashboard or monitor) reads the metrics.
         - kube_apiserver_metrics
+        # The bundled auto_conf scrapes cilium-agent :9962, which isn't
+        # enabled here - it never succeeded on any node and its tracebacks
+        # were most of the agent's ~76k error logs/day.
+        - cilium
       clusterName: prod
-      confd:
-        # The bundled auto_conf, but every 120s instead of 15s. Each scrape
-        # pulls ~16MB / 107k series of apiserver /metrics; at 15s it pinned
-        # cluster13 (CPU pressure 85%, ~50s per scrape) and starved the
-        # apiserver enough that ArgoCD server-side diffs timed out.
-        kube_apiserver_metrics.yaml: |-
-          ad_identifiers:
-            - kube-apiserver
-          init_config:
-          instances:
-            - possible_prometheus_urls:
-                - https://%%host%%:6443/metrics
-                - https://%%host%%:8443/metrics
-              bearer_token_auth: tls_only
-              min_collection_interval: 120
-              tags:
-                - apiserver:%%host%%
-        argocd.yaml: |-
-          instances:
-            -
-              app_controller_endpoint: http://argocd-application-controller-metrics.argocd.svc.cluster.local:8082/metrics
-              api_server_endpoint: http://argocd-server-metrics.argocd.svc.cluster.local:8083/metrics
-              repo_server_endpoint: http://argocd-repo-server-metrics.argocd.svc.cluster.local:8084/metrics
       orchestratorExplorer:
         kubelet_configuration_check:
           enabled: false
@@ -111,9 +94,14 @@ helmCharts:
           # The agent sat pinned at its old 1469m limit on every node, so p95
           # (1274m) is a floor, not its real demand. No CPU limit: throttling
           # it just drops checks. Cutting what it collects is the real fix.
+          # Done: argocd is now a single cluster check and the apiserver and
+          # cilium checks are off. Before that cut, 7-day usage was 309m avg /
+          # 361m max per node, so 1300m reserved 13 cores across 10 nodes for
+          # ~3 cores of work (41% of all cluster CPU requests). It's only a
+          # request - no limit - so a busy node can still burst past it.
           resources:
             requests:
-              cpu: 1300m
+              cpu: 500m
               memory: 352Mi
             limits:
               memory: 448Mi
@@ -151,6 +139,18 @@ helmCharts:
               memory: 64Mi
     clusterAgent:
       tokenExistingSecret: datadog-cluster-agent # pragma: allowlist secret
+      confd:
+        # A cluster check, so the cluster agent hands it to exactly one node
+        # agent. As a plain datadog.confd file every node agent ran it: 10
+        # copies of a 2.4-8.8s, 2.9k-sample scrape every 15s, and every
+        # argocd.* metric (e.g. app.info) summed 10x on the dashboard.
+        argocd.yaml: |-
+          cluster_check: true
+          init_config:
+          instances:
+            - app_controller_endpoint: http://argocd-application-controller-metrics.argocd.svc.cluster.local:8082/metrics
+              api_server_endpoint: http://argocd-server-metrics.argocd.svc.cluster.local:8083/metrics
+              repo_server_endpoint: http://argocd-repo-server-metrics.argocd.svc.cluster.local:8084/metrics
       resources:
         requests:
           cpu: 400m

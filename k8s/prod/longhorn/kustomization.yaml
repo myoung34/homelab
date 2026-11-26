@@ -108,7 +108,14 @@ helmCharts:
       # 8% is 316m, which fits. This is a reservation, not a limit - the
       # instance-managers were not using 12%, it was merely held for them.
       # Existing instance-manager pods keep the old request until they restart.
-      guaranteedInstanceManagerCpu: 8
+      #
+      # Key is guaranteedInstanceManagerCPU (caps CPU) and the value is
+      # per-data-engine since 1.10. The old guaranteedInstanceManagerCpu: 8
+      # matched no chart key, so it was silently dropped and the live
+      # setting stayed at the default {"v1":"12","v2":"12"}.
+      guaranteedInstanceManagerCPU:
+        v1: "8"
+        v2: "8"
       # Spread replicas off over-loaded nodes instead of leaving them where they
       # first landed. cluster11 is the probe-failure epicentre (~3100 liveness/
       # readiness timeouts on 4s `ls /data/longhorn`), which points at disk
