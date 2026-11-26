@@ -40,6 +40,11 @@ helmCharts:
     # The worker runs on every node (including amd64 cluster41) so its
     # hardware gets labelled; see amd-gpu-nodefeaturerule.yaml.
     worker:
+      # nfd-worker.conf is set by the kustomize patch below, which the chart's
+      # checksum/config annotation never sees, and the worker doesn't reload
+      # it on its own (sleepInterval: 300s sat unapplied until a restart).
+      daemonsetAnnotations:
+        configmap.reloader.stakater.com/reload: "node-feature-discovery-worker-conf"
       resources:
         requests:
           cpu: 40m
