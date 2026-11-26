@@ -84,10 +84,12 @@ spec:
             - |
               set -euo pipefail
               TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-              # cumulative seconds the whole node had all tasks stalled on IO
+              # "<cumulative seconds the whole node had all tasks stalled on IO> <sample ms>".
+              # Rate uses cadvisor's sample timestamps, not WINDOW: the real gap is
+              # WINDOW plus the per-node fetch loop, and kubelet caches samples.
               stall() {
                 curl -sfk -m 10 -H "Authorization: Bearer $TOKEN" "https://$1:10250/metrics/cadvisor" \
-                  | awk '/^container_pressure_io_stalled_seconds_total\{.*id="\/"/ {print $2; exit}'
+                  | awk '/^container_pressure_io_stalled_seconds_total\{.*id="\/"/ {print $2, $3; exit}'
               }
               declare -A ip before
               while read -r n addr _; do
@@ -101,7 +103,13 @@ spec:
                   echo "$n: no metrics, leaving as is"
                   continue
                 fi
-                pct=$(awk -v a="${before[$n]}" -v b="$after" -v w="$WINDOW" 'BEGIN {printf "%d", (b - a) / w * 100}')
+                pct=$(awk -v a="${before[$n]}" -v b="$after" 'BEGIN {
+                  split(a, x, " "); split(b, y, " "); ms = y[2] - x[2]
+                  if (ms <= 0) exit; printf "%d", (y[1] - x[1]) / (ms / 1000) * 100 }')
+                if [ -z "$pct" ]; then
+                  echo "$n: no new sample, leaving as is"
+                  continue
+                fi
                 tainted=$(kubectl get node "$n" -o jsonpath="{.spec.taints[?(@.key==\"$KEY\")].key}")
                 if [ -z "$tainted" ] && [ "$pct" -ge "$HIGH" ]; then
                   kubectl taint node "$n" "$KEY=true:NoSchedule"
