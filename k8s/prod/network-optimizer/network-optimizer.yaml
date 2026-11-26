@@ -57,7 +57,7 @@ spec:
             secretKeyRef:
               key: APP_PASSWORD
               name: network-optimizer
-        image: "ghcr.io/ozark-connect/network-optimizer:latest@sha256:bfd0131286aae84446e1ca087525d81232199e20c4a2b249bd10cd6e73632c98"
+        image: "ghcr.io/ozark-connect/network-optimizer:latest@sha256:fc67447b6041a2cd6c51e6a437933056e0be0c1040a70c84d92c67fabab51376"
         imagePullPolicy: IfNotPresent
         resources:
           requests:
