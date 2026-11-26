@@ -100,6 +100,21 @@ EOH
     # so Datadog monitors can name the node (e.g. Pi 5 macb TX stalls).
     Source_Address_Key  talos_node
 
+# Drop noise before it's shipped. Two UniFi patterns were 4.98M of
+# 5.03M lines/day: the U7-Lite's APUpdateBeaconFrame kernel spam and
+# wevent restart chatter. Talos auditd (BPF load/unload, syscalls) was
+# 718k of 1.17M talos lines/day. The UniFi update monitors match
+# fw-download / ubnt-dpi-util lines, which still pass.
+[FILTER]
+    Name    grep
+    Match   unifi
+    Exclude message (APUpdateBeaconFrame|wevent)
+
+[FILTER]
+    Name    grep
+    Match   talos
+    Exclude talos-service ^auditd$
+
 [FILTER]
     Name  modify
     Match *

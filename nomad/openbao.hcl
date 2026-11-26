@@ -22,6 +22,18 @@ cluster_addr = "http://127.0.0.1:8201"
 listener "tcp" {
   address     = "0.0.0.0:8200"
   tls_disable = 1
+
+  # The NAS Datadog agent's vault check scrapes /v1/sys/metrics with
+  # no_token; without this it 403s.
+  telemetry {
+    unauthenticated_metrics_access = true
+  }
+}
+
+# Required for /v1/sys/metrics?format=prometheus.
+telemetry {
+  prometheus_retention_time = "24h"
+  disable_hostname          = true
 }
 
 storage "raft" {
