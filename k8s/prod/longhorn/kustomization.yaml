@@ -4,6 +4,11 @@ namespace: longhorn-system
 
 resources:
   - namespace.yaml
+  # VolumeSnapshot CRDs, same release as the chart's csi-snapshotter
+  # (v8.6.0). Without them it logged "Failed to watch ... could not find the
+  # requested resource" ~9k times/day. No snapshot-controller: nothing here
+  # takes CSI snapshots, the sidecar just needs the types to exist.
+  - https://github.com/kubernetes-csi/external-snapshotter//client/config/crd?ref=v8.6.0
   - cilium-node-ingress.yaml
   - tailscale.yaml
   - vault.yaml
