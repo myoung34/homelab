@@ -38,6 +38,11 @@ helmCharts:
         configmap.reloader.stakater.com/reload: "argocd-cm,argocd-rbac-cm"
     dex:
       enabled: false
+    # argocd-redis already exists (created 2026-07-22); the job only
+    # re-checks it on every sync. It finishes and is deleted before the
+    # starved controller sees it, failing every sync with "Job ... missing".
+    redisSecretInit:
+      enabled: false
     repoServer:
       metrics:
         enabled: true
