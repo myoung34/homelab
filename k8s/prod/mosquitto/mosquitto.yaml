@@ -9,6 +9,10 @@ data:
     persistence_location /mosquitto/data/
     listener 1883
     allow_anonymous true
+    # The tcpSocket probes connect every 10s; each logged a "New connection"
+    # and "closed its connection" pair (~34k lines/day, all on stderr so
+    # tagged status:error).
+    connection_messages false
 kind: ConfigMap
 metadata:
   labels:
@@ -51,6 +55,9 @@ metadata:
     app.kubernetes.io/name: mosquitto
     app.kubernetes.io/version: 2.0.14
     helm.sh/chart: mosquitto-4.8.2
+  annotations:
+    # mosquitto only reads its config at start.
+    configmap.reloader.stakater.com/reload: "mosquitto-config"
   name: mosquitto
   namespace: mosquitto
 spec:

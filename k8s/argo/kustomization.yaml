@@ -31,6 +31,9 @@ helmCharts:
         # completed", "Update successful", ...). warn keeps errors and
         # health/sync failures.
         controller.log.level: warn
+        # Same for the repo-server: ~144k lines/day of info, almost all
+        # git fetch/checkout commands and "manifest cache hit" per refresh.
+        reposerver.log.level: warn
       secret:
         createSecret: false
     global:
@@ -107,6 +110,11 @@ helmCharts:
           cpu: 250m
           memory: 256Mi
     redis:
+      # The Datadog agent autodiscovers this as redisdb, but the
+      # argocd-redis NetworkPolicy blocks it: every run timed out after ~58s
+      # and logged an error. Its other metrics weren't used either.
+      podAnnotations:
+        ad.datadoghq.com/redis.metrics_exclude: "true"
       resources:
         requests:
           cpu: 20m
