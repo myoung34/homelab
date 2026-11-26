@@ -74,7 +74,9 @@ telemetry {
   collection_interval = "10s"
 }
 
-log_level = "DEBUG"
+# INFO, not DEBUG: DEBUG logged every template check (~160k lines/day
+# in Datadog, shipped twice via nomad.log and syslog).
+log_level = "INFO"
 log_file  = "/volume1/@appdata/nomad/log/nomad.log"
 log_rotate_bytes = 104857600
 log_rotate_duration = "24h"
