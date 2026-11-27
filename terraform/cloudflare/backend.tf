@@ -11,6 +11,9 @@ terraform {
     skip_metadata_api_check     = true
     skip_region_validation      = true
     use_path_style              = true
+    # Fastly object storage rejects the AWS SDK's default request checksums
+    # (PutObject -> 400 InvalidRequest); see the AWS_*_CHECKSUM_* vars in .envrc.
+    skip_s3_checksum = true
   }
   required_providers {
     cloudflare = {
