@@ -380,21 +380,24 @@ resource "datadog_monitor" "disk_full" {
 
 resource "datadog_monitor" "synology_login_event" {
   draft_status           = "published"
-  enable_logs_sample     = false
+  enable_logs_sample     = true
   evaluation_delay       = 0
   groupby_simple_monitor = false
   include_tags           = false
-  message                = "A login event has occured\n\n @slack-ops"
+  message                = "Someone logged in to DSM on bigNASty. The log sample has the user and source IP.\n\n @slack-ops"
   name                   = "Synology Login Event"
   new_group_delay        = 0
   notify_audit           = false
   on_missing_data        = "default"
-  query                  = "logs(\"service:synology \\\"signed in to [DSM] successfully\\\"\").index(\"*\").rollup(\"count\").last(\"5m\") > 0"
-  renotify_interval      = 0
-  renotify_occurrences   = 0
-  require_full_window    = false
-  timeout_h              = 0
-  type                   = "log alert"
+  # DSM 7 logs "User [x] from [ip] logged in successfully via [DSM]"; the old
+  # DSM 6 "signed in to [DSM] successfully" text never matches. SSH and other
+  # protocols log the same line with their own [..], left out on purpose.
+  query                = "logs(\"service:synology \\\"logged in successfully via [DSM]\\\"\").index(\"*\").rollup(\"count\").last(\"5m\") > 0"
+  renotify_interval    = 0
+  renotify_occurrences = 0
+  require_full_window  = false
+  timeout_h            = 0
+  type                 = "log alert"
   monitor_thresholds {
     critical = "0"
   }
